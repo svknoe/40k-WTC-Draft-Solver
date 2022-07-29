@@ -75,29 +75,6 @@ def get_n_player_discard_attacker_dictionary(matrix, n):
 	print(foo)
 	print(enemy_permutations[0])
 
-	kake = 0
-
-
-
-
-	if foo:
-		print()
-
-	if foo:
-		print()
-
-	kake = 0
-	kake = 0
-
-	if foo:
-		print("ya")
-
-	kake = 0
-	kake = 0
-	kake = 0
-	kake = 0
-
-
 	print("Generating {}-players discard attacker strategies:".format(n))
 	counter = 0
 	percentage = -1
@@ -193,6 +170,9 @@ def get_n_player_select_attackers_dictionary(matrix, n, discard_attacker_strateg
 			strategy = final.select_attackers(discard_attacker_strategies, f_defender, remaining_friends, e_defender, remaining_enemies)
 		else:
 			strategy = initial.select_attackers(discard_attacker_strategies, f_defender, remaining_friends, e_defender, remaining_enemies)
+
+		if not permutation_key in n_player_select_attackers_strategies:
+			print("problem")
 
 		n_player_select_attackers_strategies[permutation_key] = [list(strategy[0]), list(strategy[1]), strategy[2]]
 

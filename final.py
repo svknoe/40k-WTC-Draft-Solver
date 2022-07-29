@@ -55,7 +55,7 @@ def select_attackers(discard_attacker_strategies, f_defender, remaining_friends,
 			e_attacker_B = remaining_enemies[(j + 2) % size]
 
 			game_permutation = [[f_defender, f_attacker_A, f_attacker_B, f_not_selected],[e_defender, e_attacker_A, e_attacker_B, e_not_selected]]
-			permutation_key = utilities.get_permutation_key(game_permutation, 4)
+			permutation_key = utilities.get_permutation_key(4, game_permutation)
 
 
 			print(game_permutation)

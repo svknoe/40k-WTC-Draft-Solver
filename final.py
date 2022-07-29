@@ -1,7 +1,9 @@
+from itertools import permutations
 import numpy as np # standard libraries
 import time
 
-import nashpy # 3rd party packages
+import nashpy
+from permutations import GamePermutation, TeamPermutation # 3rd party packages
 
 import utilities # local source
 
@@ -54,26 +56,17 @@ def select_attackers(discard_attacker_strategies, f_defender, remaining_friends,
             e_attacker_A = remaining_enemies[(j + 1) % size]
             e_attacker_B = remaining_enemies[(j + 2) % size]
 
-            game_permutation = [[f_defender, f_attacker_A, f_attacker_B, f_not_selected],[e_defender, e_attacker_A, e_attacker_B, e_not_selected]]
-            permutation_key = utilities.get_permutation_key(4, game_permutation)
-
-
-            print(game_permutation)
-            print(permutation_key)
-            print(permutation_key in discard_attacker_strategies)
+            friendly_team_permutation = TeamPermutation([f_not_selected], f_defender, f_attacker_A, f_attacker_B)
+            enemy_team_permutation = TeamPermutation([e_not_selected], e_defender, e_attacker_A, e_attacker_B)
+            game_permutation = GamePermutation(friendly_team_permutation, enemy_team_permutation)
             
-            discard_attacker_overview = discard_attacker_strategies[permutation_key]
+            discard_attacker_overview = discard_attacker_strategies[game_permutation.get_key()]
             discard_attacker_value = discard_attacker_overview[2]
             row.append(discard_attacker_value)
-
-
-            print(discard_attacker_overview)
-            time.sleep(5)
 
         attackers_matrix.append(row)
 
     game_array = np.array(attackers_matrix)
-    print(game_array)
     return utilities.evaluate_game(select_attackers_cache, game_array)
 
 discard_attacker_cache = {}

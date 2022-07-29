@@ -4,8 +4,8 @@ from pathlib import Path
 
 import nashpy # 3rd party packages
 
-def import_pairing_matrix(subfolder = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
-	path = get_path(subfolder, filename)
+def import_pairing_matrix(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
+	path = get_path(match, filename)
 	with path.open(encoding="UTF-8") as f:
 		lines = f.read().splitlines()
 
@@ -97,7 +97,7 @@ def print_overview(game_overview, roundTo = 3):
 # A game permutation consist of a pair.
 # The first item is a permutation of a subset of the friendly team. The second the same of the enemy team.
 # The key for a game permutation is the concatenation of player names in the above order.
-def get_permutation_key(game_permutation, n):
+def get_permutation_key(n, game_permutation):
 	permutation_key = "Friends: "
 	for i in range(0, n): # Add friends to key.
 		permutation_key += game_permutation[0][i] + ", "
@@ -110,10 +110,11 @@ def get_permutation_key(game_permutation, n):
 
 	return permutation_key
 
-def get_path(subfolder, filename):
-	if subfolder == None:
+def get_path(match, filename):
+	if match == None:
 		path = Path(__file__).parent / (filename)
 	else:
+		subfolder = "Matches/" + match
 		path = Path(__file__).parent / (subfolder + "/" + filename)
 
 	return path
@@ -124,6 +125,12 @@ def write_strategy_dictionary(path, strategy_dictionary):
 
 def read_strategy_dictionary(path):
 	with path.open() as data_file:    
-	    strategy_dictionary = json.load(data_file)
+		strategy_dictionary = json.load(data_file)
 
 	return strategy_dictionary
+
+def write_strategy_with_print_calls(match, strategy_dictionary, filename):
+	strategy_path = get_path(match, filename)
+	print("Writing file {} ...".format(strategy_path))
+	write_strategy_dictionary(strategy_path, strategy_dictionary)
+	print('    ...done.') 

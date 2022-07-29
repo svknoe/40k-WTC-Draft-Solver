@@ -1,40 +1,25 @@
 import time # standard libraries
-import numpy as np
 import itertools
 import math
-
-import nashpy # 3rd party packages
+import sys
 
 import utilities # local source
 import initial
 import final
 
-def generate_strategy_dictionaries(subfolder):
-	matrix = utilities.import_pairing_matrix(subfolder)
+def generate_strategy_dictionaries(match):
+	matrix = utilities.import_pairing_matrix(match)
 
-	four_player_discard_attacker_strategies = get_n_player_discard_attacker_dictionary(matrix, subfolder, 4)
-	four_player_discard_attacker_path = utilities.get_path(subfolder, "four_player_discard_attacker_dictionary.json")
-	print("cache size: ", len(final.discard_attacker_cache))
-	print("Writing file {} ...".format(four_player_discard_attacker_path))
-	utilities.write_strategy_dictionary(four_player_discard_attacker_path, four_player_discard_attacker_strategies)
-	print('    ...done.')
+	four_player_discard_attacker_strategies = get_n_player_discard_attacker_dictionary(matrix, match, 4)
+	#utilities.write_strategy_with_print_calls(match, four_player_discard_attacker_strategies, "four_player_discard_attacker_dictionary.json")
+	#print("cache size: ", len(final.discard_attacker_cache))
 
-	four_player_select_attackers_strategies = get_n_player_select_attackers_dictionary(matrix, subfolder, 4, four_player_discard_attacker_strategies)
-	four_player_select_attackers_path = utilities.get_path(subfolder, "four_player_select_attackers_dictionary.json")
-	print("cache size: ", len(final.select_attackers_cache))
-	print("Writing file {} ...".format(four_player_select_attackers_path))
-	utilities.write_strategy_dictionary(four_player_select_attackers_path, four_player_select_attackers_strategies)
-	print('    ...done.')
-
-	# four_player_select_defender_strategies = get_n_player_select_defender_dictionary(matrix, subfolder, 4)
-	# four_player_select_defender_path = utilities.get_path(subfolder, "four_player_select_defender_dictionary.json")
-	# utilities.write_strategy_dictionary(four_player_select_defender_path, four_player_select_defender_strategies)
+	four_player_select_attackers_strategies = get_n_player_select_attackers_dictionary(matrix, match, 4, four_player_discard_attacker_strategies)
+	#utilities.write_strategy_with_print_calls(match, four_player_select_attackers_strategies, "four_player_select_attackers_dictionary.json")
+	#print("cache size: ", len(final.select_attackers_cache)) 
 
 
 def get_n_player_discard_attacker_dictionary(matrix, subfolder, n):
-	if (not (n == 4 or n == 6 or n == 8)):
-		sys.exit("{} is not a valid number of players for discarding attacker. Choose 4, 6 or 8.".format(n))
-
 	# Format: [defender, attackerA, attackerB, ...]
 	def get_discard_attacker_player_permutations(players, n):
 		player_combinations = itertools.combinations(players, n)
@@ -68,7 +53,10 @@ def get_n_player_discard_attacker_dictionary(matrix, subfolder, n):
 			player_permutations.extend(combination_permutations)
 		
 		return player_permutations
-	
+
+	if (not (n == 4 or n == 6 or n == 8)):
+		sys.exit("{} is not a valid number of players for discarding attacker. Choose 4, 6 or 8.".format(n))
+
 	friends = [friend for friend in matrix]
 	enemies = [enemy for enemy in matrix[friends[0]]]
 	
@@ -81,6 +69,35 @@ def get_n_player_discard_attacker_dictionary(matrix, subfolder, n):
 	product = itertools.product(friend_permutations, enemy_permutations)
 	game_permutations = [[list(element[0]), list(element[1])] for element in product]
 
+	enemy_permutations = [game_permutation[1] for game_permutation in game_permutations]
+
+	foo = ["Michal Gemmeke", "Matthias Bellmann", "Martin Nguyen", "Immanuel Wolf"] in enemy_permutations
+	print(foo)
+	print(enemy_permutations[0])
+
+	kake = 0
+
+
+
+
+	if foo:
+		print()
+
+	if foo:
+		print()
+
+	kake = 0
+	kake = 0
+
+	if foo:
+		print("ya")
+
+	kake = 0
+	kake = 0
+	kake = 0
+	kake = 0
+
+
 	print("Generating {}-players discard attacker strategies:".format(n))
 	counter = 0
 	percentage = -1
@@ -92,7 +109,7 @@ def get_n_player_discard_attacker_dictionary(matrix, subfolder, n):
 			percentage = new_percentage
 			print(" - {}%: ".format(10 * percentage), counter, "/", len(list(game_permutations)))
 		
-		permutation_key = utilities.get_permutation_key(game_permutation, n)
+		permutation_key = utilities.get_permutation_key(n, game_permutation)
 
 		remaining_friends = game_permutation[0].copy()
 		f_defender = remaining_friends.pop(0)
@@ -162,7 +179,7 @@ def get_n_player_select_attackers_dictionary(matrix, subfolder, n, discard_attac
 			percentage = new_percentage
 			print(" - {}%: ".format(10 * percentage), counter, "/", len(list(game_permutations)))
 		
-		permutation_key = utilities.get_permutation_key(game_permutation, n)
+		permutation_key = utilities.get_permutation_key(n, game_permutation)
 
 		remaining_friends = game_permutation[0].copy()
 		f_defender = remaining_friends.pop(0)

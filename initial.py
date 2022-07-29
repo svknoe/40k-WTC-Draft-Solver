@@ -1,8 +1,10 @@
 import numpy as np # standard libraries
+import time
 
 import nashpy # 3rd party packages
 
 import utilities # local source
+import final
 
 def select_defender(matrix, friends, enemies):
 	size = len(friends)
@@ -11,7 +13,7 @@ def select_defender(matrix, friends, enemies):
 		return None
 
 	if size == 4:
-		return finalPairings.select_defender(friends, enemies)
+		return final.select_defender(friends, enemies)
 
 	print("Friends: ", friends, "\n")
 	print("Enemies: ", enemies, "\n")
@@ -30,9 +32,6 @@ def select_defender(matrix, friends, enemies):
 
 			remaining_enemies = enemies.copy()
 			remaining_enemies.remove(e_defender)
-
-			print("   Evaluating defenders" + "(", (i) * size + j + 1, "/", size**2, ": ", round(time() - t0, 2), "s", ")" +":")
-			print("    - " + f_defender + " and " + e_defender + "...")
 
 			select_attackers_overview = select_attackers(matrix, f_defender, remaining_friends, e_defender, remaining_enemies)
 			select_attackers_value = select_attackers_overview[2]

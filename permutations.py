@@ -15,6 +15,7 @@ class TeamPermutation:
         self.discarded_attacker = discarded_attacker
         self.remaining_players = sorted(remaining_players)
 
+
     def get_key(self):
         permutation_key = ""
 

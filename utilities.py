@@ -3,9 +3,7 @@ import json
 from pathlib import Path
 from enum import Enum
 
-import nashpy
-
-from initial import select_attackers # 3rd party packages
+import nashpy # 3rd party packages
 
 class DraftStage(Enum):
     none, select_defender, select_attackers, discard_attacker = range(4)
@@ -111,13 +109,20 @@ def get_path(match, filename):
 
 def write_strategy_dictionary(path, strategy_dictionary):
     with path.open('w', encoding='utf-8') as f:
+        print("Writing file {} ...".format(path))
         json.dump(strategy_dictionary, f, ensure_ascii=False, indent=4)
-
+        print('    ...done.') 
+    
 def read_strategy_dictionary(path):
-    with path.open() as data_file:    
-        strategy_dictionary = json.load(data_file)
+    try:
+        with path.open() as data_file:    
+            print("Reading file {} ...".format(path))
+            strategy_dictionary = json.load(data_file)
+            print('    ...done.') 
 
-    return strategy_dictionary
+        return strategy_dictionary
+    except:
+        return None
 
 def write_strategy_with_print_calls(match, strategy_dictionary, filename):
     strategy_path = get_path(match, filename)

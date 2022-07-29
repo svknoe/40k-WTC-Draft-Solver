@@ -1,10 +1,15 @@
-from time import time # standard libraries
-import numpy as np
+import time # standard libraries
 
 import utilities # local source
+import generator
 
-t0 = time()
+t0 = time.time()
 
-four_player_select_defender_strategies = utilities.read_strategy_dictionary("four_player_select_defender_dictionary.json")
+print("Starting script...")
+strategy_dictionaries = generator.get_strategy_dictionaries("Germany", False)
 
-print(time()-t0)
+eight_player_select_defender_strategies = strategy_dictionaries["eight_player_select_defender_strategies"]
+print(len(eight_player_select_defender_strategies))
+print(eight_player_select_defender_strategies)
+
+print(time.time() - t0)

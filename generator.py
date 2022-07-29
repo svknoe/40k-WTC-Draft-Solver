@@ -10,16 +10,16 @@ import final
 def generate_strategy_dictionaries(match):
 	matrix = utilities.import_pairing_matrix(match)
 
-	four_player_discard_attacker_strategies = get_n_player_discard_attacker_dictionary(matrix, match, 4)
+	four_player_discard_attacker_strategies = get_n_player_discard_attacker_dictionary(matrix, 4)
 	#utilities.write_strategy_with_print_calls(match, four_player_discard_attacker_strategies, "four_player_discard_attacker_dictionary.json")
 	#print("cache size: ", len(final.discard_attacker_cache))
 
-	four_player_select_attackers_strategies = get_n_player_select_attackers_dictionary(matrix, match, 4, four_player_discard_attacker_strategies)
+	four_player_select_attackers_strategies = get_n_player_select_attackers_dictionary(matrix, 4, four_player_discard_attacker_strategies)
 	#utilities.write_strategy_with_print_calls(match, four_player_select_attackers_strategies, "four_player_select_attackers_dictionary.json")
 	#print("cache size: ", len(final.select_attackers_cache)) 
 
 
-def get_n_player_discard_attacker_dictionary(matrix, subfolder, n):
+def get_n_player_discard_attacker_dictionary(matrix, n):
 	# Format: [defender, attackerA, attackerB, ...]
 	def get_discard_attacker_player_permutations(players, n):
 		player_combinations = itertools.combinations(players, n)
@@ -136,7 +136,7 @@ def get_n_player_discard_attacker_dictionary(matrix, subfolder, n):
 
 
 
-def get_n_player_select_attackers_dictionary(matrix, subfolder, n, discard_attacker_strategies):
+def get_n_player_select_attackers_dictionary(matrix, n, discard_attacker_strategies):
 	if (not (n == 4 or n == 6 or n == 8)):
 		sys.exit("{} is not a valid number of players for selecting attackers. Choose 4, 6 or 8.".format(n))
 

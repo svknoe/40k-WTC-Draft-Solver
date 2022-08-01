@@ -18,7 +18,9 @@ select_defender_cache[8] = select_defender_cache_8
 def select_defender(n, select_attackers_strategies, none_game_permutation, round_strategies):
     defender_game_permutations = gamepermutations.get_next_game_permutations(utilities.DraftStage.discard_attacker, none_game_permutation)
         
-    defender_matrix = []
+    game_matrix = utilities.get_empty_matrix(n, n)
+
+
 
     for defender_game_permutation_row in defender_game_permutations:
 
@@ -29,9 +31,9 @@ def select_defender(n, select_attackers_strategies, none_game_permutation, round
             select_attackers_value = select_attackers_overview[2]
             defender_matrix_row.append(select_attackers_value)
         
-        defender_matrix.append(defender_matrix_row)
+        game_matrix.append(defender_matrix_row)
 
-    game_array = np.array(defender_matrix)
+    game_array = np.array(game_matrix)
     return utilities.evaluate_game(select_defender_cache[n], game_array, round_strategies)
 
 select_attackers_cache = {}
@@ -43,16 +45,8 @@ select_attackers_cache[6] = select_attackers_cache_6
 select_attackers_cache[8] = select_attackers_cache_8
 
 def select_attackers(n, discard_attacker_strategies, defender_game_permutation, round_strategies, restrict_attackers):
-    f_defender = defender_game_permutation.friendly_team_permutation.defender
-    remaining_friends = defender_game_permutation.friendly_team_permutation.remaining_players
 
-    e_defender = defender_game_permutation.enemy_team_permutation.defender
-    remaining_enemies = defender_game_permutation.enemy_team_permutation.remaining_players
-    
-    size = len(remaining_friends)
-    if len(remaining_enemies) != size:
-        print("select_attackers() failed.")
-        return None
+    attackers_game_permutations = gamepermutations.get_next_game_permutations(utilities.DraftStage.select_defender, defender_game_permutation) 
 
     attackers_matrix = []
     for i in range(0, size - 1):

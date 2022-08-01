@@ -142,8 +142,11 @@ def write_strategy_with_print_calls(match, strategy_dictionary, filename):
     write_strategy_dictionary(strategy_path, strategy_dictionary)
     print('    ...done.')
 
+def get_empty_matrix(n,m):
+    return [[None]*len(n)]*len(m)
+
 def get_cartesian_product(list_A, list_B):
-    cartesian_product = [[None]*len(list_B)]*len(list_A)
+    cartesian_product = get_empty_matrix(len(list_A), len(list_B))
 
     for i in range(0, len(list_A)):
         for j in range(0, len(list_B)):

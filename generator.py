@@ -6,6 +6,7 @@ import utilities # local source
 import games
 import gamepermutations
 
+# TODO: Current plan is to enumerate all game permutations to be solved from top to bottom, then solve them from the bottom and up.
 def get_strategy_dictionaries(match, read = True, write = True, round_strategies = False, restrict_attackers = True):
     matrix = utilities.import_pairing_matrix(match)
     strategy_dictionaries = {}

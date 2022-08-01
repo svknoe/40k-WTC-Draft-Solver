@@ -1,9 +1,11 @@
+from itertools import permutations
 import numpy as np # standard libraries
 
 import nashpy # 3rd party packages
 
 import utilities # local source
-from permutations import GamePermutation, TeamPermutation
+from gamepermutations import GamePermutation, TeamPermutation
+import gamepermutations
 
 select_defender_cache = {}
 select_defender_cache_4 = {}
@@ -13,34 +15,21 @@ select_defender_cache[4] = select_defender_cache_4
 select_defender_cache[6] = select_defender_cache_6
 select_defender_cache[8] = select_defender_cache_8
 
-def select_defender(n, select_attackers_strategies, friends, enemies, round_strategies):
-    size = len(friends)
-    if len(enemies) != size:
-        print("select_defender() failed.")
-        return None
-
+def select_defender(n, select_attackers_strategies, none_game_permutation, round_strategies):
+    defender_game_permutations = gamepermutations.get_next_game_permutations(utilities.DraftStage.discard_attacker, none_game_permutation)
+        
     defender_matrix = []
-    for i in range(0, size):
-        f_defender = friends[i]
-        remaining_friends = friends.copy()
-        remaining_friends.remove(f_defender)
 
-        row = []
+    for defender_game_permutation_row in defender_game_permutations:
 
-        for j in range(0, size):
-            e_defender = enemies[j]
-            remaining_enemies = enemies.copy()
-            remaining_enemies.remove(e_defender)
+        defender_matrix_row = []
 
-            friendly_team_permutation = TeamPermutation(remaining_friends, f_defender)
-            enemy_team_permutation = TeamPermutation(remaining_enemies, e_defender)
-            game_permutation = GamePermutation(friendly_team_permutation, enemy_team_permutation)
-
-            select_attackers_overview = select_attackers_strategies[game_permutation.get_key()]
+        for defender_game_permutation in defender_game_permutation_row:
+            select_attackers_overview = select_attackers_strategies[defender_game_permutation.get_key()]
             select_attackers_value = select_attackers_overview[2]
-            row.append(select_attackers_value)
-
-        defender_matrix.append(row)
+            defender_matrix_row.append(select_attackers_value)
+        
+        defender_matrix.append(defender_matrix_row)
 
     game_array = np.array(defender_matrix)
     return utilities.evaluate_game(select_defender_cache[n], game_array, round_strategies)

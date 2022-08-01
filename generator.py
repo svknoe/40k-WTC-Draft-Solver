@@ -77,7 +77,7 @@ def get_strategy_dictionary(matrix, draft_stage_to_solve, n, lower_level_strateg
         sys.exit("{} is not a valid number of players. Choose 4, 6 or 8.".format(n))
 
     previous_stage = utilities.DraftStage(draft_stage_to_solve.value - 1)
-    game_permutations_to_solve = permutations.get_game_permutations(matrix, previous_stage, n, restrict_attackers)
+    game_permutations_to_solve = gamepermutations.get_game_permutations(matrix, previous_stage, n, restrict_attackers)
 
     print("Generating {}-player {} strategies:".format(n, draft_stage_to_solve.name))
     counter = 0

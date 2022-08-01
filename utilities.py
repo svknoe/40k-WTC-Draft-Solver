@@ -6,7 +6,13 @@ from enum import Enum
 import nashpy # 3rd party packages
 
 class DraftStage(Enum):
-    none, select_defender, select_attackers, discard_attacker = range(4)
+    select_defender, select_attackers, discard_attacker = range(3)
+
+def get_next_draft_stage(draft_stage):
+    return DraftStage((draft_stage.value + 1) % 3)
+
+def get_previous_draft_stage(draft_stage):
+    return DraftStage((draft_stage.value - 1) % 3)
 
 def import_pairing_matrix(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
     path = get_path(match, filename)
@@ -69,7 +75,7 @@ def get_game_overview(game):
 
     return None
 
-def evaluate_game(metagame_cache, game_array):
+def evaluate_game(metagame_cache, game_array, round_strategies):
     game_hash = hash(game_array.tostring())
 
     if game_hash in metagame_cache:
@@ -77,6 +83,12 @@ def evaluate_game(metagame_cache, game_array):
     else:
         game = nashpy.Game(game_array)
         game_overview = get_game_overview(game)
+
+        if (round_strategies):
+            game_overview[0] = [round(p, 2) for p in game_overview[0]]
+            game_overview[1] = [round(p, 2) for p in game_overview[1]]
+            game_overview[2] = round(game_overview[2])
+
         metagame_cache[game_hash] = game_overview
         return game_overview
 
@@ -128,4 +140,13 @@ def write_strategy_with_print_calls(match, strategy_dictionary, filename):
     strategy_path = get_path(match, filename)
     print("Writing file {} ...".format(strategy_path))
     write_strategy_dictionary(strategy_path, strategy_dictionary)
-    print('    ...done.') 
+    print('    ...done.')
+
+def get_cartesian_product(list_A, list_B):
+    cartesian_product = [[None]*len(list_B)]*len(list_A)
+
+    for i in range(0, len(list_A)):
+        for j in range(0, len(list_B)):
+            cartesian_product[i][j] = [list_A[i], list_B[j]]
+
+    return cartesian_product

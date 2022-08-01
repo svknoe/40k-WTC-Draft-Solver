@@ -1,11 +1,12 @@
 import math # standard libraries
 import sys
+import time
 
 import utilities # local source
 import games
-import permutations
+import gamepermutations
 
-def get_strategy_dictionaries(match, read = True, write = True):
+def get_strategy_dictionaries(match, read = True, write = True, round_strategies = False, restrict_attackers = True):
     matrix = utilities.import_pairing_matrix(match)
     strategy_dictionaries = {}
 
@@ -28,7 +29,7 @@ def get_strategy_dictionaries(match, read = True, write = True):
             draft_stage_strategies = utilities.read_strategy_dictionary(path)
 
         if draft_stage_strategies == None:
-            draft_stage_strategies = get_strategy_dictionary(matrix, draft_stage, n, lower_level_strategies)
+            draft_stage_strategies = get_strategy_dictionary(matrix, draft_stage, n, lower_level_strategies, round_strategies, restrict_attackers)
 
             if write:
                 utilities.write_strategy_dictionary(path, draft_stage_strategies)
@@ -42,6 +43,8 @@ def get_strategy_dictionaries(match, read = True, write = True):
 
     select_attackers_4_strategies = process_draft_stage(utilities.DraftStage.select_attackers, 4, discard_attacker_4_strategies)
     print(len(games.select_attackers_cache[4]))
+
+    return
 
     select_defender_4_strategies = process_draft_stage(utilities.DraftStage.select_defender, 4, select_attackers_4_strategies)
     print(len(games.select_defender_cache[4]))
@@ -68,23 +71,28 @@ def get_strategy_dictionaries(match, read = True, write = True):
 
     return strategy_dictionaries
 
-def get_strategy_dictionary(matrix, draft_stage, n, lower_level_strategies):
+
+def get_strategy_dictionary(matrix, draft_stage_to_solve, n, lower_level_strategies, round_strategies, restrict_attackers):
     if (not (n == 4 or n == 6 or n == 8)):
         sys.exit("{} is not a valid number of players. Choose 4, 6 or 8.".format(n))
 
-    higher_level_stage = utilities.DraftStage(draft_stage.value - 1)
-    game_permutations = permutations.get_game_permutations(matrix, higher_level_stage, n)
+    previous_stage = utilities.DraftStage(draft_stage_to_solve.value - 1)
+    game_permutations_to_solve = permutations.get_game_permutations(matrix, previous_stage, n, restrict_attackers)
 
-    print("Generating {}-player {} strategies:".format(n, draft_stage.name))
+    print("Generating {}-player {} strategies:".format(n, draft_stage_to_solve.name))
     counter = 0
     percentage = -1
     draft_stage_strategies = {}
-    for game_permutation in game_permutations:
+    previous_time = time.time()
+    for game_permutation in game_permutations_to_solve:
         counter += 1
-        new_percentage = math.floor(counter / len(game_permutations))
+        new_percentage = math.floor(10 * counter / len(game_permutations_to_solve))
+        new_time = time.time()
         if (new_percentage > percentage):
             percentage = new_percentage
-            print(" - {}%: ".format(100 * percentage), counter, "/", len(list(game_permutations)))
+            print(" - {}%: ".format(10 * percentage), counter, "/", len(list(game_permutations_to_solve)))
+        elif new_time - previous_time > 30:
+            print(" - {}%: ".format(10 * percentage), counter, "/", len(list(game_permutations_to_solve)))
         
         f_defender = game_permutation.friendly_team_permutation.defender
         f_attacker_A = game_permutation.friendly_team_permutation.attacker_A
@@ -96,15 +104,16 @@ def get_strategy_dictionary(matrix, draft_stage, n, lower_level_strategies):
         e_attacker_B = game_permutation.enemy_team_permutation.attacker_B
         remaining_enemies = game_permutation.enemy_team_permutation.remaining_players
 
-        if draft_stage == utilities.DraftStage.discard_attacker:
-            strategy = games.discard_attacker(matrix, n, lower_level_strategies, f_defender, f_attacker_A, f_attacker_B, remaining_friends, e_defender, e_attacker_A, e_attacker_B, remaining_enemies)
-        elif draft_stage == utilities.DraftStage.select_attackers:
-            strategy = games.select_attackers(n, lower_level_strategies, f_defender, remaining_friends, e_defender, remaining_enemies)
-        elif draft_stage == utilities.DraftStage.select_defender:
-            strategy = games.select_defender(n, lower_level_strategies, remaining_friends, remaining_enemies)
+        if draft_stage_to_solve == utilities.DraftStage.discard_attacker:
+            strategy = games.discard_attacker(matrix, n, lower_level_strategies, f_defender, f_attacker_A, f_attacker_B, remaining_friends, e_defender, e_attacker_A, e_attacker_B, remaining_enemies, round_strategies)
+        elif draft_stage_to_solve == utilities.DraftStage.select_attackers:
+            strategy = games.select_attackers(n, lower_level_strategies, f_defender, remaining_friends, e_defender, remaining_enemies, round_strategies, restrict_attackers)
+        elif draft_stage_to_solve == utilities.DraftStage.select_defender:
+            strategy = games.select_defender(n, lower_level_strategies, remaining_friends, remaining_enemies, round_strategies)
         else:
             return None        
 
         draft_stage_strategies[game_permutation.get_key()] = [list(strategy[0]), list(strategy[1]), strategy[2]]
+        previous_time = new_time
 
     return draft_stage_strategies

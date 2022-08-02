@@ -4,8 +4,8 @@ import numpy as np # standard libraries
 import nashpy # 3rd party packages
 
 import utilities # local source
-from gamepermutations import GamePermutation, TeamPermutation
-import gamepermutations
+import gamestate
+from gamestate import GameState
 
 select_defender_cache = {}
 select_defender_cache_4 = {}
@@ -15,23 +15,27 @@ select_defender_cache[4] = select_defender_cache_4
 select_defender_cache[6] = select_defender_cache_6
 select_defender_cache[8] = select_defender_cache_8
 
-def select_defender(n, lower_level_strategies, higher_level_game_permutation):
-    game_permutations = gamepermutations.get_next_game_permutations(utilities.DraftStage.discard_attacker, higher_level_game_permutation)        
+def select_defender(n, lower_level_strategies, higher_level_gamestate):
+    game_array = get_game_array(n, lower_level_strategies, higher_level_gamestate)
+    return utilities.evaluate_game(select_defender_cache[n], game_array)
+
+def get_game_array(n, lower_level_strategies, higher_level_gamestate):
+    gamestate_matrix = gamestate.get_next_gamestate_matrix(utilities.DraftStage.attacker_discarded, higher_level_gamestate)        
     game_matrix = utilities.get_empty_matrix(n, n)
 
-    for game_permutation_row in game_permutations:
+    for gamestate_row in gamestate_matrix:
 
         matrix_row = []
 
-        for game_permutation in game_permutation_row:
-            game_overview = lower_level_strategies[game_permutation.get_key()]
+        for gamestate in gamestate_row:
+            game_overview = lower_level_strategies[gamestate.get_key()]
             game_value = game_overview[2]
             matrix_row.append(game_value)
         
         game_matrix.append(matrix_row)
 
     game_array = np.array(game_matrix)
-    return utilities.evaluate_game(select_defender_cache[n], game_array)
+    return game_array
 
 select_attackers_cache = {}
 select_attackers_cache_4 = {}
@@ -43,7 +47,7 @@ select_attackers_cache[8] = select_attackers_cache_8
 
 def select_attackers(n, discard_attacker_strategies, defender_game_permutation, round_strategies, restrict_attackers):
 
-    attackers_game_permutations = gamepermutations.get_next_game_permutations(utilities.DraftStage.select_defender, defender_game_permutation) 
+    attackers_game_permutations = gamestate.get_next_gamestate_matrix(utilities.DraftStage.defender_selected, defender_game_permutation) 
 
     attackers_matrix = []
     for i in range(0, size - 1):

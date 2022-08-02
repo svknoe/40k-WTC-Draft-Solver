@@ -6,21 +6,14 @@ from enum import Enum
 import nashpy # 3rd party packages
 
 class DraftStage(Enum):
-    select_defender, select_attackers, discard_attacker = range(3)
+    none, defender_selected, attackers_selected, attacker_discarded = range(4)
 
-def get_next_draft_stage(draft_stage, n):
-    if (draft_stage.value == 2):
-        n -= 2
+def get_next_draft_stage(draft_stage):
+    index_modulo = (draft_stage.value + 1) % 4
+    index_max = max(1, index_modulo)
+    return DraftStage(index_max)
 
-    return [DraftStage((draft_stage.value + 1) % 3), n]
-
-def get_previous_draft_stage(draft_stage, n):
-    if (draft_stage.value == 0):
-        n += 2
-        
-    return [DraftStage((draft_stage.value - 1) % 3), n]
-
-def import_pairing_matrix(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
+def import_pairing_dictionary(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
     path = get_path(match, filename)
     with path.open(encoding="UTF-8") as f:
         lines = f.read().splitlines()
@@ -52,19 +45,33 @@ def import_pairing_matrix(match = None, filename = 'input_matrix.txt', encoding 
         tmpMatchups.append(tmpMatchup)
     matchups = tmpMatchups
 
-    matrix = {}
+    pairing_dictionary = {}
 
     friendCounter = 0
     for friend in lines[0]:
         row = {}
-        foeCounter = 0
-        for foe in lines[1]:
-            row[foe] = matchups[friendCounter][foeCounter]
-            foeCounter += 1
-        matrix[friend] = row
+        enemyCounter = 0
+        for enemy in lines[1]:
+            row[enemy] = matchups[friendCounter][enemyCounter]
+            enemyCounter += 1
+        pairing_dictionary[friend] = row
         friendCounter += 1
 
-    return matrix
+    return pairing_dictionary
+
+def get_transposed_pairing_dictionary(pairing_dictionary):
+    friends = [friend for friend in pairing_dictionary]
+    enemies = [enemy for enemy in pairing_dictionary[friends[0]]]
+
+    transposed_pairing_dictionary = {}
+
+    for enemy in enemies:
+        row = {}
+        for friend in friends:
+            row[friend] = pairing_dictionary[friend][enemy]
+        transposed_pairing_dictionary[enemy] = row
+
+    return transposed_pairing_dictionary
 
 def get_game_overview(game):
     support_value = get_game_overview_from_equilibria(game, game.support_enumeration())
@@ -148,14 +155,15 @@ def write_strategy_with_print_calls(match, strategy_dictionary, filename):
     write_strategy_dictionary(strategy_path, strategy_dictionary)
     print('    ...done.')
 
-def get_empty_matrix(n,m):
-    return [[None]*len(n)]*len(m)
+def get_empty_matrix(n, m):
+    empty_matrix = { (i,j):None for i in range(len(n)) for j in range(len(m))}
+    return empty_matrix
 
 def get_cartesian_product(list_A, list_B):
     cartesian_product = get_empty_matrix(len(list_A), len(list_B))
 
     for i in range(0, len(list_A)):
         for j in range(0, len(list_B)):
-            cartesian_product[i][j] = [list_A[i], list_B[j]]
+            cartesian_product[(i, j)] = [list_A[i], list_B[j]]
 
     return cartesian_product

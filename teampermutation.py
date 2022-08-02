@@ -1,77 +1,12 @@
+from argparse import ArgumentError
 import itertools # standard libraries
 from copy import deepcopy
 
 import utilities # local source
 
-class GamePermutation:
-    def __init__(self, friendly_team_permutation, enemy_team_permutation):
-        self.friendly_team_permutation = friendly_team_permutation
-        self.enemy_team_permutation = enemy_team_permutation
-
-    def get_key(self):
-        return "Friends: {}\nEnemies: {}".format(self.friendly_team_permutation.get_key(), self.enemy_team_permutation.get_key())
-
-def get_game_permutation(draft_stage, friends, enemies):
-    friendly_team_permutation = get_team_permutation(draft_stage, friends)
-    enemy_team_permutation = get_team_permutation(draft_stage, enemies)
-
-    return GamePermutation(friendly_team_permutation, enemy_team_permutation)
-
-def get_game_permutations(matrix, draft_stage, n, restrict_attackers):
-    friends = [friend for friend in matrix]
-    enemies = [enemy for enemy in matrix[friends[0]]]
-    
-    friendly_team_permutations = get_team_permutations(draft_stage, n, friends)
-    enemy_team_permutations = get_team_permutations(draft_stage, n, enemies)
-
-    product = itertools.product(friendly_team_permutations, enemy_team_permutations)
-    game_permutations = [GamePermutation(element[0], element[1]) for element in product]
-
-    print(draft_stage)
-    if (False and restrict_attackers and draft_stage == utilities.DraftStage.select_defender):
-        restricted_game_permutations = game_permutations.copy()
-
-        for game_permutation in game_permutations:
-            friendly_team_permutation = game_permutation.friendly_team_permutation
-            enemy_team_permutation = game_permutation.enemy_team_permutation
-
-            friendly_non_defenders = friendly_team_permutation.remaining_players + [friendly_team_permutation.attacker_A, friendly_team_permutation.attacker_B]
-            enemy_non_defenders = enemy_team_permutation.remaining_players + [enemy_team_permutation.attacker_A, enemy_team_permutation.attacker_B]
-            
-            friendly_non_defenders_vs_enemy_defender = {}
-            for f_non_defender in friendly_non_defenders:
-                friendly_non_defenders_vs_enemy_defender[f_non_defender] = matrix[f_non_defender][enemy_team_permutation.defender]
-
-            friendly_non_defenders_vs_average_enemy_non_defender = []
-            for f_non_defender in friendly_non_defenders:
-                sum = 0
-
-                for e_non_defender in enemy_non_defenders:
-                    sum += matrix[f_non_defender][e_non_defender]
-
-                friendly_non_defenders_vs_average_enemy_non_defender.append([f_non_defender, sum / len(enemy_non_defenders)])
-            
-            friendly_non_defenders_vs_average_enemy_non_defender.sort(key = lambda k: k[1] * -1)
-            print(friendly_non_defenders_vs_average_enemy_non_defender)
-
-            friendly_non_defenders_to_discard = []
-            for i in range(2, len(friendly_non_defenders_vs_average_enemy_non_defender)):
-                friendly_non_defenders_to_discard.append(friendly_non_defenders_vs_average_enemy_non_defender[i][0])
-
-            if friendly_team_permutation.attacker_A in friendly_non_defenders_to_discard or friendly_team_permutation.attacker_B in friendly_non_defenders_to_discard:
-                restricted_game_permutations.remove(game_permutation)
-                print("removed")
-
-            return restricted_game_permutations
-
-    return game_permutations
-
-def get_next_game_permutations(current_draft_stage, parent_game_permutation):
-    next_friendly_team_permutations = get_next_team_permutations(current_draft_stage, parent_game_permutation.friendly_team_permutation)
-    next_enemy_team_permutations = get_next_team_permutations(current_draft_stage, parent_game_permutation.enemy_team_permutation)
-    next_game_permutations = utilities.get_cartesian_product(next_friendly_team_permutations, next_enemy_team_permutations)
-
-    return next_game_permutations
+restrict_attackers_k = None
+regular_pairing_dictionary = None
+transposed_pairing_dictionary = None
 
 class TeamPermutation:
     def __init__(self, remaining_players, defender = None, attacker_A = None, attacker_B = None, discarded_attacker = None):
@@ -163,21 +98,18 @@ def get_team_permutations(draft_stage, n, team_players):
 
     return team_permutations
 
-def get_next_team_permutations(current_draft_stage, parent_team_permutation):
-    if (current_draft_stage == None):
-        return get_defender_team_permutations(parent_team_permutation)
-
-    next_draft_stage = utilities.get_next_draft_stage(current_draft_stage, None)[0]
-
-    if (next_draft_stage == utilities.DraftStage.select_defender):
+def get_team_permutations_for_stage(draft_stage, parent_team_permutation, opposing_parent_team_permutation):
+    if (draft_stage == utilities.DraftStage.none):
+        return [get_none_team_permutation(parent_team_permutation)]
+    elif (draft_stage == utilities.DraftStage.defender_selected):
         none_team_permutation = get_none_team_permutation(parent_team_permutation)
         return get_defender_team_permutations(none_team_permutation)
-    elif (next_draft_stage == utilities.DraftStage.select_attackers):
-        return get_attackers_team_permutations(parent_team_permutation)
-    elif (next_draft_stage == utilities.DraftStage.discard_attacker):
+    elif (draft_stage == utilities.DraftStage.attackers_selected):
+        return get_attackers_team_permutations(parent_team_permutation, opposing_parent_team_permutation)
+    elif (draft_stage == utilities.DraftStage.attacker_discarded):
         return get_discard_team_permutations(parent_team_permutation)
     else:
-        raise ValueError("{} is an unknown draft stage.".format(current_draft_stage))
+        raise ValueError("{} is an unknown draft stage.".format(draft_stage))
 
 def get_defender_team_permutations(team_permutation_stage_none):
     size = len(team_permutation_stage_none.remaining_players)
@@ -186,20 +118,25 @@ def get_defender_team_permutations(team_permutation_stage_none):
     
     defender_team_permutations = []
 
-    for defender in team_permutation_stage_none:
+    for defender in team_permutation_stage_none.remaining_players:
         non_defenders = team_permutation_stage_none.remaining_players.copy()
         non_defenders.remove(defender)
         defender_team_permutations.append(TeamPermutation(non_defenders, defender))
     
     return defender_team_permutations
 
-def get_attackers_team_permutations(defender_team_permutation):
+def get_attackers_team_permutations(defender_team_permutation, opposing_defender_team_permutation):
     defender = defender_team_permutation.defender
 
     if defender == None:
         raise ValueError("Missing defender.")
 
-    attacker_combinations = itertools.combinations(defender_team_permutation.remaining_players, 2)
+    eligable_attackers = defender_team_permutation.remaining_players
+
+    if (restrict_attackers_k != None):
+        eligable_attackers = get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_permutation)
+
+    attacker_combinations = itertools.combinations(eligable_attackers, 2)
     attackers_team_permutations = []
 
     for attacker_combination in attacker_combinations:
@@ -211,6 +148,35 @@ def get_attackers_team_permutations(defender_team_permutation):
         attackers_team_permutations.append(TeamPermutation(remaining_players, defender, attacker_A, attacker_B))
 
     return attackers_team_permutations
+
+def enable_restricted_attackers(pairing_dictionary):
+    global restrict_attackers_k, regular_pairing_dictionary, transposed_pairing_dictionary
+    restrict_attackers_k = 3
+    regular_pairing_dictionary = pairing_dictionary
+    transposed_pairing_dictionary = utilities.get_transposed_pairing_dictionary(pairing_dictionary)
+
+def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_permutation):
+    if eligable_attackers[0] in regular_pairing_dictionary:
+        pairing_dictionary = regular_pairing_dictionary
+    elif eligable_attackers[0] in transposed_pairing_dictionary:
+        pairing_dictionary = transposed_pairing_dictionary
+    else:
+        raise ArgumentError("Inconsistent pairing matrices.")
+
+    attackers_with_relative_advantages_against_defender = []
+
+    for attacker in eligable_attackers:
+        vs_defender = pairing_dictionary[attacker][opposing_defender_team_permutation.defender]
+        vs_field = sum([pairing_dictionary[attacker][opponent] for opponent in opposing_defender_team_permutation.remaining_players])/len(opposing_defender_team_permutation.remaining_players)
+        relative_advantage = vs_defender - vs_field
+        attackers_with_relative_advantages_against_defender.append([attacker, relative_advantage])
+
+    ranked_attackers = sorted(attackers_with_relative_advantages_against_defender , key=lambda k: (-k[1]))
+    restricted_attackers_with_relatives_advantages = ranked_attackers[0:restrict_attackers_k]
+    restricted_attackers = [pair[0] for pair in restricted_attackers_with_relatives_advantages]
+
+    return restricted_attackers
+
 
 def get_discard_team_permutations(attackers_team_permutation):
     attacker_A = attackers_team_permutation.attacker_A
@@ -230,12 +196,11 @@ def get_discard_team_permutations(attackers_team_permutation):
     return discard_team_permutations
 
 def get_none_team_permutation(discard_team_permutation):
-    if (discard_team_permutation.discarded_attacker == None):
-        raise ValueError("Missing discarded attacker.")
-
-    unselected_players = discard_team_permutation.remaining_players
+    team_players = discard_team_permutation.remaining_players.copy()
     discarded_attacker = discard_team_permutation.discarded_attacker
 
-    return TeamPermutation(unselected_players + [discarded_attacker])
+    if discarded_attacker != None:
+        team_players = team_players + [discarded_attacker]
 
-
+    none_team_permutation = TeamPermutation(team_players)
+    return none_team_permutation

@@ -1,34 +1,71 @@
 import math # standard libraries
 import sys
 import time
+from varname import nameof
 
 import utilities # local source
 import games
 import gamepermutations
 from gamepermutations import GamePermutation, TeamPermutation
 
-eight_player_defender_game_permutations = []
-eight_player_attackers_game_permutations = []
-eight_player_discard_game_permutations = []
+eight_player_defender_permutation_dictionary = {}
+eight_player_attackers_permutation_dictionary = {}
+eight_player_discard_permutation_dictionary = {}
 
-six_player_defender_game_permutations = []
-six_player_attackers_game_permutations = []
-six_player_discard_game_permutations = []
+six_player_defender_permutation_dictionary = {}
+six_player_attackers_permutation_dictionary = {}
+six_player_discard_permutation_dictionary = {}
 
-four_player_defender_game_permutations = []
-four_player_attackers_game_permutations = []
-four_player_discard_game_permutations = []
+four_player_defender_permutation_dictionary = {}
+four_player_attackers_permutation_dictionary = {}
+four_player_discard_permutation_dictionary = {}
 
-def initilise_game_permutations(match):
-    matrix = utilities.import_pairing_matrix(match)
+def initialise_game_permutation_dictionaries(matrix):
+    print("Initilising game permutation dictionaries...")
+    initial_game_state = get_initial_game_state(matrix)
 
+    eight_player_defender_permutations = gamepermutations.get_next_game_permutations(None, initial_game_state)
+    eight_player_defender_permutation_dictionary = {}
+    add_game_permutations_to_dictionary(eight_player_defender_permutation_dictionary, eight_player_defender_permutations)
+
+    initialise_game_permutation_dictionary(eight_player_attackers_permutation_dictionary, eight_player_defender_permutation_dictionary, utilities.DraftStage.select_attackers)
+    initialise_game_permutation_dictionary(eight_player_discard_permutation_dictionary, eight_player_attackers_permutation_dictionary, utilities.DraftStage.discard_attacker)
+
+    initialise_game_permutation_dictionary(six_player_defender_permutation_dictionary, eight_player_discard_permutation_dictionary, utilities.DraftStage.select_defender)
+    initialise_game_permutation_dictionary(six_player_attackers_permutation_dictionary, six_player_defender_permutation_dictionary, utilities.DraftStage.select_attackers)
+    initialise_game_permutation_dictionary(six_player_discard_permutation_dictionary, six_player_attackers_permutation_dictionary, utilities.DraftStage.discard_attacker)
+
+    initialise_game_permutation_dictionary(four_player_defender_permutation_dictionary, six_player_discard_permutation_dictionary, utilities.DraftStage.select_defender)
+    initialise_game_permutation_dictionary(four_player_attackers_permutation_dictionary, four_player_defender_permutation_dictionary, utilities.DraftStage.select_attackers)
+    initialise_game_permutation_dictionary(four_player_discard_permutation_dictionary, four_player_attackers_permutation_dictionary, utilities.DraftStage.discard_attacker)
+
+
+def initialise_game_permutation_dictionary(dictionary, parent_dictionary, draft_stage):
+    print("Initilising {}...".format(nameof(dictionary)))
+    dictionary = {}
+    next_draft_stage = utilities.get_next_draft_stage(draft_stage)
+
+    for parent_key in parent_dictionary:
+        parent_game_permutation = parent_dictionary[parent_key]
+        game_permutations = gamepermutations.get_next_game_permutations(next_draft_stage, parent_game_permutation)
+        add_game_permutations_to_dictionary(dictionary, game_permutations)
+
+def add_game_permutations_to_dictionary(dictionary, game_permutations):
+    for game_permutation in game_permutations:
+        add_game_permutation_to_dictionary(dictionary, game_permutation)
+
+def add_game_permutation_to_dictionary(dictionary, game_permutation)
+    permutation_key = game_permutation.get_key()
+
+    if not permutation_key in dictionary:
+        dictionary[permutation_key] = game_permutation
+
+def get_initial_game_state(matrix):
     friends = [friend for friend in matrix]
     enemies = [enemy for enemy in matrix[friends[0]]]
-    initial_game_permutation = GamePermutation(TeamPermutation(friends), TeamPermutation(enemies))
+    initial_game_state = GamePermutation(TeamPermutation(friends), TeamPermutation(enemies))
 
-    eight_player_defender_game_permutations = gamepermutations.get_next_game_permutations(None, initial_game_permutation)
-
-    for permutation in 
+    return initial_game_state
 
 # TODO: Current plan is to enumerate all game permutations to be solved from top to bottom, then solve them from the bottom and up.
 def get_strategy_dictionaries(match, read = True, write = True, round_strategies = False, restrict_attackers = True):

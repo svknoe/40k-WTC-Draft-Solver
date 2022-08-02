@@ -101,25 +101,24 @@ def get_team_permutations(draft_stage, n, team_players):
 def get_team_permutations_for_stage(draft_stage, parent_team_permutation, opposing_parent_team_permutation):
     if (draft_stage == utilities.DraftStage.none):
         return [get_none_team_permutation(parent_team_permutation)]
-    elif (draft_stage == utilities.DraftStage.defender_selected):
-        none_team_permutation = get_none_team_permutation(parent_team_permutation)
-        return get_defender_team_permutations(none_team_permutation)
-    elif (draft_stage == utilities.DraftStage.attackers_selected):
+    elif (draft_stage == utilities.DraftStage.select_defender):
+        return get_defender_team_permutations(parent_team_permutation)
+    elif (draft_stage == utilities.DraftStage.select_attackers):
         return get_attackers_team_permutations(parent_team_permutation, opposing_parent_team_permutation)
-    elif (draft_stage == utilities.DraftStage.attacker_discarded):
+    elif (draft_stage == utilities.DraftStage.discard_attackers):
         return get_discard_team_permutations(parent_team_permutation)
     else:
         raise ValueError("{} is an unknown draft stage.".format(draft_stage))
 
-def get_defender_team_permutations(team_permutation_stage_none):
-    size = len(team_permutation_stage_none.remaining_players)
+def get_defender_team_permutations(none_team_permutation):
+    size = len(none_team_permutation.remaining_players)
     if (not (size == 4 or size == 6 or size == 8)):
         raise ValueError("{} is an incorrect number of players.".format(size))
     
     defender_team_permutations = []
 
-    for defender in team_permutation_stage_none.remaining_players:
-        non_defenders = team_permutation_stage_none.remaining_players.copy()
+    for defender in none_team_permutation.remaining_players:
+        non_defenders = none_team_permutation.remaining_players.copy()
         non_defenders.remove(defender)
         defender_team_permutations.append(TeamPermutation(non_defenders, defender))
     
@@ -149,9 +148,9 @@ def get_attackers_team_permutations(defender_team_permutation, opposing_defender
 
     return attackers_team_permutations
 
-def enable_restricted_attackers(pairing_dictionary):
+def enable_restricted_attackers(pairing_dictionary, k):
     global restrict_attackers_k, regular_pairing_dictionary, transposed_pairing_dictionary
-    restrict_attackers_k = 3
+    restrict_attackers_k = k
     regular_pairing_dictionary = pairing_dictionary
     transposed_pairing_dictionary = utilities.get_transposed_pairing_dictionary(pairing_dictionary)
 
@@ -176,7 +175,6 @@ def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_
     restricted_attackers = [pair[0] for pair in restricted_attackers_with_relatives_advantages]
 
     return restricted_attackers
-
 
 def get_discard_team_permutations(attackers_team_permutation):
     attacker_A = attackers_team_permutation.attacker_A

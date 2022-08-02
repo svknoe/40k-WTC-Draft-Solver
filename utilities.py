@@ -6,12 +6,11 @@ from enum import Enum
 import nashpy # 3rd party packages
 
 class DraftStage(Enum):
-    none, defender_selected, attackers_selected, attacker_discarded = range(4)
+    none, select_defender, select_attackers, discard_attackers = range(4)
 
 def get_next_draft_stage(draft_stage):
-    index_modulo = (draft_stage.value + 1) % 4
-    index_max = max(1, index_modulo)
-    return DraftStage(index_max)
+    next_draft_stage = DraftStage((draft_stage.value + 1) % 4)
+    return next_draft_stage
 
 def import_pairing_dictionary(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
     path = get_path(match, filename)
@@ -151,12 +150,12 @@ def read_strategy_dictionary(path):
 
 def write_strategy_with_print_calls(match, strategy_dictionary, filename):
     strategy_path = get_path(match, filename)
-    print("Writing file {} ...".format(strategy_path))
+    print("    - Writing file {} ...".format(strategy_path))
     write_strategy_dictionary(strategy_path, strategy_dictionary)
-    print('    ...done.')
+    print('          ...done.')
 
 def get_empty_matrix(n, m):
-    empty_matrix = { (i,j):None for i in range(len(n)) for j in range(len(m))}
+    empty_matrix = { (i,j):None for i in range(n) for j in range(m)}
     return empty_matrix
 
 def get_cartesian_product(list_A, list_B):

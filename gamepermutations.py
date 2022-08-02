@@ -164,7 +164,10 @@ def get_team_permutations(draft_stage, n, team_players):
     return team_permutations
 
 def get_next_team_permutations(current_draft_stage, parent_team_permutation):
-    next_draft_stage = utilities.get_next_draft_stage(current_draft_stage)
+    if (current_draft_stage == None):
+        return get_defender_team_permutations(parent_team_permutation)
+
+    next_draft_stage = utilities.get_next_draft_stage(current_draft_stage, None)[0]
 
     if (next_draft_stage == utilities.DraftStage.select_defender):
         none_team_permutation = get_none_team_permutation(parent_team_permutation)

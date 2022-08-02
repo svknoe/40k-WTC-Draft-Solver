@@ -5,10 +5,38 @@ import time
 import utilities # local source
 import games
 import gamepermutations
+from gamepermutations import GamePermutation, TeamPermutation
+
+eight_player_defender_game_permutations = []
+eight_player_attackers_game_permutations = []
+eight_player_discard_game_permutations = []
+
+six_player_defender_game_permutations = []
+six_player_attackers_game_permutations = []
+six_player_discard_game_permutations = []
+
+four_player_defender_game_permutations = []
+four_player_attackers_game_permutations = []
+four_player_discard_game_permutations = []
+
+def initilise_game_permutations(match):
+    matrix = utilities.import_pairing_matrix(match)
+
+    friends = [friend for friend in matrix]
+    enemies = [enemy for enemy in matrix[friends[0]]]
+    initial_game_permutation = GamePermutation(TeamPermutation(friends), TeamPermutation(enemies))
+
+    eight_player_defender_game_permutations = gamepermutations.get_next_game_permutations(None, initial_game_permutation)
+
+    for permutation in 
 
 # TODO: Current plan is to enumerate all game permutations to be solved from top to bottom, then solve them from the bottom and up.
 def get_strategy_dictionaries(match, read = True, write = True, round_strategies = False, restrict_attackers = True):
     matrix = utilities.import_pairing_matrix(match)
+
+
+
+
     strategy_dictionaries = {}
 
     def process_draft_stage(draft_stage, n, lower_level_strategies = None):

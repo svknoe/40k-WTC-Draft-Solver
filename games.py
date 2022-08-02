@@ -15,26 +15,23 @@ select_defender_cache[4] = select_defender_cache_4
 select_defender_cache[6] = select_defender_cache_6
 select_defender_cache[8] = select_defender_cache_8
 
-def select_defender(n, select_attackers_strategies, none_game_permutation, round_strategies):
-    defender_game_permutations = gamepermutations.get_next_game_permutations(utilities.DraftStage.discard_attacker, none_game_permutation)
-        
+def select_defender(n, lower_level_strategies, higher_level_game_permutation):
+    game_permutations = gamepermutations.get_next_game_permutations(utilities.DraftStage.discard_attacker, higher_level_game_permutation)        
     game_matrix = utilities.get_empty_matrix(n, n)
 
+    for game_permutation_row in game_permutations:
 
+        matrix_row = []
 
-    for defender_game_permutation_row in defender_game_permutations:
-
-        defender_matrix_row = []
-
-        for defender_game_permutation in defender_game_permutation_row:
-            select_attackers_overview = select_attackers_strategies[defender_game_permutation.get_key()]
-            select_attackers_value = select_attackers_overview[2]
-            defender_matrix_row.append(select_attackers_value)
+        for game_permutation in game_permutation_row:
+            game_overview = lower_level_strategies[game_permutation.get_key()]
+            game_value = game_overview[2]
+            matrix_row.append(game_value)
         
-        game_matrix.append(defender_matrix_row)
+        game_matrix.append(matrix_row)
 
     game_array = np.array(game_matrix)
-    return utilities.evaluate_game(select_defender_cache[n], game_array, round_strategies)
+    return utilities.evaluate_game(select_defender_cache[n], game_array)
 
 select_attackers_cache = {}
 select_attackers_cache_4 = {}

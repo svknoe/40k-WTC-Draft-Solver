@@ -8,11 +8,17 @@ import nashpy # 3rd party packages
 class DraftStage(Enum):
     select_defender, select_attackers, discard_attacker = range(3)
 
-def get_next_draft_stage(draft_stage):
-    return DraftStage((draft_stage.value + 1) % 3)
+def get_next_draft_stage(draft_stage, n):
+    if (draft_stage.value == 2):
+        n -= 2
 
-def get_previous_draft_stage(draft_stage):
-    return DraftStage((draft_stage.value - 1) % 3)
+    return [DraftStage((draft_stage.value + 1) % 3), n]
+
+def get_previous_draft_stage(draft_stage, n):
+    if (draft_stage.value == 0):
+        n += 2
+        
+    return [DraftStage((draft_stage.value - 1) % 3), n]
 
 def import_pairing_matrix(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
     path = get_path(match, filename)
@@ -75,7 +81,7 @@ def get_game_overview(game):
 
     return None
 
-def evaluate_game(metagame_cache, game_array, round_strategies):
+def evaluate_game(metagame_cache, game_array, should_round_off_overview_values = False):
     game_hash = hash(game_array.tostring())
 
     if game_hash in metagame_cache:
@@ -84,7 +90,7 @@ def evaluate_game(metagame_cache, game_array, round_strategies):
         game = nashpy.Game(game_array)
         game_overview = get_game_overview(game)
 
-        if (round_strategies):
+        if (should_round_off_overview_values):
             game_overview[0] = [round(p, 2) for p in game_overview[0]]
             game_overview[1] = [round(p, 2) for p in game_overview[1]]
             game_overview[2] = round(game_overview[2])

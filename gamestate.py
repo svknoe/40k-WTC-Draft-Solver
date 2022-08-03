@@ -32,7 +32,23 @@ class GameState:
         if friendly_n != enemy_n:
             raise ValueError("Inconsistent number of players.")
         
-        return friendly_n        
+        return friendly_n
+
+    # Returns the name of the draft iteration that follows this gamestate.
+    def get_iteration_name(self):
+        n = self.get_n()
+        draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
+    
+        if n == 4:
+            num = "four"
+        elif n == 6:
+            num = "six"
+        elif n == 8:
+            num = "eight"
+        else:
+            raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
+
+        iteration_name = num + "_player_" + draft_stage_to_solve.name + "_dictionary" 
 
 def get_next_gamestates(game_permutation):
     next_game_permutations_matrix = get_next_gamestate_matrix(game_permutation)
@@ -52,3 +68,4 @@ def get_next_gamestate_matrix(gamestate):
 
     next_game_permutations_matrix = [[GameState(next_draft_stage, team_permutations_product[(i,j)][0], team_permutations_product[(i,j)][1]) for j in range(0, len(next_enemy_team_permutations))] for i in range(0, len(next_friendly_team_permutations))]
     return next_game_permutations_matrix
+

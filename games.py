@@ -8,24 +8,6 @@ import gamestate
 from gamestate import GameState
 from teampermutation import TeamPermutation
 
-def get_game_array(higher_level_gamestate, lower_level_strategies):
-    gamestate_matrix = gamestate.get_next_gamestate_matrix(higher_level_gamestate)        
-    game_matrix = []
-
-    for gamestate_row in gamestate_matrix:
-
-        matrix_row = []
-
-        for _gamestate in gamestate_row:
-            game_overview = lower_level_strategies[_gamestate.get_key()]
-            game_value = game_overview[2]
-            matrix_row.append(game_value)
-        
-        game_matrix.append(matrix_row)
-
-    game_array = np.array(game_matrix)
-    return game_array
-
 select_defender_cache = {}
 select_defender_cache_4 = {}
 select_defender_cache_6 = {}
@@ -36,7 +18,9 @@ select_defender_cache[8] = select_defender_cache_8
 
 def select_defender(n, none_gamestate, select_attackers_strategies):
     game_array = get_game_array(none_gamestate, select_attackers_strategies)
-    return utilities.evaluate_game(select_defender_cache[n], game_array)
+    select_defender_strategy = utilities.get_game_strategy(select_defender_cache[n], game_array)
+    
+    return select_defender_strategy
 
 select_attackers_cache = {}
 select_attackers_cache_4 = {}
@@ -48,7 +32,9 @@ select_attackers_cache[8] = select_attackers_cache_8
 
 def select_attackers(n, selected_defender_gamestate, discard_attacker_strategies):
     game_array = get_game_array(selected_defender_gamestate, discard_attacker_strategies)
-    return utilities.evaluate_game(select_attackers_cache[n], game_array)
+    select_attackers_strategy = utilities.get_game_strategy(select_attackers_cache[n], game_array)
+    
+    return select_attackers_strategy
 
 discard_attacker_cache = {}
 discard_attacker_cache_4 = {}
@@ -86,7 +72,9 @@ def discard_attacker(matrix, n, selected_attackers_gamestate, select_defender_st
     BB = matrix[f_defender][e_attacker_A] + matrix[f_attacker_A][e_defender] + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_B)][2]
 
     game_array = np.array([[AA, AB], [BA, BB]])
-    return utilities.evaluate_game(discard_attacker_cache[n], game_array)
+    discard_attacker_strategy = utilities.get_game_strategy(discard_attacker_cache[n], game_array)
+    
+    return discard_attacker_strategy
 
 def discard_attacker_4(matrix, f_defender, f_attacker_A, f_attacker_B, f_not_selected, e_defender, e_attacker_A, e_attacker_B, e_not_selected):
     AA = matrix[f_defender][e_attacker_B] + matrix[f_attacker_B][e_defender] + matrix[f_attacker_A][e_attacker_A] + matrix[f_not_selected][e_not_selected]
@@ -95,4 +83,25 @@ def discard_attacker_4(matrix, f_defender, f_attacker_A, f_attacker_B, f_not_sel
     BB = matrix[f_defender][e_attacker_A] + matrix[f_attacker_A][e_defender] + matrix[f_attacker_B][e_attacker_B] + matrix[f_not_selected][e_not_selected]
 
     game_array = np.array([[AA, AB], [BA, BB]])
-    return utilities.evaluate_game(discard_attacker_cache[4], game_array)
+    discard_attacker_strategy = utilities.get_game_strategy(discard_attacker_cache[4], game_array)
+
+    return discard_attacker_strategy
+
+def get_game_array(higher_level_gamestate, lower_level_strategies):
+    gamestate_matrix = gamestate.get_next_gamestate_matrix(higher_level_gamestate)        
+    game_matrix = []
+
+    for gamestate_row in gamestate_matrix:
+
+        matrix_row = []
+
+        for _gamestate in gamestate_row:
+            game_overview = lower_level_strategies[_gamestate.get_key()]
+            game_value = game_overview[2]
+            matrix_row.append(game_value)
+        
+        game_matrix.append(matrix_row)
+
+    game_array = np.array(game_matrix)
+    
+    return game_array

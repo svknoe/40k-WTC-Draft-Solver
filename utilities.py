@@ -72,7 +72,7 @@ def get_transposed_pairing_dictionary(pairing_dictionary):
 
     return transposed_pairing_dictionary
 
-def get_game_overview(game):
+def get_game_solution(game):
     support_value = get_game_overview_from_equilibria(game, game.support_enumeration())
     if support_value != None:
         return support_value
@@ -87,22 +87,31 @@ def get_game_overview(game):
 
     return None
 
-def evaluate_game(metagame_cache, game_array, should_round_off_overview_values = False):
-    game_hash = hash(game_array.tostring())
+def get_game_strategy(game_solution_cache, game_array, friendly_team_options, enemy_team_options):
+    game_array_hash = hash(game_array.tostring())
 
-    if game_hash in metagame_cache:
-        return metagame_cache[game_hash]
+    if game_array_hash in metagame_cache:
+        game_solution = game_solution_cache[game_array_hash]
     else:
         game = nashpy.Game(game_array)
-        game_overview = get_game_overview(game)
+        game_solution = get_game_solution(game)
+        game_solution_cache[game_array_hash] = game_solution
 
-        if (should_round_off_overview_values):
-            game_overview[0] = [round(p, 2) for p in game_overview[0]]
-            game_overview[1] = [round(p, 2) for p in game_overview[1]]
-            game_overview[2] = round(game_overview[2])
+    game_strategy = [[], [], game_solution[2]]
 
-        metagame_cache[game_hash] = game_overview
-        return game_overview
+    if (len(friendly_team_options) != len(game_solution[0])):
+        raise ValueError("Inconsistent friendly team options.")
+
+    for i in range(0, len(friendly_team_options))
+        game_strategy[0].append([friendly_team_options[i], game_solution[0][i]])
+
+    if (len(enemy_team_options) != len(game_solution[1])):
+        raise ValueError("Inconsistent enemy team options.")
+
+    for i in range(0, len(enemy_team_options))
+        game_strategy[1].append([enemy_team_options[i], game_solution[1][i]])
+
+    return game_strategy
 
 # Returns overview of first equilibrium.
 def get_game_overview_from_equilibria(game, equilibria):
@@ -166,3 +175,13 @@ def get_cartesian_product(list_A, list_B):
             cartesian_product[(i, j)] = [list_A[i], list_B[j]]
 
     return cartesian_product
+
+def list_to_string(input_list):
+    output_string = ""
+
+    for i in range(0, len(input_list) - 1):
+        output_string += input_list[i] + ", "
+
+    output_string += input_list[len(input_list)]
+
+    return output_string

@@ -78,17 +78,7 @@ def get_strategy_dictionaries(match, read = True, write = True, restrict_attacke
         arbitrary_gamestate = gamestates_to_solve[list(gamestates_to_solve.keys())[0]]
         n = arbitrary_gamestate.get_n()
         draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
-    
-        if n == 4:
-            num = "four"
-        elif n == 6:
-            num = "six"
-        elif n == 8:
-            num = "eight"
-        else:
-            raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
-
-        iteration_name = num + "_player_" + draft_stage_to_solve.name + "_dictionary" 
+        iteration_name = arbitrary_gamestate.get_iteration_name()
         path = utilities.get_path(match, iteration_name + ".json")
 
         draft_stage_strategies = None

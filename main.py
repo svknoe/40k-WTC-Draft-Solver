@@ -3,7 +3,8 @@ from random import random
 from copy import deepcopy
 
 import utilities # local source
-import generator
+import strategydictionaries
+import gamestatedictionaries
 from gamestate import GameState
 
 match = ""
@@ -20,7 +21,7 @@ strategy_dictionaries = {}
 def run():
     global match
     match = "Germany" # Select match
-    initialise_strategy_dictionaries()
+    initialise()
 
     while True:
         play_draft()
@@ -28,9 +29,17 @@ def run():
         if not draft_again:
             break
 
-def initialise_strategy_dictionaries():
-    global strategy_dictionaries
-    strategy_dictionaries = generator.get_strategy_dictionaries(match, read, write, restrict_attackers, round_strategies)
+def initialise():
+    pairing_dictionary = utilities.import_pairing_dictionary(match)
+
+    if (restrict_attackers):
+        teampermutation.enable_restricted_attackers(pairing_dictionary, 3)
+
+    print("Initialising gamestate dictionaries:")
+    gamestatedictionaries.initialise_dictionaries(pairing_dictionary)
+
+    print("Initialising strategy dictionaries:")
+    strategydictionaries.initialise_dictionaries(match, read, write, restrict_attackers, round_strategies)
 
 def prompt_draft_again():
     def valid_input(prompt_input):
@@ -64,7 +73,7 @@ def play_draft():
 
 def get_team_strategies(_gamestate):
     iteration_name = _gamestate.get_iteration_name
-    strategy_dictionary = strategy_dictionaries[iteration_name]
+    strategy_dictionary = strategydictionaries.dictionaries[iteration_name]
     team_strategies = strategy_dictionary[_gamestate.get_key()]
     return team_strategies
 

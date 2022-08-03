@@ -34,24 +34,17 @@ class GameState:
         
         return friendly_n
 
+    def get_gamestate_dictionary_name(self):
+        n = self.get_n()
+        gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(n, self.draft_stage)
+        return gamestate_dictionary_name
+
     # Returns the name of the draft iteration that follows this gamestate.
-    def get_iteration_name(self):
+    def get_strategy_dictionary_name(self):
         n = self.get_n()
         draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
-        return get_iteration_name(n, draft_stage_to_solve)
-
-def get_iteration_name(n, draft_stage):
-    if n == 4:
-        num = "four"
-    elif n == 6:
-        num = "six"
-    elif n == 8:
-        num = "eight"
-    else:
-        raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
-
-    iteration_name = num + "_player_" + draft_stage_to_solve.name + "_dictionary"
-
+        strategy_dictionary_name = utilities.get_strategy_dictionary_name(n, draft_stage_to_solve)
+        return strategy_dictionary_name
 
 def get_next_gamestates(game_permutation):
     next_game_permutations_matrix = get_next_gamestate_matrix(game_permutation)
@@ -71,4 +64,3 @@ def get_next_gamestate_matrix(gamestate):
 
     next_game_permutations_matrix = [[GameState(next_draft_stage, team_permutations_product[(i,j)][0], team_permutations_product[(i,j)][1]) for j in range(0, len(next_enemy_team_permutations))] for i in range(0, len(next_friendly_team_permutations))]
     return next_game_permutations_matrix
-

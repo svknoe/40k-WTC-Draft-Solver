@@ -189,3 +189,21 @@ def list_to_string(input_list):
     output_string += input_list[len(input_list)]
 
     return output_string
+
+def get_gamestate_dictionary_name(n, draft_stage):
+    return get_dictionary_name(n, draft_stage, "gamestate")
+
+def get_strategy_dictionary_name(n, draft_stage):
+    return get_dictionary_name(n, draft_stage, "strategy")
+
+def get_dictionary_name(n, draft_stage, dictionary_type):
+    if n == 4:
+        num = "four"
+    elif n == 6:
+        num = "six"
+    elif n == 8:
+        num = "eight"
+    else:
+        raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
+
+    iteration_name = num + "_player_" + draft_stage_to_solve.name + "_" + dictionary_type + "_dictionary"

@@ -156,22 +156,23 @@ def get_strategy_dictionary(pairing_dictionary, gamestates_to_solve, lower_level
     percentage = -1
     draft_stage_strategies = {}
     previous_time = time.time()
-    for gamestate_to_solve in gamestates_to_solve:
+    for key in gamestates_to_solve:
+        gamestate_to_solve = gamestates_to_solve[key]
         counter += 1
         new_percentage = math.floor(10 * counter / len(gamestates_to_solve))
         new_time = time.time()
         if (new_percentage > percentage):
             percentage = new_percentage
-            print(" - {}%: ".format(10 * percentage), counter, "/", len(list(gamestates_to_solve)))
+            print("    - {}%: ".format(10 * percentage), counter, "/", len(list(gamestates_to_solve)))
         elif new_time - previous_time > 30:
-            print(" - {}%: ".format(10 * percentage), counter, "/", len(list(gamestates_to_solve)))
+            print("    - {}%: ".format(10 * percentage), counter, "/", len(list(gamestates_to_solve)))
         
         if draft_stage_to_solve == utilities.DraftStage.select_defender:
-            strategy = games.select_defender(n, lower_level_strategies, gamestate_to_solve)
+            strategy = games.select_defender(n, gamestate_to_solve, lower_level_strategies)
         elif draft_stage_to_solve == utilities.DraftStage.select_attackers:
-            strategy = games.select_attackers(n, lower_level_strategies, gamestate_to_solve)
+            strategy = games.select_attackers(n, gamestate_to_solve, lower_level_strategies)
         elif draft_stage_to_solve == utilities.DraftStage.discard_attackers:
-            strategy = games.discard_attacker(pairing_dictionary, n, lower_level_strategies, gamestate_to_solve)
+            strategy = games.discard_attacker(pairing_dictionary, n, gamestate_to_solve, lower_level_strategies)
         else:
             raise ValueError("Unsolvavle draft stage: {}.".format(draft_stage_to_solve))       
 

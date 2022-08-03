@@ -8,9 +8,9 @@ import gamestate
 from gamestate import GameState
 from teampermutation import TeamPermutation
 
-def get_game_array(n, higher_level_gamestate, lower_level_strategies):
+def get_game_array(higher_level_gamestate, lower_level_strategies):
     gamestate_matrix = gamestate.get_next_gamestate_matrix(higher_level_gamestate)        
-    game_matrix = utilities.get_empty_matrix(n, n)
+    game_matrix = []
 
     for gamestate_row in gamestate_matrix:
 
@@ -35,7 +35,7 @@ select_defender_cache[6] = select_defender_cache_6
 select_defender_cache[8] = select_defender_cache_8
 
 def select_defender(n, none_gamestate, select_attackers_strategies):
-    game_array = get_game_array(n, none_gamestate, select_attackers_strategies)
+    game_array = get_game_array(none_gamestate, select_attackers_strategies)
     return utilities.evaluate_game(select_defender_cache[n], game_array)
 
 select_attackers_cache = {}
@@ -47,7 +47,7 @@ select_attackers_cache[6] = select_attackers_cache_6
 select_attackers_cache[8] = select_attackers_cache_8
 
 def select_attackers(n, selected_defender_gamestate, discard_attacker_strategies):
-    game_array = get_game_array(n, selected_defender_gamestate, discard_attacker_strategies)
+    game_array = get_game_array(selected_defender_gamestate, discard_attacker_strategies)
     return utilities.evaluate_game(select_attackers_cache[n], game_array)
 
 discard_attacker_cache = {}
@@ -60,14 +60,9 @@ discard_attacker_cache[8] = discard_attacker_cache_8
 
 def discard_attacker(matrix, n, selected_attackers_gamestate, select_defender_strategies):
     def get_game_key(extra_friend, extra_enemy):
-        friendly_team_permutation = TeamPermutation(remaining_friends + [extra_friend])
-        enemy_team_permutation = TeamPermutation(remaining_enemies + [extra_enemy])
-        game_permutation = GameState(friendly_team_permutation, enemy_team_permutation)
-        game_key = game_permutation.get_key()
-
-        friendly_team_permutation = TeamPermutation(remaining_friends + [extra_friend])
-        enemy_team_permutation = TeamPermutation(remaining_enemies + [extra_enemy])
-        game_permutation = GameState(friendly_team_permutation, enemy_team_permutation)
+        friendly_team_permutation = TeamPermutation(selected_attackers_gamestate.friendly_team_permutation.remaining_players + [extra_friend])
+        enemy_team_permutation = TeamPermutation(selected_attackers_gamestate.enemy_team_permutation.remaining_players + [extra_enemy])
+        game_permutation = GameState(utilities.DraftStage.none, friendly_team_permutation, enemy_team_permutation)
         game_key = game_permutation.get_key()
 
         return game_key

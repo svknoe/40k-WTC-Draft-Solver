@@ -155,10 +155,12 @@ def enable_restricted_attackers(pairing_dictionary, k):
     transposed_pairing_dictionary = utilities.get_transposed_pairing_dictionary(pairing_dictionary)
 
 def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_permutation):
+    ranking_sign = -1
     if eligable_attackers[0] in regular_pairing_dictionary:
         pairing_dictionary = regular_pairing_dictionary
     elif eligable_attackers[0] in transposed_pairing_dictionary:
         pairing_dictionary = transposed_pairing_dictionary
+        ranking_sign *= -1
     else:
         raise ArgumentError("Inconsistent pairing matrices.")
 
@@ -170,7 +172,7 @@ def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_
         relative_advantage = vs_defender - vs_field
         attackers_with_relative_advantages_against_defender.append([attacker, relative_advantage])
 
-    ranked_attackers = sorted(attackers_with_relative_advantages_against_defender , key=lambda k: (-k[1]))
+    ranked_attackers = sorted(attackers_with_relative_advantages_against_defender , key=lambda k: (ranking_sign * k[1]))
     restricted_attackers_with_relatives_advantages = ranked_attackers[0:restrict_attackers_k]
     restricted_attackers = [pair[0] for pair in restricted_attackers_with_relatives_advantages]
 

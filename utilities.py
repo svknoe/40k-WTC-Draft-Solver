@@ -5,6 +5,8 @@ from enum import Enum
 
 import nashpy # 3rd party packages
 
+pairing_dictionary = None
+
 class DraftStage(Enum):
     none, select_defender, select_attackers, discard_attackers = range(4)
 
@@ -16,7 +18,8 @@ def get_previous_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value - 1) % 4)
     return next_draft_stage
 
-def import_pairing_dictionary(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
+def initialise_pairing_dictionary(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
+    global pairing_dictionary
     path = get_path(match, filename)
     with path.open(encoding="UTF-8") as f:
         lines = f.read().splitlines()
@@ -60,9 +63,7 @@ def import_pairing_dictionary(match = None, filename = 'input_matrix.txt', encod
         pairing_dictionary[friend] = row
         friendCounter += 1
 
-    return pairing_dictionary
-
-def get_transposed_pairing_dictionary(pairing_dictionary):
+def get_transposed_pairing_dictionary():
     friends = [friend for friend in pairing_dictionary]
     enemies = [enemy for enemy in pairing_dictionary[friends[0]]]
 
@@ -94,7 +95,7 @@ def get_game_solution(game):
 def get_game_strategy(game_solution_cache, game_array, friendly_team_options, enemy_team_options):
     game_array_hash = hash(game_array.tostring())
 
-    if game_array_hash in metagame_cache:
+    if game_array_hash in game_solution_cache:
         game_solution = game_solution_cache[game_array_hash]
     else:
         game = nashpy.Game(game_array)
@@ -106,13 +107,13 @@ def get_game_strategy(game_solution_cache, game_array, friendly_team_options, en
     if (len(friendly_team_options) != len(game_solution[0])):
         raise ValueError("Inconsistent friendly team options.")
 
-    for i in range(0, len(friendly_team_options))
+    for i in range(0, len(friendly_team_options)):
         game_strategy[0].append([friendly_team_options[i], game_solution[0][i]])
 
     if (len(enemy_team_options) != len(game_solution[1])):
         raise ValueError("Inconsistent enemy team options.")
 
-    for i in range(0, len(enemy_team_options))
+    for i in range(0, len(enemy_team_options)):
         game_strategy[1].append([enemy_team_options[i], game_solution[1][i]])
 
     return game_strategy
@@ -206,4 +207,6 @@ def get_dictionary_name(n, draft_stage, dictionary_type):
     else:
         raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
 
-    iteration_name = num + "_player_" + draft_stage_to_solve.name + "_" + dictionary_type + "_dictionary"
+    dictionary_name = num + "_player_" + draft_stage.name + "_" + dictionary_type + "_dictionary"
+
+    return dictionary_name

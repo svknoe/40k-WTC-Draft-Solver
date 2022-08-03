@@ -43,14 +43,14 @@ class TeamPermutation:
 
         return permutation_key
 
-    def select_defender(defender):
+    def select_defender(self, defender):
         if not defender in self.remaining_players:
             raise ValueError("Unknown player {}.".format(defender))
 
         self.defender = defender
         self.remaining_players.remove(defender)
 
-    def select_attackers(attacker_A, attacker_B):
+    def select_attackers(self, attacker_A, attacker_B):
         if not attacker_A in self.remaining_players:
             raise ValueError("Unknown player {}.".format(attacker_A))
 
@@ -63,10 +63,10 @@ class TeamPermutation:
         self.attacker_B = attacker_B
         self.remaining_players.remove(attacker_B)
 
-    def select_discarded_attacker(discarded_attacker):
+    def select_discarded_attacker(self, discarded_attacker):
         if not discarded_attacker in self.remaining_players:
-            raise ValueError("Unknown player {}.".format(discarded_attacker))self.attacker_A = attacker_A
-
+            raise ValueError("Unknown player {}.".format(discarded_attacker))
+            
         self.discarded_attacker = discarded_attacker
 
 def get_team_permutation(draft_stage, players):
@@ -174,11 +174,11 @@ def get_attackers_team_permutations(defender_team_permutation, opposing_defender
 
     return attackers_team_permutations
 
-def enable_restricted_attackers(pairing_dictionary, k):
+def enable_restricted_attackers(k):
     global restrict_attackers_k, regular_pairing_dictionary, transposed_pairing_dictionary
     restrict_attackers_k = k
-    regular_pairing_dictionary = pairing_dictionary
-    transposed_pairing_dictionary = utilities.get_transposed_pairing_dictionary(pairing_dictionary)
+    regular_pairing_dictionary = utilities.pairing_dictionary
+    transposed_pairing_dictionary = utilities.get_transposed_pairing_dictionary()
 
 def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_permutation):
     ranking_sign = -1

@@ -44,7 +44,7 @@ discard_attacker_cache[4] = discard_attacker_cache_4
 discard_attacker_cache[6] = discard_attacker_cache_6
 discard_attacker_cache[8] = discard_attacker_cache_8
 
-def discard_attacker(matrix, n, selected_attackers_gamestate, select_defender_strategies):
+def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies):
     def get_game_key(extra_friend, extra_enemy):
         friendly_team_permutation = TeamPermutation(selected_attackers_gamestate.friendly_team_permutation.remaining_players + [extra_friend])
         enemy_team_permutation = TeamPermutation(selected_attackers_gamestate.enemy_team_permutation.remaining_players + [extra_enemy])
@@ -64,8 +64,9 @@ def discard_attacker(matrix, n, selected_attackers_gamestate, select_defender_st
     remaining_enemies = selected_attackers_gamestate.enemy_team_permutation.remaining_players
 
     if n == 4:
-        return discard_attacker_4(matrix, f_defender, f_attacker_A, f_attacker_B, remaining_friends[0], e_defender, e_attacker_A, e_attacker_B, remaining_enemies[0])
+        return discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, remaining_friends[0], e_defender, e_attacker_A, e_attacker_B, remaining_enemies[0])
 
+    matrix = utilities.pairing_dictionary
     AA = matrix[f_defender][e_attacker_B] + matrix[f_attacker_B][e_defender] + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_A)][2]
     AB = matrix[f_defender][e_attacker_B] + matrix[f_attacker_A][e_defender] + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_B)][2]
     BA = matrix[f_defender][e_attacker_A] + matrix[f_attacker_B][e_defender] + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_A)][2]
@@ -76,7 +77,8 @@ def discard_attacker(matrix, n, selected_attackers_gamestate, select_defender_st
     
     return discard_attacker_strategy
 
-def discard_attacker_4(matrix, f_defender, f_attacker_A, f_attacker_B, f_not_selected, e_defender, e_attacker_A, e_attacker_B, e_not_selected):
+def discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, f_not_selected, e_defender, e_attacker_A, e_attacker_B, e_not_selected):
+    matrix = utilities.pairing_dictionary
     AA = matrix[f_defender][e_attacker_B] + matrix[f_attacker_B][e_defender] + matrix[f_attacker_A][e_attacker_A] + matrix[f_not_selected][e_not_selected]
     AB = matrix[f_defender][e_attacker_B] + matrix[f_attacker_A][e_defender] + matrix[f_attacker_B][e_attacker_A] + matrix[f_not_selected][e_not_selected]
     BA = matrix[f_defender][e_attacker_A] + matrix[f_attacker_B][e_defender] + matrix[f_attacker_A][e_attacker_B] + matrix[f_not_selected][e_not_selected]

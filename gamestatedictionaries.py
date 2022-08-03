@@ -81,9 +81,9 @@ def add_gamestate_to_dictionary(dictionary, gamestate):
     if not key in dictionary:
         dictionary[key] = gamestate
 
-def get_initial_game_state(pairing_dictionary):
-    friends = [friend for friend in pairing_dictionary]
-    enemies = [enemy for enemy in pairing_dictionary[friends[0]]]
+def get_initial_game_state():
+    friends = [friend for friend in utilities.pairing_dictionary]
+    enemies = [enemy for enemy in utilities.pairing_dictionary[friends[0]]]
     initial_game_state = GameState(utilities.DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
 
     return initial_game_state

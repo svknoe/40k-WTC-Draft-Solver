@@ -21,30 +21,42 @@ dictionaries[utilities.get_strategy_dictionary_name(4, utilities.select_defender
 dictionaries[utilities.get_strategy_dictionary_name(4, utilities.select_attackers)] = {'descriptor':[4, utilities.select_attackers]}
 dictionaries[utilities.get_strategy_dictionary_name(4, utilities.discard_attacker)] = {'descriptor':[4, utilities.discard_attacker]}
 
-def extend_strategy_dictionary(gamestates_to_solve, lower_level_strategies = None, read = False, write = False):
+def extend_strategy_dictionary(gamestates_to_solve, lower_level_strategies):
     arbitrary_gamestate = gamestates_to_solve[list(gamestates_to_solve.keys())[0]]
-    n = arbitrary_gamestate.get_n()
-    draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
-    iteration_name = arbitrary_gamestate.get_strategy_dictionary_name()
-    path = utilities.get_path(match, iteration_name + ".json")
+    strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
 
-    draft_stage_strategies = None
-
-    if read:
-        draft_stage_strategies = utilities.read_strategy_dictionary(path)
-
-    if draft_stage_strategies == None:
-        draft_stage_strategies = get_strategy_dictionary(pairing_dictionary, gamestates_to_solve, lower_level_strategies)
-
-        if write:
-            utilities.write_strategy_dictionary(path, draft_stage_strategies)
-    
-    dictionaries[iteration_name] = draft_stage_strategies
+    strategies = get_strategy_dictionary(gamestates_to_solve, lower_level_strategies)
+    update_strategy_dictionary(strategy_dictionary_name, strategies)
         
-    return draft_stage_strategies
+    return strategies
 
-def initialise_dictionaries(match, read = True, write = True, restrict_attackers = False, round_strategies = False):
+def update_strategy_dictionary(dictionary_name, strategies):
+    dictionaries[dictionary_name].update(strategies)
+
+
+
+def initialise_dictionaries(match, read = True, write = True):
     def process_draft_stage(gamestates_to_solve, lower_level_strategies = None):
+        arbitrary_gamestate = gamestates_to_solve[list(gamestates_to_solve.keys())[0]]
+        n = arbitrary_gamestate.get_n()
+        draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
+        strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
+        path = utilities.get_path(match, strategy_dictionary_name + ".json")
+
+        draft_stage_strategies = None
+
+        if read:
+            draft_stage_strategies = utilities.read_strategy_dictionary(path)
+
+        if draft_stage_strategies == None:
+            draft_stage_strategies = get_strategy_dictionary(gamestates_to_solve, lower_level_strategies)
+
+            if write:
+                utilities.write_strategy_dictionary(path, draft_stage_strategies)
+        
+        dictionaries[strategy_dictionary_name] = draft_stage_strategies
+
+
         return extend_strategy_dictionary(gamestates_to_solve, lower_level_strategies, read, write)
 
 
@@ -52,11 +64,11 @@ def initialise_dictionaries(match, read = True, write = True, restrict_attackers
     print("Generating strategy dictionaries:")
 
     gamestate_dictionary = utilities.get_gamestate_dictionary_name(4, utilities.select_attackers)
-    strategy_dictionary = process_draft_stage(gamestate_dictionary):
+    strategy_dictionary = process_draft_stage(gamestate_dictionary)
 
     while strategy_dictionary != None:
         gamestate_dictionary = gamestatedictionaries.get_previous_gamestate_dictionary(gamestate_dictionary)
-        strategy_dictionary = process_draft_stage(gamestate_dictionary, strategy_dictionary):
+        strategy_dictionary = process_draft_stage(gamestate_dictionary, strategy_dictionary)
 
     return
 
@@ -91,7 +103,7 @@ def initialise_dictionaries(match, read = True, write = True, restrict_attackers
 
     return dictionaries
 
-def get_strategy_dictionary(pairing_dictionary, gamestates_to_solve, lower_level_strategies, n, draft_stage_to_solve):
+def get_strategy_dictionary(gamestates_to_solve, lower_level_strategies):
     arbitrary_gamestate = gamestates_to_solve[list(gamestates_to_solve.keys())[0]]
     n = arbitrary_gamestate.get_n()
     draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
@@ -120,7 +132,7 @@ def get_strategy_dictionary(pairing_dictionary, gamestates_to_solve, lower_level
         elif draft_stage_to_solve == utilities.DraftStage.select_attackers:
             strategy = games.select_attackers(n, gamestate_to_solve, lower_level_strategies)
         elif draft_stage_to_solve == utilities.DraftStage.discard_attackers:
-            strategy = games.discard_attacker(pairing_dictionary, n, gamestate_to_solve, lower_level_strategies)
+            strategy = games.discard_attacker(n, gamestate_to_solve, lower_level_strategies)
         else:
             raise ValueError("Unsolvavle draft stage: {}.".format(draft_stage_to_solve))       
 

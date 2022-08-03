@@ -42,7 +42,7 @@ class GameState:
     # Returns the name of the draft iteration that follows this gamestate.
     def get_strategy_dictionary_name(self):
         n = self.get_n()
-        draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
+        draft_stage_to_solve = utilities.get_next_draft_stage(self.draft_stage)
         strategy_dictionary_name = utilities.get_strategy_dictionary_name(n, draft_stage_to_solve)
         return strategy_dictionary_name
 

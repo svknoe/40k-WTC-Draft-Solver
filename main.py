@@ -1,11 +1,13 @@
 import time # standard libraries
 from random import random
+import itertools
 from copy import deepcopy
 
 import utilities # local source
 import strategydictionaries
 import gamestatedictionaries
 from gamestate import GameState
+import teampermutation
 
 match = ""
 
@@ -30,16 +32,16 @@ def run():
             break
 
 def initialise():
-    pairing_dictionary = utilities.import_pairing_dictionary(match)
+    utilities.initialise_pairing_dictionary(match)
 
     if (restrict_attackers):
-        teampermutation.enable_restricted_attackers(pairing_dictionary, 3)
+        teampermutation.enable_restricted_attackers(3)
 
     print("Initialising gamestate dictionaries:")
-    gamestatedictionaries.initialise_dictionaries(pairing_dictionary)
+    gamestatedictionaries.initialise_dictionaries()
 
     print("Initialising strategy dictionaries:")
-    strategydictionaries.initialise_dictionaries(match, read, write, restrict_attackers, round_strategies)
+    strategydictionaries.initialise_dictionaries(match, read, write)
 
 def prompt_draft_again():
     def valid_input(prompt_input):
@@ -60,7 +62,7 @@ def prompt_draft_again():
 
 def play_draft():
     print("\nPlaying draft against {}!\n".format(match))
-    current_gamestate = generator.get_initial_game_state(pairing_dictionary)
+    current_gamestate = gamestatedictionaries.get_initial_game_state()
 
     while True:
         print("Current gamestate:\n{}\n".format(current_gamestate))
@@ -100,7 +102,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
 
         print("Suggested random strategy:")
 
-        plausible_selections = [selection in team_strategy if selection[1] > 1e-3]
+        plausible_selections = [selection for selection in team_strategy if selection[1] > 1e-3]
         ranked_selections = sorted(plausible_selections , key=lambda k: (-1 * k[1]))
 
         for selection in ranked_selections:
@@ -145,7 +147,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
 
         return user_selection
 
-    def get_next_gamestate():
+    def get_next_gamestate(friendly_team_permutation, friendly_enemy_permutation):
         next_gamestate_stage = draft_stage
         next_friendly_team_permutation = deepcopy(friendly_team_permutation)
         next_enemy_team_permutation = deepcopy(friendly_enemy_permutation)
@@ -195,7 +197,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
 
     enemy_team_selection = prompt_team_selection(match, enemy_team_options)
     if enemy_team_selection == None:
-        return get_none_team_permutation
+        return teampermutation.get_none_team_permutation()
 
     next_gamestate = get_next_gamestate()
 

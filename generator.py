@@ -9,102 +9,70 @@ from gamestate import GameState
 import teampermutation
 from teampermutation import TeamPermutation
 
-eight_player_none_gamestate_dictionary = {}
-eight_player_defender_gamestate_dictionary = {}
-eight_player_attackers_gamestate_dictionary = {}
-eight_player_discard_gamestate_dictionary = {}
+strategy_dictionaries = {}
+strategy_dictionaries[gamestate.get_iteration_name(8, utilities.select_defender)] = {'descriptor':[8, utilities.select_defender]}
+strategy_dictionaries[gamestate.get_iteration_name(8, utilities.select_attackers)] = {'descriptor':[8, utilities.select_attackers]}
+strategy_dictionaries[gamestate.get_iteration_name(8, utilities.discard_attacker)] = {'descriptor':[8, utilities.discard_attacker]}
+strategy_dictionaries[gamestate.get_iteration_name(6, utilities.select_defender)] = {'descriptor':[6, utilities.select_defender]}
+strategy_dictionaries[gamestate.get_iteration_name(6, utilities.select_attackers)] = {'descriptor':[6, utilities.select_attackers]}
+strategy_dictionaries[gamestate.get_iteration_name(6, utilities.discard_attacker)] = {'descriptor':[6, utilities.discard_attacker]}
+strategy_dictionaries[gamestate.get_iteration_name(4, utilities.select_defender)] = {'descriptor':[4, utilities.select_defender]}
+strategy_dictionaries[gamestate.get_iteration_name(4, utilities.select_attackers)] = {'descriptor':[4, utilities.select_attackers]}
+strategy_dictionaries[gamestate.get_iteration_name(4, utilities.discard_attacker)] = {'descriptor':[4, utilities.discard_attacker]}
 
-six_player_none_gamestate_dictionary = {}
-six_player_defender_gamestate_dictionary = {}
-six_player_attackers_gamestate_dictionary = {}
-six_player_discard_gamestate_dictionary = {}
+def extend_strategy_dictionary(gamestates_to_solve, lower_level_strategies = None, read = False, write = False):
+    arbitrary_gamestate = gamestates_to_solve[list(gamestates_to_solve.keys())[0]]
+    n = arbitrary_gamestate.get_n()
+    draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
+    iteration_name = arbitrary_gamestate.get_iteration_name()
+    path = utilities.get_path(match, iteration_name + ".json")
 
-four_player_none_gamestate_dictionary = {}
-four_player_defender_gamestate_dictionary = {}
-four_player_attackers_gamestate_dictionary = {}
+    draft_stage_strategies = None
 
-def initialise_game_permutation_dictionaries(pairing_dictionary):
-    global eight_player_none_gamestate_dictionary, eight_player_discard_gamestate_dictionary, six_player_discard_gamestate_dictionary
+    if read:
+        draft_stage_strategies = utilities.read_strategy_dictionary(path)
 
-    print("Initialising gamestate dictionaries:")
+    if draft_stage_strategies == None:
+        draft_stage_strategies = get_strategy_dictionary(pairing_dictionary, gamestates_to_solve, lower_level_strategies)
 
-    initial_game_state = get_initial_game_state(pairing_dictionary)
-    eight_player_none_gamestate_dictionary[initial_game_state.get_key()] = initial_game_state
-    initialise_gamestate_dictionary(eight_player_defender_gamestate_dictionary, eight_player_none_gamestate_dictionary, "eight player defender gamestate dictionary")
-    initialise_gamestate_dictionary(eight_player_attackers_gamestate_dictionary, eight_player_defender_gamestate_dictionary, "eight player attackers gamestate dictionary")
-    initialise_gamestate_dictionary(eight_player_discard_gamestate_dictionary, eight_player_attackers_gamestate_dictionary, "tmp eight player discard gamestate dictionary")
+        if write:
+            utilities.write_strategy_dictionary(path, draft_stage_strategies)
+    
+    strategy_dictionaries[iteration_name] = draft_stage_strategies
+        
+    return draft_stage_strategies
 
-    initialise_gamestate_dictionary(six_player_none_gamestate_dictionary, eight_player_discard_gamestate_dictionary, "six player non gamestate dictionary")
-    eight_player_discard_gamestate_dictionary = None
-    initialise_gamestate_dictionary(six_player_defender_gamestate_dictionary, six_player_none_gamestate_dictionary, "six player defender gamestate dictionary")
-    initialise_gamestate_dictionary(six_player_attackers_gamestate_dictionary, six_player_defender_gamestate_dictionary, "six player attackers gamestate dictionary")
-    initialise_gamestate_dictionary(six_player_discard_gamestate_dictionary, six_player_attackers_gamestate_dictionary, "tmp six player discard gamestate dictionary")
+def get_higher_level_strategy_dictionary(strategy_dictionary):
+    strategy_dictionary_descriptor = strategy_dictionary['descriptor']
+    n = strategy_dictionary_descriptor[0]
+    draft_stage = strategy_dictionary_descriptor[0]
 
-    initialise_gamestate_dictionary(four_player_none_gamestate_dictionary, six_player_discard_gamestate_dictionary, "four player non gamestate dictionary")
-    six_player_discard_gamestate_dictionary = None
-    initialise_gamestate_dictionary(four_player_defender_gamestate_dictionary, four_player_none_gamestate_dictionary, "four player defender gamestate dictionary")
-    initialise_gamestate_dictionary(four_player_attackers_gamestate_dictionary, four_player_defender_gamestate_dictionary, "four player attackers gamestate dictionary")
+    previous_draft_stage = utilities.get_previous_draft_stage(draft_stage)
 
-def initialise_gamestate_dictionary(dictionary, parent_dictionary, dictionary_name):
-    print(" - Initialising {}...".format(dictionary_name))
+    if (previous_draft_stage == utilities.DraftStage.none):
+        previous_draft_stage = utilities.DraftStage.discard_attackers
+        n += 2
 
-    for parent_key in parent_dictionary:
-        parent_gamestate = parent_dictionary[parent_key]
-        gamestates = gamestate.get_next_gamestates(parent_gamestate)
-        add_gamestates_to_dictionary(dictionary, gamestates)
+        if n > 8:
+            return None
 
-    print("    - Done: {} gamestates".format(len(dictionary)))
-    return dictionary
+    higher_level_iteration_name = gamestate.get_iteration_name(n, previous_draft_stage)
+    higher_level_strategy_dictionary = strategy_dictionary[higher_level_iteration_name]
 
-def add_gamestates_to_dictionary(dictionary, gamestates):
-    for gamestate in gamestates:
-        add_gamestate_to_dictionary(dictionary, gamestate)
-
-def add_gamestate_to_dictionary(dictionary, gamestate):
-    key = gamestate.get_key()
-
-    if not key in dictionary:
-        dictionary[key] = gamestate
-
-def get_initial_game_state(pairing_dictionary):
-    friends = [friend for friend in pairing_dictionary]
-    enemies = [enemy for enemy in pairing_dictionary[friends[0]]]
-    initial_game_state = GameState(utilities.DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
-
-    return initial_game_state
+    return higher_level_strategy_dictionary
 
 def get_strategy_dictionaries(match, read = True, write = True, restrict_attackers = False, round_strategies = False):
     def process_draft_stage(gamestates_to_solve, lower_level_strategies = None):
-        arbitrary_gamestate = gamestates_to_solve[list(gamestates_to_solve.keys())[0]]
-        n = arbitrary_gamestate.get_n()
-        draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
-        iteration_name = arbitrary_gamestate.get_iteration_name()
-        path = utilities.get_path(match, iteration_name + ".json")
+        return extend_strategy_dictionary(gamestates_to_solve, lower_level_strategies, read, write)
 
-        draft_stage_strategies = None
-
-        if read:
-            draft_stage_strategies = utilities.read_strategy_dictionary(path)
-
-        if draft_stage_strategies == None:
-            draft_stage_strategies = get_strategy_dictionary(pairing_dictionary, gamestates_to_solve, lower_level_strategies, n, draft_stage_to_solve)
-
-            if write:
-                utilities.write_strategy_dictionary(path, draft_stage_strategies)
-        
-        strategy_dictionaries[iteration_name] = draft_stage_strategies
-        
-        return draft_stage_strategies
-    
     pairing_dictionary = utilities.import_pairing_dictionary(match)
 
     if (restrict_attackers):
         teampermutation.enable_restricted_attackers(pairing_dictionary, 3)
 
-    initialise_game_permutation_dictionaries(pairing_dictionary)
+    initialise_gamestate_dictionaries(pairing_dictionary)
 
     print("Generating strategy dictionaries:")
-    strategy_dictionaries = {}
 
     discard_attacker_4_strategies = process_draft_stage(four_player_attackers_gamestate_dictionary)
     print(len(games.discard_attacker_cache[4]))
@@ -138,6 +106,10 @@ def get_strategy_dictionaries(match, read = True, write = True, restrict_attacke
     return strategy_dictionaries
 
 def get_strategy_dictionary(pairing_dictionary, gamestates_to_solve, lower_level_strategies, n, draft_stage_to_solve):
+    arbitrary_gamestate = gamestates_to_solve[list(gamestates_to_solve.keys())[0]]
+    n = arbitrary_gamestate.get_n()
+    draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
+
     if (not (n == 4 or n == 6 or n == 8)):
         sys.exit("{} is not a valid number of players. Choose 4, 6 or 8.".format(n))
 
@@ -170,3 +142,70 @@ def get_strategy_dictionary(pairing_dictionary, gamestates_to_solve, lower_level
         previous_time = new_time
 
     return draft_stage_strategies
+
+
+eight_player_none_gamestate_dictionary = {}
+eight_player_defender_gamestate_dictionary = {}
+eight_player_attackers_gamestate_dictionary = {}
+eight_player_discard_gamestate_dictionary = {}
+
+six_player_none_gamestate_dictionary = {}
+six_player_defender_gamestate_dictionary = {}
+six_player_attackers_gamestate_dictionary = {}
+six_player_discard_gamestate_dictionary = {}
+
+four_player_none_gamestate_dictionary = {}
+four_player_defender_gamestate_dictionary = {}
+four_player_attackers_gamestate_dictionary = {}
+
+def initialise_gamestate_dictionaries(pairing_dictionary, restrict_attackers):
+    global eight_player_none_gamestate_dictionary, eight_player_discard_gamestate_dictionary, six_player_discard_gamestate_dictionary
+
+    print("Initialising gamestate dictionaries:")
+
+    initial_game_state = get_initial_game_state(pairing_dictionary)
+    eight_player_none_gamestate_dictionary[initial_game_state.get_key()] = initial_game_state
+    initialise_gamestate_dictionary(eight_player_defender_gamestate_dictionary, eight_player_none_gamestate_dictionary, "eight player defender gamestate dictionary")
+    initialise_gamestate_dictionary(eight_player_attackers_gamestate_dictionary, eight_player_defender_gamestate_dictionary, "eight player attackers gamestate dictionary")
+    initialise_gamestate_dictionary(eight_player_discard_gamestate_dictionary, eight_player_attackers_gamestate_dictionary, "tmp eight player discard gamestate dictionary")
+
+    initialise_gamestate_dictionary(six_player_none_gamestate_dictionary, eight_player_discard_gamestate_dictionary, "six player non gamestate dictionary")
+    if not restrict_attackers:
+        eight_player_discard_gamestate_dictionary = None
+    initialise_gamestate_dictionary(six_player_defender_gamestate_dictionary, six_player_none_gamestate_dictionary, "six player defender gamestate dictionary")
+    initialise_gamestate_dictionary(six_player_attackers_gamestate_dictionary, six_player_defender_gamestate_dictionary, "six player attackers gamestate dictionary")
+    initialise_gamestate_dictionary(six_player_discard_gamestate_dictionary, six_player_attackers_gamestate_dictionary, "tmp six player discard gamestate dictionary")
+
+    initialise_gamestate_dictionary(four_player_none_gamestate_dictionary, six_player_discard_gamestate_dictionary, "four player non gamestate dictionary")
+    if not restrict_attackers:
+        six_player_discard_gamestate_dictionary = None
+    initialise_gamestate_dictionary(four_player_defender_gamestate_dictionary, four_player_none_gamestate_dictionary, "four player defender gamestate dictionary")
+    initialise_gamestate_dictionary(four_player_attackers_gamestate_dictionary, four_player_defender_gamestate_dictionary, "four player attackers gamestate dictionary")
+
+def initialise_gamestate_dictionary(dictionary, parent_dictionary, dictionary_name):
+    print(" - Initialising {}...".format(dictionary_name))
+
+    for parent_key in parent_dictionary:
+        parent_gamestate = parent_dictionary[parent_key]
+        gamestates = gamestate.get_next_gamestates(parent_gamestate)
+        add_gamestates_to_dictionary(dictionary, gamestates)
+
+    print("    - Done: {} gamestates".format(len(dictionary)))
+    return dictionary
+
+def add_gamestates_to_dictionary(dictionary, gamestates):
+    for gamestate in gamestates:
+        add_gamestate_to_dictionary(dictionary, gamestate)
+
+def add_gamestate_to_dictionary(dictionary, gamestate):
+    key = gamestate.get_key()
+
+    if not key in dictionary:
+        dictionary[key] = gamestate
+
+def get_initial_game_state(pairing_dictionary):
+    friends = [friend for friend in pairing_dictionary]
+    enemies = [enemy for enemy in pairing_dictionary[friends[0]]]
+    initial_game_state = GameState(utilities.DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
+
+    return initial_game_state

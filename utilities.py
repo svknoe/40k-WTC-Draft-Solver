@@ -12,6 +12,10 @@ def get_next_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value + 1) % 4)
     return next_draft_stage
 
+def get_previous_draft_stage(draft_stage):
+    next_draft_stage = DraftStage((draft_stage.value - 1) % 4)
+    return next_draft_stage
+
 def import_pairing_dictionary(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
     path = get_path(match, filename)
     with path.open(encoding="UTF-8") as f:

@@ -38,17 +38,20 @@ class GameState:
     def get_iteration_name(self):
         n = self.get_n()
         draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
-    
-        if n == 4:
-            num = "four"
-        elif n == 6:
-            num = "six"
-        elif n == 8:
-            num = "eight"
-        else:
-            raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
+        return get_iteration_name(n, draft_stage_to_solve)
 
-        iteration_name = num + "_player_" + draft_stage_to_solve.name + "_dictionary" 
+def get_iteration_name(n, draft_stage):
+    if n == 4:
+        num = "four"
+    elif n == 6:
+        num = "six"
+    elif n == 8:
+        num = "eight"
+    else:
+        raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
+
+    iteration_name = num + "_player_" + draft_stage_to_solve.name + "_dictionary"
+
 
 def get_next_gamestates(game_permutation):
     next_game_permutations_matrix = get_next_gamestate_matrix(game_permutation)

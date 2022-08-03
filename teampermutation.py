@@ -131,7 +131,7 @@ def get_team_permutations_for_stage(draft_stage, parent_team_permutation, opposi
         return get_defender_team_permutations(parent_team_permutation)
     elif (draft_stage == utilities.DraftStage.select_attackers):
         return get_attackers_team_permutations(parent_team_permutation, opposing_parent_team_permutation)
-    elif (draft_stage == utilities.DraftStage.discard_attackers):
+    elif (draft_stage == utilities.DraftStage.discard_attacker):
         return get_discard_team_permutations(parent_team_permutation)
     else:
         raise ValueError("{} is an unknown draft stage.".format(draft_stage))

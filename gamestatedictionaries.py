@@ -1,85 +1,25 @@
-import math # standard libraries
-import sys
-import time
-
 import utilities # local source
-import games
 import gamestate
 from gamestate import GameState
-import teampermutation
 from teampermutation import TeamPermutation
 
-eight_player_none_gamestate_dictionary = {}
-eight_player_defender_gamestate_dictionary = {}
-eight_player_attackers_gamestate_dictionary = {}
-eight_player_discard_gamestate_dictionary = {}
-
-six_player_none_gamestate_dictionary = {}
-six_player_defender_gamestate_dictionary = {}
-six_player_attackers_gamestate_dictionary = {}
-six_player_discard_gamestate_dictionary = {}
-
-four_player_none_gamestate_dictionary = {}
-four_player_defender_gamestate_dictionary = {}
-four_player_attackers_gamestate_dictionary = {}
-
 dictionaries = {}
-dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.none)] = {'descriptor':[8, utilities.none]}
-dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.select_defender)] = {'descriptor':[8, utilities.select_defender]}
-dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.select_attackers)] = {'descriptor':[8, utilities.select_attackers]}
-dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.discard_attacker)] = {'descriptor':[8, utilities.discard_attacker]}
-dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.none)] = {'descriptor':[6, utilities.none]}
-dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.select_defender)] = {'descriptor':[6, utilities.select_defender]}
-dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.select_attackers)] = {'descriptor':[6, utilities.select_attackers]}
-dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.discard_attacker)] = {'descriptor':[6, utilities.discard_attacker]}
-dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.none)] = {'descriptor':[4, utilities.none]}
-dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.select_defender)] = {'descriptor':[4, utilities.select_defender]}
-dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.select_attackers)] = {'descriptor':[4, utilities.select_attackers]}
+dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.none)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.select_defender)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.select_attackers)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.discard_attacker)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.none)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.select_defender)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.select_attackers)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.discard_attacker)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.none)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_defender)] = {}
+dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_attackers)] = {}
 
-def initialise_dictionaries(pairing_dictionary, restrict_attackers):
-    global eight_player_none_gamestate_dictionary, eight_player_discard_gamestate_dictionary, six_player_discard_gamestate_dictionary
-
-    print("Initialising gamestate dictionaries:")
-
-    initial_game_state = get_initial_game_state(pairing_dictionary)
-    eight_player_none_gamestate_dictionary[initial_game_state.get_key()] = initial_game_state
-    initialise_gamestate_dictionary(eight_player_defender_gamestate_dictionary, eight_player_none_gamestate_dictionary, "eight player defender gamestate dictionary")
-    initialise_gamestate_dictionary(eight_player_attackers_gamestate_dictionary, eight_player_defender_gamestate_dictionary, "eight player attackers gamestate dictionary")
-    initialise_gamestate_dictionary(eight_player_discard_gamestate_dictionary, eight_player_attackers_gamestate_dictionary, "tmp eight player discard gamestate dictionary")
-
-    initialise_gamestate_dictionary(six_player_none_gamestate_dictionary, eight_player_discard_gamestate_dictionary, "six player non gamestate dictionary")
-    if not restrict_attackers:
-        eight_player_discard_gamestate_dictionary = None
-    initialise_gamestate_dictionary(six_player_defender_gamestate_dictionary, six_player_none_gamestate_dictionary, "six player defender gamestate dictionary")
-    initialise_gamestate_dictionary(six_player_attackers_gamestate_dictionary, six_player_defender_gamestate_dictionary, "six player attackers gamestate dictionary")
-    initialise_gamestate_dictionary(six_player_discard_gamestate_dictionary, six_player_attackers_gamestate_dictionary, "tmp six player discard gamestate dictionary")
-
-    initialise_gamestate_dictionary(four_player_none_gamestate_dictionary, six_player_discard_gamestate_dictionary, "four player non gamestate dictionary")
-    if not restrict_attackers:
-        six_player_discard_gamestate_dictionary = None
-    initialise_gamestate_dictionary(four_player_defender_gamestate_dictionary, four_player_none_gamestate_dictionary, "four player defender gamestate dictionary")
-    initialise_gamestate_dictionary(four_player_attackers_gamestate_dictionary, four_player_defender_gamestate_dictionary, "four player attackers gamestate dictionary")
-
-def initialise_gamestate_dictionary(dictionary, parent_dictionary, dictionary_name):
-    print(" - Initialising {}...".format(dictionary_name))
-
-    for parent_key in parent_dictionary:
-        parent_gamestate = parent_dictionary[parent_key]
-        gamestates = gamestate.get_next_gamestates(parent_gamestate)
-        add_gamestates_to_dictionary(dictionary, gamestates)
-
-    print("    - Done: {} gamestates".format(len(dictionary)))
-    return dictionary
-
-def add_gamestates_to_dictionary(dictionary, gamestates):
-    for gamestate in gamestates:
-        add_gamestate_to_dictionary(dictionary, gamestate)
-
-def add_gamestate_to_dictionary(dictionary, gamestate):
-    key = gamestate.get_key()
-
-    if not key in dictionary:
-        dictionary[key] = gamestate
+def initialise_dictionaries():
+    initial_game_state = get_initial_game_state()
+    seed_dictionary = {'seed' : initial_game_state}
+    extend_gamestate_tree_from_seed_dictionary(seed_dictionary)
 
 def get_initial_game_state():
     friends = [friend for friend in utilities.pairing_dictionary]
@@ -88,28 +28,64 @@ def get_initial_game_state():
 
     return initial_game_state
 
-def get_next_gamestate_dictionary(gamestate_dictionary):
-    gamestate_dictionary_descriptor = gamestate_dictionary['descriptor']
-    n = gamestate_dictionary_descriptor[0]
-    draft_stage = gamestate_dictionary_descriptor[0]
+def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_dictionaries = None):
+    current_arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(parent_dictionary)
 
-    next_draft_stage = utilities.get_next_draft_stage(draft_stage)
+    current_draft_stage = current_arbitrary_gamestate.draft_stage
+    current_n = current_arbitrary_gamestate.get_n()
 
-    if (next_draft_stage == utilities.DraftStage.none):
-        n -= 2
+    if current_n == 4 and current_draft_stage == utilities.DraftStage.discard_attacker:
+        return new_gamestate_dictionaries
 
-        if n < 4:
-            return None
+    current_global_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(current_n, current_draft_stage)
+    current_global_dictionary = dictionaries[current_global_gamestate_dictionary_name]
 
-    next_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(n, next_draft_stage)
-    next_gamestate_dictionary = dictionaries[next_gamestate_dictionary_name]
+    if (current_global_dictionary == None):
+        return new_gamestate_dictionaries
 
-    return next_gamestate_dictionary
+    parent_gamestates = [parent_dictionary[key] for key in parent_dictionary]
+    added_subdictionary = add_gamestates_to_dictionary(current_global_dictionary, parent_gamestates)
+
+    next_draft_stage = utilities.get_next_draft_stage(current_draft_stage)
+    next_n = current_n
+
+    next_global_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(next_n, next_draft_stage)
+
+    print(" - Initialising {}...".format(next_global_gamestate_dictionary_name))
+
+    generated_gamestate_dictionary = {}
+    for parent_key in parent_dictionary:
+        parent_gamestate = parent_dictionary[parent_key]
+        child_gamestates = gamestate.get_next_gamestates(parent_gamestate)
+        add_gamestates_to_dictionary(generated_gamestate_dictionary, child_gamestates)
+    
+    print("    - Done: {} gamestates".format(len(generated_gamestate_dictionary)))
+
+    extend_gamestate_tree_from_seed_dictionary(generated_gamestate_dictionary, new_gamestate_dictionaries)
+
+    if (new_gamestate_dictionaries != None):
+        new_gamestate_dictionaries.append(added_subdictionary)
+        return new_gamestate_dictionaries
+
+def add_gamestates_to_dictionary(dictionary, gamestates):
+    added_subdictionary = {}
+
+    for gamestate in gamestates:
+        key = gamestate.get_key()
+
+        if not key in dictionary:
+            dictionary[key] = gamestate
+            added_subdictionary[key] = gamestate
+
+    return added_subdictionary
 
 def get_previous_gamestate_dictionary(gamestate_dictionary):
-    gamestate_dictionary_descriptor = gamestate_dictionary['descriptor']
-    n = gamestate_dictionary_descriptor[0]
-    draft_stage = gamestate_dictionary_descriptor[0]
+    arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(gamestate_dictionary)
+    n = arbitrary_gamestate.get_n()
+    draft_stage = arbitrary_gamestate.draft_stage
+
+    if n == 8 and draft_stage == utilities.DraftStage.none:
+        return None
 
     previous_draft_stage = utilities.get_previous_draft_stage(draft_stage)
 

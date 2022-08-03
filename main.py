@@ -16,6 +16,7 @@ friendly_team_name = "Norway"
 read = False
 write = True
 restrict_attackers = True
+restricted_attackers_count = 2
 round_strategies = False
 
 strategy_dictionaries = {}
@@ -23,7 +24,10 @@ strategy_dictionaries = {}
 def run():
     global match
     match = "Germany" # Select match
+
+    t0 = time.time()
     initialise()
+    print("time: {}s".format(round(time.time() - t0, 2)))
 
     while True:
         play_draft()
@@ -35,7 +39,7 @@ def initialise():
     utilities.initialise_pairing_dictionary(match)
 
     if (restrict_attackers):
-        teampermutation.enable_restricted_attackers(3)
+        teampermutation.enable_restricted_attackers(restricted_attackers_count)
 
     print("Initialising gamestate dictionaries:")
     gamestatedictionaries.initialise_dictionaries()
@@ -73,9 +77,16 @@ def play_draft():
             print("Draft finished. Expected result:")
             break
 
+        gamestate_dictionary = gamestatedictionaries.dictionaries[current_gamestate.get_gamestate_dictionary_name()]
+        current_gamestate_key = gamestate_dictionary.get_key()
+
+        if current_gamestate_key not in gamestate_dictionary:
+            added_gamestate_dictionaries = gamestatedictionaries.extend_gamestate_tree_from_seed_dictionary({current_gamestate_key : current_gamestate}, [])
+            print()
+
 def get_team_strategies(_gamestate):
-    iteration_name = _gamestate.get_iteration_name
-    strategy_dictionary = strategydictionaries.dictionaries[iteration_name]
+    strategy_dictionary_name = _gamestate.get_strategy_dictionary_name()
+    strategy_dictionary = strategydictionaries.dictionaries[strategy_dictionary_name]
     team_strategies = strategy_dictionary[_gamestate.get_key()]
     return team_strategies
 
@@ -206,9 +217,4 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
 
     return next_gamestate
 
-
-t0 = time.time()
-
 run()
-
-print(time.time() - t0)

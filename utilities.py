@@ -8,7 +8,7 @@ import nashpy # 3rd party packages
 pairing_dictionary = None
 
 class DraftStage(Enum):
-    none, select_defender, select_attackers, discard_attackers = range(4)
+    none, select_defender, select_attackers, discard_attacker = range(4)
 
 def get_next_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value + 1) % 4)
@@ -108,13 +108,13 @@ def get_game_strategy(game_solution_cache, game_array, friendly_team_options, en
         raise ValueError("Inconsistent friendly team options.")
 
     for i in range(0, len(friendly_team_options)):
-        game_strategy[0].append([friendly_team_options[i], game_solution[0][i]])
+        game_strategy[0].append([friendly_team_options[i], round(game_solution[0][i], 3)])
 
     if (len(enemy_team_options) != len(game_solution[1])):
         raise ValueError("Inconsistent enemy team options.")
 
     for i in range(0, len(enemy_team_options)):
-        game_strategy[1].append([enemy_team_options[i], game_solution[1][i]])
+        game_strategy[1].append([enemy_team_options[i], round(game_solution[1][i], 3)])
 
     return game_strategy
 
@@ -210,3 +210,16 @@ def get_dictionary_name(n, draft_stage, dictionary_type):
     dictionary_name = num + "_player_" + draft_stage.name + "_" + dictionary_type + "_dictionary"
 
     return dictionary_name
+
+def get_arbitrarty_dictionary_entry(dictionary):
+    dictionary_keys = list(dictionary.keys())
+
+    if 'descriptor' in dictionary_keys:
+        dictionary_keys.remove('descriptor')
+
+    if (len(dictionary_keys) > 0):
+        arbitrary_dictionary_entry = dictionary[dictionary_keys[0]]
+        return arbitrary_dictionary_entry
+    else:
+        return None
+

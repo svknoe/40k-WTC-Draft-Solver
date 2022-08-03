@@ -153,7 +153,7 @@ def write_strategy_dictionary(path, strategy_dictionary):
     
 def read_strategy_dictionary(path):
     try:
-        with path.open() as data_file:    
+        with path.open('r', encoding='utf-8') as data_file:    
             print("Reading file {} ...".format(path))
             strategy_dictionary = json.load(data_file)
             print('    ...done.') 
@@ -187,7 +187,7 @@ def list_to_string(input_list):
     for i in range(0, len(input_list) - 1):
         output_string += input_list[i] + ", "
 
-    output_string += input_list[len(input_list)]
+    output_string += input_list[len(input_list) - 1]
 
     return output_string
 

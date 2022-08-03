@@ -13,7 +13,7 @@ match = ""
 
 # Settings
 friendly_team_name = "Norway"
-read = False
+read = True
 write = True
 restrict_attackers = True
 restricted_attackers_count = 2
@@ -69,7 +69,7 @@ def play_draft():
     current_gamestate = gamestatedictionaries.get_initial_game_state()
 
     while True:
-        print("Current gamestate:\n{}\n".format(current_gamestate))
+        print("Current gamestate:\n{}\n".format(current_gamestate.get_key()))
         team_strategies = get_team_strategies(current_gamestate)
         current_gamestate = prompt_next_gamestate(current_gamestate, team_strategies)
         
@@ -87,7 +87,8 @@ def play_draft():
 def get_team_strategies(_gamestate):
     strategy_dictionary_name = _gamestate.get_strategy_dictionary_name()
     strategy_dictionary = strategydictionaries.dictionaries[strategy_dictionary_name]
-    team_strategies = strategy_dictionary[_gamestate.get_key()]
+    key = _gamestate.get_key()
+    team_strategies = strategy_dictionary[key]
     return team_strategies
 
 def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
@@ -119,7 +120,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
         for selection in ranked_selections:
             selection_probability = round(selection[1], 3)
             selection_player = selection[0]
-            print("[{}]: {}".format(selection_probability, selection_player))
+            print("   [p={}]: {}".format(selection_probability, selection_player))
 
         suggested_selection = None
 
@@ -133,7 +134,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
                 else:
                     roll -= selection[1]
 
-        print(" --- Suggested {} selection: {} ---\n".format(team_name, suggested_selection))
+        print("\n --- Suggested {} selection: {} ---".format(team_name, suggested_selection))
         print("------------------------\n")
 
         return options, suggested_selection
@@ -142,7 +143,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
         user_selection = None
 
         while (not user_selection in team_options) and (user_selection != ""):
-            user_selection = input("Provide {team_name} selection (press 'enter' for suggested default, write 'quit()' to abort draft'):")
+            user_selection = input("Provide {} selection (press 'enter' for suggested default, write 'quit()' to abort draft'):".format(team_name))
 
             if user_selection == "quit()":
                 return None
@@ -190,7 +191,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
 
         return next_gamestate
 
-    draft_stage = utilities.get_next_gamestate(_gamestate.draft_stage)
+    draft_stage = utilities.get_next_draft_stage(_gamestate.draft_stage)
     print("Draft stage: {}".format(draft_stage))
 
     friendly_team_permutation = _gamestate.friendly_team_permutation

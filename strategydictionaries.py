@@ -21,11 +21,11 @@ dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.sele
 dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.select_attackers)] = {'descriptor':[4, utilities.DraftStage.select_attackers]}
 dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.discard_attacker)] = {'descriptor':[4, utilities.DraftStage.discard_attacker]}
 
-def initialise_dictionaries(match, read = True, write = True):
+def initialise_dictionaries(read, write):
     def process_draft_stage(gamestate_dictionary_to_solve, lower_level_strategies = None):
         arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(gamestate_dictionary_to_solve)
         strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
-        path = utilities.get_path(match, strategy_dictionary_name + ".json")
+        path = utilities.get_path(strategy_dictionary_name + ".json")
 
         draft_stage_strategies = None
 

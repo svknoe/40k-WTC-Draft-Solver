@@ -3,23 +3,43 @@ import gamestate
 from gamestate import GameState
 from teampermutation import TeamPermutation
 
-dictionaries = {}
-dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.none)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.select_defender)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.select_attackers)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.discard_attacker)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.none)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.select_defender)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.select_attackers)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.discard_attacker)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.none)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_defender)] = {}
-dictionaries[utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_attackers)] = {}
+global_gamestate_dictionary_names = [
+utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.none),
+utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.select_defender),
+utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.select_attackers),
+utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.discard_attacker),
+utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.none),
+utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.select_defender),
+utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.select_attackers),
+utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.discard_attacker),
+utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.none),
+utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_defender),
+utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_attackers)]
 
-def initialise_dictionaries():
-    initial_game_state = get_initial_game_state()
-    seed_dictionary = {'seed' : initial_game_state}
-    extend_gamestate_tree_from_seed_dictionary(seed_dictionary)
+dictionaries = {}
+for name in global_gamestate_dictionary_names:
+    dictionaries[name] = {}
+
+def initialise_dictionaries(read, write):
+    if read:
+        read_dictionaries()
+    else:
+        initial_game_state = get_initial_game_state()
+        seed_dictionary = {'seed' : initial_game_state}
+        perform_gamestate_tree_extension(seed_dictionary)
+
+        if write():
+            print()
+
+def read_dictionaries():
+    for name in global_gamestate_dictionary_names:
+        path = utilities.get_path(name + ".json")
+        dictionaries[name] = utilities.read_dictionary(path)
+
+def write_dictionaries():
+    for name in global_gamestate_dictionary_names:
+        path = utilities.get_path(name + ".json")
+        utilities.write_dictionary(path, dictionaries[name])
 
 def get_initial_game_state():
     friends = [friend for friend in utilities.pairing_dictionary]
@@ -28,14 +48,18 @@ def get_initial_game_state():
 
     return initial_game_state
 
+def perform_gamestate_tree_extension(parent_dictionary, new_gamestate_dictionaries = None):
+    current_arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(parent_dictionary)
+    current_global_gamestate_dictionary_name = current_arbitrary_gamestate.get_gamestate_dictionary_name()
+    print_extend_dictionaries(current_global_gamestate_dictionary_name, new_gamestate_dictionaries)
+
+    return extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_dictionaries)
+
 def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_dictionaries = None):
     current_arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(parent_dictionary)
 
     current_draft_stage = current_arbitrary_gamestate.draft_stage
     current_n = current_arbitrary_gamestate.get_n()
-
-    if current_n == 4 and current_draft_stage == utilities.DraftStage.discard_attacker:
-        return new_gamestate_dictionaries
 
     current_global_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(current_n, current_draft_stage)
     current_global_dictionary = dictionaries[current_global_gamestate_dictionary_name]
@@ -46,12 +70,20 @@ def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_
     parent_gamestates = [parent_dictionary[key] for key in parent_dictionary]
     added_subdictionary = add_gamestates_to_dictionary(current_global_dictionary, parent_gamestates)
 
+    if (new_gamestate_dictionaries != None):
+        new_gamestate_dictionaries.append(added_subdictionary)
+
+    print("    - Done: {} gamestates added".format(len(added_subdictionary)))
+
     next_draft_stage = utilities.get_next_draft_stage(current_draft_stage)
     next_n = current_n
 
+    if (next_n == 4 and next_draft_stage == utilities.DraftStage.discard_attacker):
+        return new_gamestate_dictionaries
+
     next_global_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(next_n, next_draft_stage)
 
-    print(" - Initialising {}...".format(next_global_gamestate_dictionary_name))
+    print_extend_dictionaries(next_global_gamestate_dictionary_name, new_gamestate_dictionaries)
 
     generated_gamestate_dictionary = {}
     for parent_key in parent_dictionary:
@@ -59,13 +91,17 @@ def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_
         child_gamestates = gamestate.get_next_gamestates(parent_gamestate)
         add_gamestates_to_dictionary(generated_gamestate_dictionary, child_gamestates)
     
-    print("    - Done: {} gamestates".format(len(generated_gamestate_dictionary)))
-
     extend_gamestate_tree_from_seed_dictionary(generated_gamestate_dictionary, new_gamestate_dictionaries)
 
-    if (new_gamestate_dictionaries != None):
-        new_gamestate_dictionaries.append(added_subdictionary)
-        return new_gamestate_dictionaries
+    return new_gamestate_dictionaries
+
+def print_extend_dictionaries(dictionary_name, new_gamestate_dictionaries):
+    if new_gamestate_dictionaries == None:
+        description = "Initialising"
+    else:
+        description = "Extending"
+
+    print(" - {} {}...".format(description, dictionary_name))
 
 def add_gamestates_to_dictionary(dictionary, gamestates):
     added_subdictionary = {}

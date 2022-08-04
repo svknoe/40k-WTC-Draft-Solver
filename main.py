@@ -9,8 +9,6 @@ import gamestatedictionaries
 from gamestate import GameState
 import teampermutation
 
-match = ""
-
 # Settings
 friendly_team_name = "Norway"
 read = True
@@ -22,8 +20,7 @@ round_strategies = False
 strategy_dictionaries = {}
 
 def run():
-    global match
-    match = "Germany" # Select match
+    utilities.enemy_team_name = "Germany" # Select match
 
     t0 = time.time()
     initialise()
@@ -36,16 +33,16 @@ def run():
             break
 
 def initialise():
-    utilities.initialise_pairing_dictionary(match)
+    utilities.initialise_pairing_dictionary()
 
     if (restrict_attackers):
         teampermutation.enable_restricted_attackers(restricted_attackers_count)
 
     print("Initialising gamestate dictionaries:")
-    gamestatedictionaries.initialise_dictionaries()
+    gamestatedictionaries.initialise_dictionaries(read, write)
 
     print("Initialising strategy dictionaries:")
-    strategydictionaries.initialise_dictionaries(match, read, write)
+    strategydictionaries.initialise_dictionaries(read, write)
 
 def prompt_draft_again():
     def valid_input(prompt_input):
@@ -65,7 +62,7 @@ def prompt_draft_again():
     return False
 
 def play_draft():
-    print("\nPlaying draft against {}!\n".format(match))
+    print("\nPlaying draft against {}!\n".format(utilities.enemy_team_name))
     current_gamestate = gamestatedictionaries.get_initial_game_state()
 
     while True:
@@ -201,13 +198,13 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
     enemy_team_strategy = gamestate_team_strategies[1]
 
     friendly_team_options = print_team_options(friendly_team_name, friendly_team_permutation, friendly_team_strategy)
-    enemy_team_options = print_team_options(match, enemy_team_permutation, enemy_team_strategy)
+    enemy_team_options = print_team_options(utilities.enemy_team_name, enemy_team_permutation, enemy_team_strategy)
 
     friendly_team_selection = prompt_team_selection(friendly_team_name, friendly_team_options)
     if friendly_team_selection == None:
         return None
 
-    enemy_team_selection = prompt_team_selection(match, enemy_team_options)
+    enemy_team_selection = prompt_team_selection(utilities.enemy_team_name, enemy_team_options)
     if enemy_team_selection == None:
         return teampermutation.get_none_team_permutation()
 

@@ -5,6 +5,7 @@ from enum import Enum
 
 import nashpy # 3rd party packages
 
+enemy_team_name = None
 pairing_dictionary = None
 
 class DraftStage(Enum):
@@ -18,9 +19,9 @@ def get_previous_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value - 1) % 4)
     return next_draft_stage
 
-def initialise_pairing_dictionary(match = None, filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
+def initialise_pairing_dictionary(filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
     global pairing_dictionary
-    path = get_path(match, filename)
+    path = get_path(filename)
     with path.open(encoding="UTF-8") as f:
         lines = f.read().splitlines()
 
@@ -136,38 +137,32 @@ def print_overview(game_overview, roundTo = 3):
     print("Column strategy: ", round_column_strategy)
     print("Value: ", round_value)
 
-def get_path(match, filename):
-    if match == None:
+def get_path(filename):
+    if enemy_team_name == None:
         path = Path(__file__).parent / (filename)
     else:
-        subfolder = "Matches/" + match
+        subfolder = "Matches/" + enemy_team_name
         path = Path(__file__).parent / (subfolder + "/" + filename)
 
     return path
 
-def write_strategy_dictionary(path, strategy_dictionary):
-    with path.open('w', encoding='utf-8') as f:
-        print("Writing file {} ...".format(path))
-        json.dump(strategy_dictionary, f, ensure_ascii=False, indent=4)
-        print('    ...done.') 
-    
-def read_strategy_dictionary(path):
+def read_dictionary(path):
     try:
         with path.open('r', encoding='utf-8') as data_file:    
             print("Reading file {} ...".format(path))
-            strategy_dictionary = json.load(data_file)
+            dictionary = json.load(data_file)
             print('    ...done.') 
 
-        return strategy_dictionary
+        return dictionary
     except:
         return None
 
-def write_strategy_with_print_calls(match, strategy_dictionary, filename):
-    strategy_path = get_path(match, filename)
-    print("    - Writing file {} ...".format(strategy_path))
-    write_strategy_dictionary(strategy_path, strategy_dictionary)
-    print('          ...done.')
-
+def write_dictionary(path, dictionary):
+    with path.open('w', encoding='utf-8') as f:
+        print("Writing file {} ...".format(path))
+        json.dump(dictionary, f, ensure_ascii=False, indent=4)
+        print('    ...done.') 
+    
 def get_empty_matrix(n, m):
     empty_matrix = { (i,j):None for i in range(n) for j in range(m)}
     return empty_matrix

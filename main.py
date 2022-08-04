@@ -1,3 +1,4 @@
+from operator import add
 import time # standard libraries
 from random import random
 import itertools
@@ -74,12 +75,7 @@ def play_draft():
             print("Draft finished. Expected result:")
             break
 
-        gamestate_dictionary = gamestatedictionaries.dictionaries[current_gamestate.get_gamestate_dictionary_name()]
-        current_gamestate_key = gamestate_dictionary.get_key()
-
-        if current_gamestate_key not in gamestate_dictionary:
-            added_gamestate_dictionaries = gamestatedictionaries.extend_gamestate_tree_from_seed_dictionary({current_gamestate_key : current_gamestate}, [])
-            print()
+        update_dictionaries(current_gamestate)
 
 def get_team_strategies(_gamestate):
     strategy_dictionary_name = _gamestate.get_strategy_dictionary_name()
@@ -87,6 +83,22 @@ def get_team_strategies(_gamestate):
     key = _gamestate.get_key()
     team_strategies = strategy_dictionary[key]
     return team_strategies
+
+def update_dictionaries(seed_gamestate):
+    gamestate_dictionary = gamestatedictionaries.dictionaries[seed_gamestate.get_gamestate_dictionary_name()]
+    current_gamestate_key = gamestate_dictionary.get_key()
+
+    if current_gamestate_key not in gamestate_dictionary:
+        added_gamestate_dictionaries = gamestatedictionaries.perform_gamestate_tree_extension({current_gamestate_key : seed_gamestate}, [])
+        added_gamestate_dictionaries = reversed(added_gamestate_dictionaries)
+        lower_level_strategies = None
+
+        for gamestate_dictionary in added_gamestate_dictionaries:
+            arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(gamestate_dictionary)
+            if arbitrary_gamestate.draft_stage == utilities.DraftStage.discard_attacker:
+                continue
+
+            lower_level_strategies = strategydictionaries.process_gamestate_dictionary(False, False, gamestate_dictionary, lower_level_strategies)
 
 def prompt_next_gamestate(_gamestate, gamestate_team_strategies):
     def print_team_options(team_name, team_permutation, team_strategy):

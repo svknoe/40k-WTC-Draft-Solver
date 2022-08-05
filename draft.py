@@ -70,11 +70,11 @@ def update_dictionaries(seed_gamestate):
         gamestate_dictionaries_to_process = list(reversed(gamestate_dictionaries_to_process))
 
         if len(gamestate_dictionaries_to_process) > 0:
-            first_gamestate_dictionary = added_gamestate_dictionaries[0]
+            first_gamestate_dictionary = gamestate_dictionaries_to_process[0]
             first_arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(first_gamestate_dictionary)
             lower_level_strategies = strategydictionaries.get_dictionary_for_gamestate(first_arbitrary_gamestate)
 
-            for gamestate_dictionary in added_gamestate_dictionaries:
+            for gamestate_dictionary in gamestate_dictionaries_to_process:
                 lower_level_strategies = strategydictionaries.process_gamestate_dictionary(False, False, gamestate_dictionary, lower_level_strategies)
 
 def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stage):

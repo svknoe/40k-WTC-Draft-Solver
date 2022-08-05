@@ -13,9 +13,9 @@ show_enemy_strategy_suggestions = True
 
 # Configuration
 read = True
-write = True
+write = False
 restrict_attackers = True
-restricted_attackers_count = 2
+restricted_attackers_count = 4
 round_strategies = False
 
 def run():
@@ -24,9 +24,7 @@ def run():
     utilities.show_friendly_strategy_suggestions = show_friendly_strategy_suggestions
     utilities.show_enemy_strategy_suggestions = show_enemy_strategy_suggestions
 
-    t0 = time.time()
     initialise()
-    print("time: {}s".format(round(time.time() - t0, 2)))
 
     while True:
         draft.play_draft()
@@ -41,11 +39,15 @@ def initialise():
     if (restrict_attackers):
         teampermutation.enable_restricted_attackers(restricted_attackers_count)
 
+    t0 = time.time()
     print("Initialising gamestate dictionaries:")
     gamestatedictionaries.initialise_dictionaries(read, write)
+    print("time: {}s".format(round(time.time() - t0, 2)))
 
+    t0 = time.time()
     print("Initialising strategy dictionaries:")
     strategydictionaries.initialise_dictionaries(read, write)
+    print("time: {}s".format(round(time.time() - t0, 2)))
 
 def prompt_draft_again():
     def valid_input(prompt_input):
@@ -57,11 +59,11 @@ def prompt_draft_again():
     user_input = None
 
     while not valid_input(user_input):
-        user_input = input("Draft again? (y / [n])\n")
+        user_input = input("Draft again? ([y] / n)\n")
 
-    if user_input == "y":
-        return True
+    if user_input == "n":
+        return False
 
-    return False
+    return True
 
 run()

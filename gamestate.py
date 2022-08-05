@@ -65,8 +65,8 @@ def get_next_gamestate_matrix(gamestate):
 
 def get_gamestate_from_key(key):
     friendly_team_representation, enemy_team_representation = key.split('\n', 1)
-    friendly_team_permutation = teampermutation.get_team_permutation_from_string(friendly_team_representation)
-    enemy_team_permutation = teampermutation.get_team_permutation_from_string(enemy_team_representation)
+    friendly_team_permutation = teampermutation.get_team_permutation_from_key(friendly_team_representation)
+    enemy_team_permutation = teampermutation.get_team_permutation_from_key(enemy_team_representation)
     draft_stage = friendly_team_permutation.get_draft_stage()
 
     return GameState(draft_stage, friendly_team_permutation, enemy_team_permutation)

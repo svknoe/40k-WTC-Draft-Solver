@@ -23,7 +23,6 @@ class TeamPermutation:
         self.discarded_attacker = discarded_attacker
         self.remaining_players = sorted(remaining_players)
 
-
     def get_key(self):
         permutation_key = ""
 
@@ -42,6 +41,16 @@ class TeamPermutation:
         permutation_key += "{{Remaining players: {}}}".format(", ".join(self.remaining_players))
 
         return permutation_key
+
+    def get_draft_stage(self):
+        if self.discard_attacker != None:
+            return utilities.DraftStage.discard_attacker
+        elif self.attacker_A != None:
+            return utilities.DraftStage.select_attackers
+        elif self.defender != None:
+            return utilities.DraftStage.select_defender
+        else:
+            return utilities.DraftStage.none
 
     def select_defender(self, defender):
         if not defender in self.remaining_players:
@@ -64,10 +73,29 @@ class TeamPermutation:
         self.remaining_players.remove(attacker_B)
 
     def select_discarded_attacker(self, discarded_attacker):
-        if not discarded_attacker in self.remaining_players:
+        if not (discarded_attacker == self.attacker_A or discarded_attacker == self.attacker_B):
             raise ValueError("Unknown player {}.".format(discarded_attacker))
             
         self.discarded_attacker = discarded_attacker
+
+    def get_nondiscarded_attacker(self, discarded_attacker_override = None):
+        discarded_attacker = self.discarded_attacker
+
+        if discarded_attacker_override != None:
+            discarded_attacker = discarded_attacker_override
+
+        if discarded_attacker == None:
+            return None
+        elif discarded_attacker == self.attacker_A:
+            return self.attacker_B
+        elif discarded_attacker == self.attacker_B:
+            return self.attacker_A
+        else:
+            raise ValueError("Unknown discarded attacker: {}".format(discarded_attacker))
+
+def get_team_permutation_from_key(key):
+    role_string, remaining_players_string = key.split("{Remaining players: ", 1)
+    raise NotImplementedError()
 
 def get_team_permutation(draft_stage, players):
     players_clone = players.copy()

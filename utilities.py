@@ -5,8 +5,11 @@ from enum import Enum
 
 import nashpy # 3rd party packages
 
+friendly_team_name = None
 enemy_team_name = None
 pairing_dictionary = None
+show_friendly_strategy_suggestions = True
+show_enemy_strategy_suggestions = True
 
 class DraftStage(Enum):
     none, select_defender, select_attackers, discard_attacker = range(4)
@@ -206,7 +209,7 @@ def get_dictionary_name(n, draft_stage, dictionary_type):
 
     return dictionary_name
 
-def get_arbitrarty_dictionary_entry(dictionary):
+def get_arbitrary_dictionary_entry(dictionary):
     dictionary_keys = list(dictionary.keys())
 
     if 'descriptor' in dictionary_keys:
@@ -218,3 +221,15 @@ def get_arbitrarty_dictionary_entry(dictionary):
     else:
         return None
 
+def get_pairing(friendly_player, enemy_player):
+    if friendly_player in pairing_dictionary:
+        row = pairing_dictionary[friendly_player]
+    else:
+        raise ValueError("Unknown player: {}".format(friendly_player))
+
+    if enemy_player in row:
+        value = row[enemy_player]
+    else:
+        raise ValueError("Unknown player: {}".format(enemy_player))
+
+    return value, "{} vs {}".format(friendly_player, enemy_player)

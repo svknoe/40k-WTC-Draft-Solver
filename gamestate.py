@@ -1,5 +1,3 @@
-import itertools # standard libraries
-
 import utilities # local source
 import teampermutation
 
@@ -64,3 +62,11 @@ def get_next_gamestate_matrix(gamestate):
 
     next_game_permutations_matrix = [[GameState(next_draft_stage, team_permutations_product[(i,j)][0], team_permutations_product[(i,j)][1]) for j in range(0, len(next_enemy_team_permutations))] for i in range(0, len(next_friendly_team_permutations))]
     return next_game_permutations_matrix
+
+def get_gamestate_from_key(key):
+    friendly_team_representation, enemy_team_representation = key.split('\n', 1)
+    friendly_team_permutation = teampermutation.get_team_permutation_from_string(friendly_team_representation)
+    enemy_team_permutation = teampermutation.get_team_permutation_from_string(enemy_team_representation)
+    draft_stage = friendly_team_permutation.get_draft_stage()
+
+    return GameState(draft_stage, friendly_team_permutation, enemy_team_permutation)

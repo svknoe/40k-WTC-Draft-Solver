@@ -1,12 +1,8 @@
-from itertools import permutations
 import numpy as np # standard libraries
-
-import nashpy # 3rd party packages
 
 import utilities # local source
 import gamestate
 from gamestate import GameState
-import teampermutation
 from teampermutation import TeamPermutation
 
 select_defender_cache = {}

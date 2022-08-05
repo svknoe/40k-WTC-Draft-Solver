@@ -4,11 +4,7 @@ import time
 
 import utilities # local source
 import games
-import gamestate
 import gamestatedictionaries
-from gamestate import GameState
-import teampermutation
-from teampermutation import TeamPermutation
 
 dictionaries = {}
 dictionaries[utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_defender)] = {'descriptor':[8, utilities.DraftStage.select_defender]}
@@ -33,7 +29,7 @@ def initialise_dictionaries(read, write):
         if (gamestate_dictionary is None):
             break
 
-        arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(gamestate_dictionary)
+        arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary)
         if (arbitrary_gamestate == None):
             break
         elif (arbitrary_gamestate.draft_stage == utilities.DraftStage.discard_attacker):
@@ -49,7 +45,7 @@ def update_dictionaries(read, write, gamestate_dictionaries):
     lower_level_strategies = None
 
     for gamestate_dictionary in reversed_gamestate_dictionaries:
-        arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(gamestate_dictionary)
+        arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary)
         if arbitrary_gamestate.draft_stage == utilities.DraftStage.discard_attacker:
             continue
 
@@ -57,27 +53,27 @@ def update_dictionaries(read, write, gamestate_dictionaries):
 
 
 def process_gamestate_dictionary(read, write, gamestate_dictionary_to_solve, lower_level_strategies = None):
-    arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(gamestate_dictionary_to_solve)
+    arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
     strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
     path = utilities.get_path(strategy_dictionary_name + ".json")
 
     draft_stage_strategies = None
 
     if read:
-        draft_stage_strategies = utilities.read_strategy_dictionary(path)
+        draft_stage_strategies = utilities.read_dictionary(path)
 
     if draft_stage_strategies == None:
         draft_stage_strategies = get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategies)
 
         if write:
-            utilities.write_strategy_dictionary(path, draft_stage_strategies)
+            utilities.write_dictionary(path, draft_stage_strategies)
         
     dictionaries[strategy_dictionary_name].update(draft_stage_strategies)
 
     return dictionaries[strategy_dictionary_name]
 
 def get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategies):
-    arbitrary_gamestate = utilities.get_arbitrarty_dictionary_entry(gamestate_dictionary_to_solve)
+    arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
     n = arbitrary_gamestate.get_n()
     draft_stage_to_solve = utilities.get_next_draft_stage(arbitrary_gamestate.draft_stage)
 
@@ -142,3 +138,30 @@ def get_previous_strategy_dictionary(strategy_dictionary):
     previous_strategy_dictionary = dictionaries[previous_strategy_dictionary_name]
 
     return previous_strategy_dictionary
+
+def get_dictionary_for_gamestate(achieved_gamestate):
+    n = achieved_gamestate.get_n()
+    achieved_draft_stage = achieved_gamestate.draft_stage
+
+    draft_stage_to_solve = utilities.get_next_draft_stage(achieved_draft_stage)
+    if draft_stage_to_solve == utilities.DraftStage.none:
+        draft_stage_to_solve = utilities.get_next_draft_stage(draft_stage_to_solve)
+
+    supporting_draft_stage = utilities.get_next_draft_stage(draft_stage_to_solve)
+    if supporting_draft_stage == utilities.DraftStage.none:
+        supporting_draft_stage = utilities.get_next_draft_stage(supporting_draft_stage)
+
+    if supporting_draft_stage.value < achieved_draft_stage.value:
+        n -= 2
+
+    if n < 4:
+        return None
+
+    for key in dictionaries:
+        dictionary = dictionaries[key]
+        descriptor = dictionary['descriptor']
+
+        if n == descriptor[0] and supporting_draft_stage == descriptor[1]:
+            return dictionary
+    
+    return None

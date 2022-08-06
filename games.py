@@ -87,10 +87,10 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
     if n == 4:
         return discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, remaining_friends[0], e_defender, e_attacker_A, e_attacker_B, remaining_enemies[0])
 
-    fD_eA = utilities.get_pairing_value(n, f_defender, e_attacker_A, f_defender)
-    fD_eB = utilities.get_pairing_value(n, f_defender, e_attacker_B, f_defender)
-    fA_eD = utilities.get_pairing_value(n, e_defender, f_attacker_A, e_defender)
-    fB_eD = utilities.get_pairing_value(n, e_defender, f_attacker_B, e_defender)
+    fD_eA = utilities.get_pairing_value(4, f_defender, e_attacker_A, f_defender)
+    fD_eB = utilities.get_pairing_value(4, f_defender, e_attacker_B, f_defender)
+    fA_eD = utilities.get_pairing_value(4, f_attacker_A, e_defender, e_defender)
+    fB_eD = utilities.get_pairing_value(4, f_attacker_B, e_defender, e_defender)
     
     AA = fD_eB + fB_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_A)][2]
     AB = fD_eB + fA_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_B)][2]

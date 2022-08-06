@@ -12,8 +12,8 @@ show_friendly_strategy_suggestions = True
 show_enemy_strategy_suggestions = True
 
 # Configuration
-read_gamestates = False
-write_gamestates = False
+read_gamestates = True
+write_gamestates = True
 
 read_strategies = True
 write_strategies = True

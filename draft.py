@@ -138,7 +138,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     def prompt_team_selection(team_name, team_options, suggested_selection):
         user_selection = None
 
-        while (not user_selection in team_options) and (user_selection != ""):
+        while (not user_selection.upper() in (option.upper() for option in team_options)) and (user_selection != ""):
             user_selection = input("Provide {} selection (press 'enter' for suggested default, write 'quit()' to abort draft'):\n".format(team_name))
 
             if user_selection == "quit()":

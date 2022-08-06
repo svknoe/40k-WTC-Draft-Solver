@@ -15,8 +15,7 @@ show_enemy_strategy_suggestions = True
 read = True
 write = False
 restrict_attackers = True
-restricted_attackers_count = 4
-round_strategies = False
+restricted_attackers_count = 4 # Maximum number of attacker players considered by each team in each select attackers step.
 
 def run():
     utilities.friendly_team_name = friendly_team_name

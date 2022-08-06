@@ -17,7 +17,8 @@ def play_draft():
 
     while True:
         next_draft_stage = utilities.get_next_draft_stage(current_gamestate.draft_stage)
-        print("\n-----------------------------------------------------------------------------------------------------\nDraft stage: {}\n".format(next_draft_stage))
+        n = current_gamestate.get_n()
+        print("\n-----------------------------------------------------------------------------------------------------\nDraft stage: {}-player {}\n".format(n, next_draft_stage))
         print("Current gamestate:\n{}\n".format(current_gamestate.get_key()))
         team_strategies = get_team_strategies(current_gamestate)
         current_gamestate, new_pairings = prompt_next_gamestate(current_gamestate, team_strategies, next_draft_stage)
@@ -35,7 +36,7 @@ def play_draft():
         print("Pairings:")
         for new_pairings in pairings:
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))
-        print("\nTotal: {}".format(sum([pairing[0] for pairing in pairings])))
+        print("\nTotal: {}".format(round(sum([pairing[0] for pairing in pairings]))))
         initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_defender)
         initial_strategy_dictionary = strategydictionaries.dictionaries[initial_strategy_dictionary_name]
         initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dictionary)
@@ -138,7 +139,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     def prompt_team_selection(team_name, team_options, suggested_selection):
         user_selection = None
 
-        while (not user_selection.upper() in (option.upper() for option in team_options)) and (user_selection != ""):
+        while (user_selection == None) or ((not user_selection.upper() in (option.upper() for option in team_options)) and (user_selection != "")):
             user_selection = input("Provide {} selection (press 'enter' for suggested default, write 'quit()' to abort draft'):\n".format(team_name))
 
             if user_selection == "quit()":
@@ -194,12 +195,14 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
             e_nondiscarded_attacker = enemy_team_permutation.get_nondiscarded_attacker(e_discarded_attacker)
             e_remaining_players = enemy_team_permutation.remaining_players
 
-            pairings.append(utilities.get_pairing(f_defender, e_nondiscarded_attacker))
-            pairings.append(utilities.get_pairing(f_nondiscarded_attacker, e_defender))
+            n = _gamestate.get_n()
+
+            pairings.append(utilities.get_pairing_string(n, f_defender, e_nondiscarded_attacker, f_defender))
+            pairings.append(utilities.get_pairing_string(n, f_nondiscarded_attacker, e_defender, e_defender))
 
             if len(f_remaining_players) == 1:
-                pairings.append(utilities.get_pairing(f_discarded_attacker, e_discarded_attacker))
-                pairings.append(utilities.get_pairing(f_remaining_players[0], e_remaining_players[0]))
+                pairings.append(utilities.get_pairing_string(n, f_discarded_attacker, e_discarded_attacker))
+                pairings.append(utilities.get_pairing_string(n, f_remaining_players[0], e_remaining_players[0]))
 
             next_gamestate_draft_stage = utilities.get_next_draft_stage(next_gamestate_draft_stage)
 

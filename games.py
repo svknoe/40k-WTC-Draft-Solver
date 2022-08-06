@@ -87,11 +87,15 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
     if n == 4:
         return discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, remaining_friends[0], e_defender, e_attacker_A, e_attacker_B, remaining_enemies[0])
 
-    matrix = utilities.pairing_dictionary
-    AA = matrix[f_defender][e_attacker_B] + matrix[f_attacker_B][e_defender] + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_A)][2]
-    AB = matrix[f_defender][e_attacker_B] + matrix[f_attacker_A][e_defender] + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_B)][2]
-    BA = matrix[f_defender][e_attacker_A] + matrix[f_attacker_B][e_defender] + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_A)][2]
-    BB = matrix[f_defender][e_attacker_A] + matrix[f_attacker_A][e_defender] + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_B)][2]
+    fD_eA = utilities.get_pairing_value(n, f_defender, e_attacker_A, f_defender)
+    fD_eB = utilities.get_pairing_value(n, f_defender, e_attacker_B, f_defender)
+    fA_eD = utilities.get_pairing_value(n, e_defender, f_attacker_A, e_defender)
+    fB_eD = utilities.get_pairing_value(n, e_defender, f_attacker_B, e_defender)
+    
+    AA = fD_eB + fB_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_A)][2]
+    AB = fD_eB + fA_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_B)][2]
+    BA = fD_eA + fB_eD + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_A)][2]
+    BB = fD_eA + fA_eD + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_B)][2]
 
     game_array = np.array([[AA, AB], [BA, BB]])
     discard_attacker_strategy = utilities.get_game_strategy(discard_attacker_cache[n], game_array, [e_attacker_A, e_attacker_B], [f_attacker_A, f_attacker_B])
@@ -99,11 +103,22 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
     return discard_attacker_strategy
 
 def discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, f_not_selected, e_defender, e_attacker_A, e_attacker_B, e_not_selected):
-    matrix = utilities.pairing_dictionary
-    AA = matrix[f_defender][e_attacker_B] + matrix[f_attacker_B][e_defender] + matrix[f_attacker_A][e_attacker_A] + matrix[f_not_selected][e_not_selected]
-    AB = matrix[f_defender][e_attacker_B] + matrix[f_attacker_A][e_defender] + matrix[f_attacker_B][e_attacker_A] + matrix[f_not_selected][e_not_selected]
-    BA = matrix[f_defender][e_attacker_A] + matrix[f_attacker_B][e_defender] + matrix[f_attacker_A][e_attacker_B] + matrix[f_not_selected][e_not_selected]
-    BB = matrix[f_defender][e_attacker_A] + matrix[f_attacker_A][e_defender] + matrix[f_attacker_B][e_attacker_B] + matrix[f_not_selected][e_not_selected]
+    fD_eA = utilities.get_pairing_value(4, f_defender, e_attacker_A, f_defender)
+    fD_eB = utilities.get_pairing_value(4, f_defender, e_attacker_B, f_defender)
+    fA_eD = utilities.get_pairing_value(4, f_attacker_A, e_defender, e_defender)
+    fB_eD = utilities.get_pairing_value(4, f_attacker_B, e_defender, e_defender)
+
+    fA_eA = utilities.get_pairing_value(4, f_attacker_A, e_attacker_A)
+    fA_eB = utilities.get_pairing_value(4, f_attacker_A, e_attacker_B)
+    fB_eA = utilities.get_pairing_value(4, f_attacker_B, e_attacker_A)
+    fB_eB = utilities.get_pairing_value(4, f_attacker_B, e_attacker_B)
+
+    fN_eN = utilities.get_pairing_value(4, f_not_selected, e_not_selected)
+
+    AA = fD_eB + fB_eD + fA_eA + fN_eN
+    AB = fD_eB + fA_eD + fB_eA + fN_eN
+    BA = fD_eA + fB_eD + fA_eB + fN_eN
+    BB = fD_eA + fA_eD + fB_eB + fN_eN
 
     game_array = np.array([[AA, AB], [BA, BB]])
     discard_attacker_strategy = utilities.get_game_strategy(discard_attacker_cache[4], game_array, [e_attacker_A, e_attacker_B], [f_attacker_A, f_attacker_B])

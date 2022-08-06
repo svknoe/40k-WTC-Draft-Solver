@@ -44,7 +44,7 @@ class TeamPermutation:
         return permutation_key
 
     def get_draft_stage(self):
-        if self.discard_attacker != None:
+        if self.discarded_attacker != None:
             return utilities.DraftStage.discard_attacker
         elif self.attacker_A != None:
             return utilities.DraftStage.select_attackers
@@ -52,6 +52,17 @@ class TeamPermutation:
             return utilities.DraftStage.select_defender
         else:
             return utilities.DraftStage.none
+
+    def get_n(self):
+        n = len(self.remaining_players)
+        if self.defender != None:
+            n += 1
+        if self.attacker_A != None:
+            n += 1
+        if self.attacker_B != None:
+            n += 1
+        
+        return n
 
     def select_defender(self, defender):
         if not defender in self.remaining_players:

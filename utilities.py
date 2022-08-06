@@ -2,14 +2,19 @@ import sys # standard libraries
 import json
 from pathlib import Path
 from enum import Enum
+from tokenize import Double
 
 import nashpy # 3rd party packages
 
 friendly_team_name = None
 enemy_team_name = None
-pairing_dictionary = None
+
 show_friendly_strategy_suggestions = True
 show_enemy_strategy_suggestions = True
+
+pairing_dictionary = {}
+map_importance_dictionary = {}
+
 
 class DraftStage(Enum):
     none, select_defender, select_attackers, discard_attacker = range(4)
@@ -22,11 +27,18 @@ def get_previous_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value - 1) % 4)
     return next_draft_stage
 
-def initialise_pairing_dictionary(filename = 'pairing_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
-    global pairing_dictionary
+def initialise_input_dictionary(empty_input_dictionary, filename, hard_crash, encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
     path = get_path(filename)
-    with path.open(encoding="UTF-8") as f:
-        lines = f.read().splitlines()
+
+    try:
+        with path.open(encoding="UTF-8") as f:
+            lines = f.read().splitlines()
+    except:
+        if hard_crash:
+            raise SystemError("Missing file: {}".format(path))
+        else:
+            print("Warning: Missing file: {}".format(path))
+            return
 
     tmpLines = []
     for line in lines:
@@ -51,7 +63,14 @@ def initialise_pairing_dictionary(filename = 'pairing_matrix.txt', encoding = {'
     for matchup in matchups:
         tmpMatchup = []
         for element in matchup:
-            tmpMatchup.append(encoding[element])
+            try:
+                tmpMatchup.append(float(element))
+            except ValueError:
+                if element in encoding:
+                    tmpMatchup.append(encoding[element])
+                else:
+                    error_message = "File {} contains unknown element {}. Use number values, specify encoding or use default encoding: {}.".format(path, element, encoding)
+                    raise ValueError(error_message)
         tmpMatchups.append(tmpMatchup)
     matchups = tmpMatchups
 
@@ -62,8 +81,6 @@ def initialise_pairing_dictionary(filename = 'pairing_matrix.txt', encoding = {'
         if friend in enemies:
             raise ValueError("Player {} present on both teams. All player names must be unique.".format(friend))
 
-    pairing_dictionary = {}
-
     friendCounter = 0
     for friend in friends:
         row = {}
@@ -71,7 +88,7 @@ def initialise_pairing_dictionary(filename = 'pairing_matrix.txt', encoding = {'
         for enemy in enemies:
             row[enemy] = matchups[friendCounter][enemyCounter]
             enemyCounter += 1
-        pairing_dictionary[friend] = row
+        empty_input_dictionary[friend] = row
         friendCounter += 1
 
 def get_transposed_pairing_dictionary():
@@ -159,9 +176,9 @@ def get_path(filename):
 def read_dictionary(path):
     try:
         with path.open('r', encoding='utf-8') as data_file:    
-            print("Reading file {} ...".format(path))
+            print("   Reading file {} ...".format(path))
             dictionary = json.load(data_file)
-            print('    ...done.') 
+            print('       ...done.') 
 
         return dictionary
     except:
@@ -169,9 +186,9 @@ def read_dictionary(path):
 
 def write_dictionary(path, dictionary):
     with path.open('w', encoding='utf-8') as f:
-        print("Writing file {} ...".format(path))
+        print("   Writing file {} ...".format(path))
         json.dump(dictionary, f, ensure_ascii=False, indent=4)
-        print('    ...done.') 
+        print('       ...done.') 
     
 def get_empty_matrix(n, m):
     empty_matrix = { (i,j):None for i in range(n) for j in range(m)}
@@ -222,9 +239,9 @@ def get_arbitrary_dictionary_entry(dictionary):
     else:
         return None
 
-def get_pairing(friendly_player, enemy_player):
-    if friendly_player in pairing_dictionary:
-        row = pairing_dictionary[friendly_player]
+def get_value_from_input_dictionary(input_dictionary, friendly_player, enemy_player):
+    if friendly_player in input_dictionary:
+        row = input_dictionary[friendly_player]
     else:
         raise ValueError("Unknown player: {}".format(friendly_player))
 
@@ -233,4 +250,45 @@ def get_pairing(friendly_player, enemy_player):
     else:
         raise ValueError("Unknown player: {}".format(enemy_player))
 
-    return value, "{} vs {}".format(friendly_player, enemy_player)
+    return value
+
+def get_pairing_value(n, friendly_player, enemy_player, defender = None):
+    value = get_value_from_input_dictionary(pairing_dictionary, friendly_player, enemy_player)
+
+    if len(map_importance_dictionary) > 0 and defender != None:
+        if n == 8:
+            map_importance_multiplier = 1
+        elif n == 6:
+            map_importance_multiplier = 0.6
+        elif n == 4:
+            map_importance_multiplier = 0.2
+        else:
+            raise ValueError("Incorrect n: {}. Must be 4, 6 or 8.".format(n))
+
+        map_importance_entry = get_value_from_input_dictionary(map_importance_dictionary, friendly_player, enemy_player)
+        map_importance = map_importance_multiplier * map_importance_entry
+
+        if friendly_player == defender:
+            value = map_importance
+        elif enemy_player == defender:
+            value = -map_importance
+        else:
+            raise ValueError("Unknown defender: {}".format(defender))
+
+    return value        
+
+def get_pairing_string(n, friendly_player, enemy_player, defender = None):
+    value = get_pairing_value(n, friendly_player, enemy_player, defender)
+
+    friendly_player_string = friendly_player
+    enemy_player_string = enemy_player
+
+    if defender != None:
+        if friendly_player == defender:
+            friendly_player_string += " (D)"
+        elif enemy_player == defender:
+            enemy_player_string += " (D)"
+        else:
+            raise ValueError("Unknown defender: {}".format(defender))
+
+    return round(value, 2), "{} vs {}".format(friendly_player_string, enemy_player_string)

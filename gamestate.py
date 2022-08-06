@@ -11,21 +11,8 @@ class GameState:
         return "Friends: {}\nEnemies: {}".format(self.friendly_team_permutation.get_key(), self.enemy_team_permutation.get_key())
 
     def get_n(self):
-        friendly_n = len(self.friendly_team_permutation.remaining_players)
-        if self.friendly_team_permutation.defender != None:
-            friendly_n += 1
-        if self.friendly_team_permutation.attacker_A != None:
-            friendly_n += 1
-        if self.friendly_team_permutation.attacker_B != None:
-            friendly_n += 1
-        
-        enemy_n = len(self.enemy_team_permutation.remaining_players)
-        if self.friendly_team_permutation.defender != None:
-            enemy_n += 1
-        if self.friendly_team_permutation.attacker_A != None:
-            enemy_n += 1
-        if self.friendly_team_permutation.attacker_B != None:
-            enemy_n += 1
+        friendly_n = self.friendly_team_permutation.get_n()
+        enemy_n = self.enemy_team_permutation.get_n()
 
         if friendly_n != enemy_n:
             raise ValueError("Inconsistent number of players.")

@@ -23,7 +23,7 @@ restricted_attackers_count = 4 # Maximum number of attacker players considered b
 
 def run():
     utilities.friendly_team_name = friendly_team_name
-    utilities.enemy_team_name = input("Select enemy team by entering the name of a folder in ../Matches/:")
+    utilities.enemy_team_name = input("Select enemy team by entering the name of a folder in ../Matches:\n")
     utilities.show_friendly_strategy_suggestions = show_friendly_strategy_suggestions
     utilities.show_enemy_strategy_suggestions = show_enemy_strategy_suggestions
 

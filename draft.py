@@ -32,7 +32,7 @@ def play_draft():
         update_dictionaries(current_gamestate)
     
     if len(pairings) == 8:
-        print("\nDraft finished!\n")
+        print("\nDraft vs. {} finished!\n".format(utilities.enemy_team_name))
         print("Pairings:")
         for new_pairings in pairings:
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))

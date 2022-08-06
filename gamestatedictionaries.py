@@ -22,7 +22,7 @@ for name in global_gamestate_dictionary_names:
     dictionaries[name] = {}
 
 def initialise_dictionaries(read, write):
-    if read and False: #
+    if read:
         read_dictionaries()
     else:
         initial_game_state = get_initial_game_state()

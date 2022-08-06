@@ -1,6 +1,7 @@
-from argparse import ArgumentError
 import itertools # standard libraries
+from argparse import ArgumentError
 from copy import deepcopy
+import re
 
 import utilities # local source
 
@@ -95,7 +96,33 @@ class TeamPermutation:
 
 def get_team_permutation_from_key(key):
     role_string, remaining_players_string = key.split("{Remaining players: ", 1)
-    raise NotImplementedError()
+
+    remaining_players_string = remaining_players_string.strip('}')
+    remaining_players = remaining_players_string.split(', ')
+
+    defender = None
+    attacker_A = None
+    attacker_B = None
+    discarded_attacker = None
+
+    groups = re.findall(r'\{.*?\}', role_string)
+    for group in groups:
+        role, player = group.split(': ')
+        role = role.strip('{')
+        player = player.strip('}')
+
+        if role == "Defender":
+            defender = player
+        elif role == "Attacker A":
+            attacker_A = player
+        elif role == "Attacker B":
+            attacker_B = player
+        elif role == "Discarded attacker":
+            discarded_attacker = player
+        else:
+            raise ValueError("Unknown role {}.".format(role))
+
+    return(TeamPermutation(remaining_players, defender, attacker_A, attacker_B, discarded_attacker))
 
 def get_team_permutation(draft_stage, players):
     players_clone = players.copy()

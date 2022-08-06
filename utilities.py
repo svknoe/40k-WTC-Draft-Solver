@@ -40,6 +40,8 @@ def initialise_input_dictionary(empty_input_dictionary, filename, hard_crash, en
             print("Warning: Missing file: {}".format(path))
             return
 
+    lines = [line for line in lines if line != ""]
+
     tmpLines = []
     for line in lines:
         if line.count('|') > 0:

@@ -22,9 +22,11 @@ for name in global_gamestate_dictionary_names:
     dictionaries[name] = {}
 
 def initialise_dictionaries(read, write):
+    dictionaries_loaded_from_files = False
     if read:
-        read_dictionaries()
-    else:
+        dictionaries_loaded_from_files = read_dictionaries()
+
+    if not dictionaries_loaded_from_files:
         initial_game_state = get_initial_game_state()
         seed_dictionary = {'seed' : initial_game_state}
         perform_gamestate_tree_extension(seed_dictionary)
@@ -36,7 +38,13 @@ def read_dictionaries():
     for name in global_gamestate_dictionary_names:
         path = utilities.get_path(name + ".json")
         key_list = utilities.read_dictionary(path)
-        dictionaries[name] = { key : gamestate.get_gamestate_from_key(key) for key in key_list }
+
+        if (key_list != None and len(key_list) > 0):
+            dictionaries[name] = { key : gamestate.get_gamestate_from_key(key) for key in key_list }
+        else:
+            return False
+
+    return True
 
 def write_dictionaries():
     for name in global_gamestate_dictionary_names:

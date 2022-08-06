@@ -22,7 +22,7 @@ def get_previous_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value - 1) % 4)
     return next_draft_stage
 
-def initialise_pairing_dictionary(filename = 'input_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
+def initialise_pairing_dictionary(filename = 'pairing_matrix.txt', encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
     global pairing_dictionary
     path = get_path(filename)
     with path.open(encoding="UTF-8") as f:
@@ -55,13 +55,20 @@ def initialise_pairing_dictionary(filename = 'input_matrix.txt', encoding = {'--
         tmpMatchups.append(tmpMatchup)
     matchups = tmpMatchups
 
+    friends = lines[0]
+    enemies = lines[1]
+
+    for friend in friends:
+        if friend in enemies:
+            raise ValueError("Player {} present on both teams. All player names must be unique.".format(friend))
+
     pairing_dictionary = {}
 
     friendCounter = 0
-    for friend in lines[0]:
+    for friend in friends:
         row = {}
         enemyCounter = 0
-        for enemy in lines[1]:
+        for enemy in enemies:
             row[enemy] = matchups[friendCounter][enemyCounter]
             enemyCounter += 1
         pairing_dictionary[friend] = row
@@ -196,16 +203,10 @@ def get_strategy_dictionary_name(n, draft_stage):
     return get_dictionary_name(n, draft_stage, "strategy")
 
 def get_dictionary_name(n, draft_stage, dictionary_type):
-    if n == 4:
-        num = "four"
-    elif n == 6:
-        num = "six"
-    elif n == 8:
-        num = "eight"
-    else:
+    if not (n == 4 or n == 6 or n == 8):
         raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
 
-    dictionary_name = num + "_player_" + draft_stage.name + "_" + dictionary_type + "_dictionary"
+    dictionary_name =  "{}_{}_player_{}_dictionary".format(dictionary_type, n, draft_stage.name)
 
     return dictionary_name
 

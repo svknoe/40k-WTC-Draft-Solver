@@ -13,7 +13,7 @@ show_enemy_strategy_suggestions = True
 
 # Configuration
 read = True
-write = False
+write = True
 restrict_attackers = True
 restricted_attackers_count = 4 # Maximum number of attacker players considered by each team in each select attackers step.
 

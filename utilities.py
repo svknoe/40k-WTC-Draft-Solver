@@ -266,9 +266,9 @@ def get_pairing_value(n, friendly_player, enemy_player, defender = None):
 
     if len(map_importance_dictionary) > 0 and defender != None:
         if n == 8:
-            map_importance_multiplier = 0.8
+            map_importance_multiplier = 1
         elif n == 6:
-            map_importance_multiplier = 0.5
+            map_importance_multiplier = 0.6
         elif n == 4:
             map_importance_multiplier = 0.2
         else:

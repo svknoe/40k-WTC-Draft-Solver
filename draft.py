@@ -139,7 +139,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     def prompt_team_selection(team_name, team_options, suggested_selection):
         user_selection = None
 
-        while (user_selection == None) or ((not user_selection.upper() in (option.upper() for option in team_options)) and (user_selection != "")):
+        while (user_selection == None) or ((not user_selection.upper() in (option.upper() for option in team_options)) and (user_selection != "")): 
             user_selection = input("Provide {} selection (press 'enter' for suggested default, write 'quit()' to abort draft'):\n".format(team_name))
 
             if user_selection == "quit()":
@@ -159,7 +159,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
 
         print(" - Selection made: {}".format(user_selection))
 
-        return user_selection
+        return user_selection # TODO: Convert user selection to correct case.
 
     def get_next_gamestate():
         next_gamestate_draft_stage = next_draft_stage

@@ -153,7 +153,14 @@ def get_game_overview_from_equilibria(game, equilibria):
     for equilibrium in equilibria:
         row_strategy = equilibrium[0]
         column_strategy = equilibrium[1]
-        value = game[row_strategy, column_strategy][0]
+
+        try:
+            value = game[row_strategy, column_strategy][0]
+        except:
+            print(game)
+            print(row_strategy)
+            print(column_strategy)
+            raise SystemError()
         return [row_strategy, column_strategy, value]
 
     return None
@@ -259,9 +266,9 @@ def get_pairing_value(n, friendly_player, enemy_player, defender = None):
 
     if len(map_importance_dictionary) > 0 and defender != None:
         if n == 8:
-            map_importance_multiplier = 1
+            map_importance_multiplier = 0.8
         elif n == 6:
-            map_importance_multiplier = 0.6
+            map_importance_multiplier = 0.5
         elif n == 4:
             map_importance_multiplier = 0.2
         else:

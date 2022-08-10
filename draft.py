@@ -60,7 +60,7 @@ def play_draft():
         else:
             winner_message = "Large win for {}".format(winner)
 
-        print("\n" + winner_message)
+        print("\n - " + winner_message + "!")
     else:
         print("Draft aborted.")
 

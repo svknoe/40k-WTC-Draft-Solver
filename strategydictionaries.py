@@ -95,7 +95,7 @@ def get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategie
             print("    - {}%: ".format(10 * percentage), counter, "/", len(list(gamestate_dictionary_to_solve)))
             previous_time = new_time
         elif new_time - previous_time > 30:
-            print("    - {}%: ".format(round(100 * counter / len(gamestate_dictionary_to_solve), 0)), counter, "/", len(list(gamestate_dictionary_to_solve)))
+            print("    - {}%: ".format(round(100 * counter / len(gamestate_dictionary_to_solve), 1)), counter, "/", len(list(gamestate_dictionary_to_solve)))
             previous_time = new_time
         
         if draft_stage_to_solve == utilities.DraftStage.select_defender:

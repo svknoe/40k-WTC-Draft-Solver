@@ -93,8 +93,10 @@ def get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategie
         if (new_percentage > percentage):
             percentage = new_percentage
             print("    - {}%: ".format(10 * percentage), counter, "/", len(list(gamestate_dictionary_to_solve)))
+            previous_time = new_time
         elif new_time - previous_time > 30:
             print("    - {}%: ".format(10 * percentage), counter, "/", len(list(gamestate_dictionary_to_solve)))
+            previous_time = new_time
         
         if draft_stage_to_solve == utilities.DraftStage.select_defender:
             strategy = games.select_defender(n, gamestate_to_solve, lower_level_strategies)
@@ -106,7 +108,6 @@ def get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategie
             raise ValueError("Unsolvavle draft stage: {}.".format(draft_stage_to_solve))       
 
         draft_stage_strategies[gamestate_to_solve.get_key()] = strategy
-        previous_time = new_time
 
     return draft_stage_strategies
 

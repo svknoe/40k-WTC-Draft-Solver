@@ -33,7 +33,7 @@ select_attackers_cache[8] = select_attackers_cache_8
 def select_attackers(n, selected_defender_gamestate, discard_attacker_strategies):
     gamestate_matrix = gamestate.get_next_gamestate_matrix(selected_defender_gamestate)        
     friendly_team_options = [[row[0].friendly_team_permutation.attacker_A, row[0].friendly_team_permutation.attacker_B] for row in gamestate_matrix]
-    enemy_team_options = [[row[0].enemy_team_permutation.attacker_A, row[0].enemy_team_permutation.attacker_B] for row in gamestate_matrix]
+    enemy_team_options = [[gamestate.enemy_team_permutation.attacker_A, gamestate.enemy_team_permutation.attacker_B] for gamestate in gamestate_matrix[0]] # TODO ?
     game_array = get_game_array(gamestate_matrix, discard_attacker_strategies)
     select_attackers_strategy = utilities.get_game_strategy(select_attackers_cache[n], game_array, friendly_team_options, enemy_team_options)
     

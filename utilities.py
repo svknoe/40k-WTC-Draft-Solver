@@ -280,7 +280,7 @@ def get_pairing_value(n, friendly_player, enemy_player, defender = None):
         if friendly_player == defender:
             value += map_importance
         elif enemy_player == defender:
-            value -= -map_importance
+            value -= map_importance
         else:
             raise ValueError("Unknown defender: {}".format(defender))
 

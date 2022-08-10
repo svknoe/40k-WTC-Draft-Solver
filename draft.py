@@ -159,27 +159,32 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     def prompt_team_selection(team_name, team_options, suggested_selection):
         user_selection = None
 
-        while (user_selection == None) or ((not user_selection.upper() in (option.upper() for option in team_options)) and (user_selection != "")): 
+        while (user_selection == None) or (not user_selection in team_options): 
             user_selection = input("Provide {} selection (press 'enter' for suggested default, write 'quit()' to abort draft'):\n".format(team_name))
 
             if user_selection == "quit()":
                 return None
-
-            if ("&" in user_selection and not user_selection in team_options):
-                split_selection = user_selection.split()
-                user_selection = split_selection[2] + " & " + split_selection[0] # TODO whitespace management.
-
-            if (user_selection == ""):
+            elif (user_selection == ""):
                 if type(suggested_selection) == str:
                     user_selection = suggested_selection
                 elif type(suggested_selection) == list:
                     user_selection = suggested_selection[0] + " & " + suggested_selection[1]
                 else:
                     raise ValueError("Incorrect user selection type (must be str or list): ", type(user_selection))
+            else:
+                if ("&" in user_selection and not user_selection in team_options):
+                    split_selection = user_selection.split()
+                    user_selection = split_selection[2] + " & " + split_selection[0]
+
+                # Convert user selection to correct case.
+                for option in team_options: 
+                    if option.upper() == user_selection.upper():
+                        user_selection = option
+                        break
 
         print(" - Selection made: {}".format(user_selection))
 
-        return user_selection # TODO: Convert user selection to correct case.
+        return user_selection 
 
     def get_next_gamestate():
         next_gamestate_draft_stage = next_draft_stage

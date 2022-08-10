@@ -36,11 +36,31 @@ def play_draft():
         print("Pairings:")
         for new_pairings in pairings:
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))
-        print("\nTotal: {}".format(round(sum([pairing[0] for pairing in pairings]))))
+        result_sum = sum([pairing[0] for pairing in pairings])
+        print("\nTotal: {}".format(round(result_sum, 2)))
         initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_defender)
         initial_strategy_dictionary = strategydictionaries.dictionaries[initial_strategy_dictionary_name]
         initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dictionary)
-        print("Expected result: {}".format(round(initial_strategy[2], 2)))
+        expected_result = initial_strategy[2]
+        print("Expected result: {}".format(round(expected_result, 2)))
+        difference = result_sum - expected_result
+        print("Difference: {}".format(round(difference, 2)))
+        
+        if difference > 0:
+            winner = utilities.friendly_team_name
+        else:
+            winner = utilities.enemy_team_name
+
+        if abs(difference) <= 1:
+            winner_message = "Draw"
+        elif abs(difference) <= 4:
+            winner_message = "Small win for {}".format(winner)
+        elif abs(difference) <= 8:
+            winner_message = "Win for {}".format(winner)
+        else:
+            winner_message = "Large win for {}".format(winner)
+
+        print("\n" + winner_message)
     else:
         print("Draft aborted.")
 

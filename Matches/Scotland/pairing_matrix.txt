@@ -6,5 +6,5 @@ Sisters|BA|IK|AdMech|Tyranids|CK|Drukhari|CWE
 0	0	0	++	-	+	+	+
 0	0	0	+	-	0	0	+
 0	-	-	0	--	-	0	-
--	0	+	+	-	+	+	0
+0	0	+	+	-	+	+	0
 0	+	0	0	0	0	+	0

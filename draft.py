@@ -253,7 +253,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
 
     enemy_team_selection = prompt_team_selection(utilities.enemy_team_name, enemy_team_options, suggested_enemy_selection)
     if enemy_team_selection == None:
-        return teampermutation.get_none_team_permutation()
+        return None, []
 
     next_gamestate, new_pairings = get_next_gamestate()
 

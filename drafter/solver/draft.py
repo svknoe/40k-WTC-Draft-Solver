@@ -24,9 +24,14 @@ def play_draft():
 
     while True:
         next_draft_stage = draftstage.get_next_draft_stage(current_gamestate.draft_stage)
+        
+        display_draft_stage = next_draft_stage
+        if (settings.invert_discard_attackers and display_draft_stage == DraftStage.discard_attacker):
+            display_draft_stage = "select enemy attacker"
+
         n = current_gamestate.get_n()
         print(("\n----------------------------------------------------------------------------------"
-            + "-------------------\nDraft stage: {}-player {}\n").format(n, next_draft_stage))
+            + "-------------------\nDraft stage: {}-player {}\n").format(n, display_draft_stage))
         print("Current gamestate:\n{}\n".format(current_gamestate.get_key()))
         team_strategies = get_team_strategies(current_gamestate)
         current_gamestate, new_pairings = prompt_next_gamestate(current_gamestate, team_strategies, next_draft_stage)
@@ -143,7 +148,10 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
             option_combinations = itertools.combinations(options, 2)
             options = ["{} & {}".format(option[0], option[1]) for option in option_combinations]
 
-        print("   {} options:\n    - {}\n".format(team_name, options_string))
+        if settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
+            print("   {} options: {} vs\n    - {}\n".format(team_name, team_permutation.defender, options_string))
+        else:
+            print("   {} options:\n    - {}\n".format(team_name, options_string))
 
         if (show_suggestions):
             print("   Suggested strategy:")
@@ -177,12 +185,12 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                 else:
                     roll -= selection[1]
 
-        # Hacky fix to select opposing attacker rather than discard opposing attacker.
-        if next_draft_stage == DraftStage.discard_attacker:
-            if suggested_selection == opponent_team_permutation.attacker_A:
-                suggested_selection = opponent_team_permutation.attacker_B
-            elif suggested_selection == opponent_team_permutation.attacker_B:
-                suggested_selection = opponent_team_permutation.attacker_A
+        if settings.invert_discard_attackers:
+            if next_draft_stage == DraftStage.discard_attacker:
+                if suggested_selection == opponent_team_permutation.attacker_A:
+                    suggested_selection = opponent_team_permutation.attacker_B
+                elif suggested_selection == opponent_team_permutation.attacker_B:
+                    suggested_selection = opponent_team_permutation.attacker_A
 
         if (show_suggestions):
             print("\n    --- Suggested {} selection: {} ---\n".format(team_name, suggested_selection))
@@ -221,12 +229,12 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
 
         print(" - Selection made: {}".format(user_selection))
 
-        # Hacky fix to select opposing attacker rather than discard opposing attacker.
-        if next_draft_stage == DraftStage.discard_attacker:
-            if user_selection == team_options[0]:
-                user_selection = team_options[1]
-            elif user_selection == team_options[1]:
-                user_selection = team_options[0]
+        if settings.invert_discard_attackers:
+            if next_draft_stage == DraftStage.discard_attacker:
+                if user_selection == team_options[0]:
+                    user_selection = team_options[1]
+                elif user_selection == team_options[1]:
+                    user_selection = team_options[0]
 
         return user_selection
 

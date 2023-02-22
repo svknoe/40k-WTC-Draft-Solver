@@ -1,4 +1,4 @@
-import drafter.data.setenemyteam as setenemyteam
+import drafter.data.setenemyteam as setenemyteam  # local source
 import drafter.data.initialisedictionaries as initialisedictionaries
 import drafter.solver.draftloop as draftloop
 

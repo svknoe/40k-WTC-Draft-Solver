@@ -5,6 +5,7 @@ from copy import deepcopy
 import drafter.common.utilities as utilities  # local source
 import drafter.common.teampermutation as teampermutation
 from drafter.common.gamestate import GameState
+import drafter.common.draftstage as draftstage
 from drafter.common.draftstage import DraftStage
 import drafter.data.settings as settings
 import drafter.data.matchinfo as matchinfo
@@ -18,7 +19,7 @@ def play_draft():
     current_gamestate = gamestatedictionaries.get_initial_game_state()
 
     while True:
-        next_draft_stage = utilities.get_next_draft_stage(current_gamestate.draft_stage)
+        next_draft_stage = draftstage.get_next_draft_stage(current_gamestate.draft_stage)
         n = current_gamestate.get_n()
         print(("\n----------------------------------------------------------------------------------"
             + "-------------------\nDraft stage: {}-player {}\n").format(n, next_draft_stage))
@@ -240,7 +241,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                 pairings.append(utilities.get_pairing_string(n, f_discarded_attacker, e_discarded_attacker))
                 pairings.append(utilities.get_pairing_string(n, f_remaining_players[0], e_remaining_players[0]))
 
-            next_gamestate_draft_stage = utilities.get_next_draft_stage(next_gamestate_draft_stage)
+            next_gamestate_draft_stage = draftstage.get_next_draft_stage(next_gamestate_draft_stage)
 
         else:
             raise ValueError("Cannot set gamestate stage {}".format(next_gamestate_draft_stage))

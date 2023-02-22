@@ -6,12 +6,13 @@ import drafter.common.utilities as utilities  # local source
 import drafter.common.teampermutation as teampermutation
 from drafter.common.gamestate import GameState
 import drafter.data.settings as settings
+import drafter.data.matchinfo as matchinfo
 import drafter.solver.strategydictionaries as strategydictionaries
 import drafter.solver.gamestatedictionaries as gamestatedictionaries
 
 
 def play_draft():
-    print("\nPlaying draft against {}!\n".format(utilities.enemy_team_name))
+    print("\nPlaying draft against {}!\n".format(matchinfo.enemy_team_name))
     pairings = []
     current_gamestate = gamestatedictionaries.get_initial_game_state()
 
@@ -33,7 +34,7 @@ def play_draft():
         update_dictionaries(current_gamestate)
 
     if len(pairings) == 8:
-        print("\nDraft vs. {} finished!\n".format(utilities.enemy_team_name))
+        print("\nDraft vs. {} finished!\n".format(matchinfo.enemy_team_name))
         print("Pairings:")
         for new_pairings in pairings:
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))
@@ -48,9 +49,9 @@ def play_draft():
         print("Difference: {}".format(round(difference, 2)))
 
         if difference > 0:
-            winner = utilities.friendly_team_name
+            winner = settings.friendly_team_name
         else:
-            winner = utilities.enemy_team_name
+            winner = matchinfo.enemy_team_name
 
         if abs(difference) <= 1:
             winner_message = "Draw"
@@ -256,7 +257,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     friendly_team_options, suggested_friendly_selection = print_team_options(settings.friendly_team_name,
         friendly_team_permutation, friendly_team_strategy, enemy_team_permutation, settings.show_friendly_strategy_suggestions)
 
-    enemy_team_options, suggested_enemy_selection = print_team_options(settings.enemy_team_name,
+    enemy_team_options, suggested_enemy_selection = print_team_options(matchinfo.enemy_team_name,
         enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, settings.show_enemy_strategy_suggestions)
 
     friendly_team_selection = prompt_team_selection(settings.friendly_team_name, friendly_team_options, suggested_friendly_selection)
@@ -264,7 +265,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     if friendly_team_selection is None:
         return None, []
 
-    enemy_team_selection = prompt_team_selection(settings.enemy_team_name, enemy_team_options, suggested_enemy_selection)
+    enemy_team_selection = prompt_team_selection(matchinfo.enemy_team_name, enemy_team_options, suggested_enemy_selection)
     if enemy_team_selection is None:
         return None, []
 

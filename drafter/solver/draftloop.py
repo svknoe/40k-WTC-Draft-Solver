@@ -1,6 +1,6 @@
 import time  # standard libraries
 
-import drafter.solver.draft as draft
+import drafter.solver.draft as draft  # local source
 
 
 def play():

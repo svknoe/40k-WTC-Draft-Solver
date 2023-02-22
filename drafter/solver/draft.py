@@ -1,4 +1,4 @@
-from random import random
+from random import random  # standard libraries
 import itertools
 from copy import deepcopy
 

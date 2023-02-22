@@ -1,0 +1,3 @@
+Go back option
+Choose attacker rather than discard
+Tolerate 'A & B' and 'B & A' answers

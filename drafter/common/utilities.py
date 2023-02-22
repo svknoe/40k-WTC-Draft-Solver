@@ -5,19 +5,6 @@ import nashpy  # 3rd party packages
 
 import drafter.data.matchinfo as matchinfo  # local source
 
-class DraftStage(Enum):
-    none, select_defender, select_attackers, discard_attacker = range(4)
-
-
-def get_next_draft_stage(draft_stage):
-    next_draft_stage = DraftStage((draft_stage.value + 1) % 4)
-    return next_draft_stage
-
-
-def get_previous_draft_stage(draft_stage):
-    next_draft_stage = DraftStage((draft_stage.value - 1) % 4)
-    return next_draft_stage
-
 
 def get_transposed_pairing_dictionary():
     friends = [friend for friend in matchinfo.pairing_dictionary]

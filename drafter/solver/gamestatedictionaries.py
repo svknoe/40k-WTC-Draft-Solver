@@ -2,21 +2,23 @@ import drafter.common.utilities as utilities  # local source
 import drafter.common.gamestate as gamestate
 from drafter.common.gamestate import GameState
 from drafter.common.teampermutation import TeamPermutation
+from drafter.common.draftstage import DraftStage
+import drafter.common.draftstage as draftstage
 import drafter.data.matchinfo as matchinfo
 import drafter.data.readwrite as readwrite
 
 global_gamestate_dictionary_names = [
-    utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.none),
-    utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.select_defender),
-    utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.select_attackers),
-    utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.discard_attacker),
-    utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.none),
-    utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.select_defender),
-    utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.select_attackers),
-    utilities.get_gamestate_dictionary_name(6, utilities.DraftStage.discard_attacker),
-    utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.none),
-    utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_defender),
-    utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_attackers)]
+    utilities.get_gamestate_dictionary_name(8, DraftStage.none),
+    utilities.get_gamestate_dictionary_name(8, DraftStage.select_defender),
+    utilities.get_gamestate_dictionary_name(8, DraftStage.select_attackers),
+    utilities.get_gamestate_dictionary_name(8, DraftStage.discard_attacker),
+    utilities.get_gamestate_dictionary_name(6, DraftStage.none),
+    utilities.get_gamestate_dictionary_name(6, DraftStage.select_defender),
+    utilities.get_gamestate_dictionary_name(6, DraftStage.select_attackers),
+    utilities.get_gamestate_dictionary_name(6, DraftStage.discard_attacker),
+    utilities.get_gamestate_dictionary_name(4, DraftStage.none),
+    utilities.get_gamestate_dictionary_name(4, DraftStage.select_defender),
+    utilities.get_gamestate_dictionary_name(4, DraftStage.select_attackers)]
 
 dictionaries = {}
 for name in global_gamestate_dictionary_names:
@@ -60,7 +62,7 @@ def write_dictionaries():
 def get_initial_game_state():
     friends = [friend for friend in matchinfo.pairing_dictionary]
     enemies = [enemy for enemy in matchinfo.pairing_dictionary[friends[0]]]
-    initial_game_state = GameState(utilities.DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
+    initial_game_state = GameState(DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
 
     return initial_game_state
 
@@ -105,10 +107,10 @@ def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_
     if (new_gamestate_dictionaries is not None):
         new_gamestate_dictionaries.append(added_subdictionary)
 
-    next_draft_stage = utilities.get_next_draft_stage(current_draft_stage)
+    next_draft_stage = draftstage.get_next_draft_stage(current_draft_stage)
     next_n = current_n
 
-    if (next_n == 4 and next_draft_stage == utilities.DraftStage.discard_attacker):
+    if (next_n == 4 and next_draft_stage == DraftStage.discard_attacker):
         return new_gamestate_dictionaries
 
     next_global_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(next_n, next_draft_stage)
@@ -153,12 +155,12 @@ def get_previous_gamestate_dictionary(gamestate_dictionary):
     n = arbitrary_gamestate.get_n()
     draft_stage = arbitrary_gamestate.draft_stage
 
-    if n == 8 and draft_stage == utilities.DraftStage.none:
+    if n == 8 and draft_stage == DraftStage.none:
         return None
 
-    previous_draft_stage = utilities.get_previous_draft_stage(draft_stage)
+    previous_draft_stage = draftstage.get_previous_draft_stage(draft_stage)
 
-    if (previous_draft_stage == utilities.DraftStage.discard_attacker):
+    if (previous_draft_stage == DraftStage.discard_attacker):
         n += 2
 
         if n > 10:

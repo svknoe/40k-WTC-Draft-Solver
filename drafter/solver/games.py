@@ -4,6 +4,7 @@ import drafter.common.utilities as utilities  # local source
 import drafter.common.gamestate as gamestate
 from drafter.common.gamestate import GameState
 from drafter.common.teampermutation import TeamPermutation
+from drafter.common.draftstage import DraftStage
 
 select_defender_cache = {}
 select_defender_cache_4 = {}
@@ -87,7 +88,7 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
         enemy_team_permutation = TeamPermutation(
             selected_attackers_gamestate.enemy_team_permutation.remaining_players + [extra_enemy])
 
-        game_permutation = GameState(utilities.DraftStage.none, friendly_team_permutation, enemy_team_permutation)
+        game_permutation = GameState(DraftStage.none, friendly_team_permutation, enemy_team_permutation)
         game_key = game_permutation.get_key()
 
         return game_key

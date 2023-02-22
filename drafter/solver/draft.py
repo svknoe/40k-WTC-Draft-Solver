@@ -5,6 +5,7 @@ from copy import deepcopy
 import drafter.common.utilities as utilities  # local source
 import drafter.common.teampermutation as teampermutation
 from drafter.common.gamestate import GameState
+from drafter.common.draftstage import DraftStage
 import drafter.data.settings as settings
 import drafter.data.matchinfo as matchinfo
 import drafter.solver.strategydictionaries as strategydictionaries
@@ -40,7 +41,7 @@ def play_draft():
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))
         result_sum = sum([pairing[0] for pairing in pairings])
         print("\nTotal: {}".format(round(result_sum, 2)))
-        initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_defender)
+        initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(8, DraftStage.select_defender)
         initial_strategy_dictionary = strategydictionaries.dictionaries[initial_strategy_dictionary_name]
         initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dictionary)
         expected_result = initial_strategy[2]
@@ -92,7 +93,7 @@ def update_dictionaries(seed_gamestate):
             gamestate_dictionary_draft_stage = utilities.get_arbitrary_dictionary_entry(
                 gamestate_dictionary).draft_stage
 
-            if gamestate_dictionary_draft_stage != utilities.DraftStage.discard_attacker:
+            if gamestate_dictionary_draft_stage != DraftStage.discard_attacker:
                 gamestate_dictionaries_to_process.append(gamestate_dictionary)
 
         gamestate_dictionaries_to_process = list(reversed(gamestate_dictionaries_to_process))
@@ -110,18 +111,18 @@ def update_dictionaries(seed_gamestate):
 def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stage):
     def print_team_options(team_name, team_permutation, team_strategy, opponent_team_permutation, show_suggestions):
         print("")
-        if next_draft_stage == utilities.DraftStage.select_defender:
+        if next_draft_stage == DraftStage.select_defender:
             options = team_permutation.remaining_players
-        elif next_draft_stage == utilities.DraftStage.select_attackers:
+        elif next_draft_stage == DraftStage.select_attackers:
             options = team_permutation.remaining_players
-        elif next_draft_stage == utilities.DraftStage.discard_attacker:
+        elif next_draft_stage == DraftStage.discard_attacker:
             options = [opponent_team_permutation.attacker_A, opponent_team_permutation.attacker_B]
         else:
             raise ValueError("Cannot solve draft stage {}".format(next_draft_stage))
 
         options_string = utilities.list_to_string(options)
 
-        if next_draft_stage == utilities.DraftStage.select_attackers:
+        if next_draft_stage == DraftStage.select_attackers:
             options_string += "\n   Choose two. Format: 'Alice & Bob'"
             option_combinations = itertools.combinations(options, 2)
             options = ["{} & {}".format(option[0], option[1]) for option in option_combinations]
@@ -202,18 +203,18 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
         next_enemy_team_permutation = deepcopy(enemy_team_permutation)
         pairings = []
 
-        if next_gamestate_draft_stage == utilities.DraftStage.select_defender:
+        if next_gamestate_draft_stage == DraftStage.select_defender:
             next_friendly_team_permutation.select_defender(friendly_team_selection)
             next_enemy_team_permutation.select_defender(enemy_team_selection)
 
-        elif next_gamestate_draft_stage == utilities.DraftStage.select_attackers:
+        elif next_gamestate_draft_stage == DraftStage.select_attackers:
             f_attacker_A, f_attacker_B = friendly_team_selection.split(" & ")
             next_friendly_team_permutation.select_attackers(f_attacker_A, f_attacker_B)
 
             e_attacker_A, e_attacker_B = enemy_team_selection.split(" & ")
             next_enemy_team_permutation.select_attackers(e_attacker_A, e_attacker_B)
 
-        elif next_gamestate_draft_stage == utilities.DraftStage.discard_attacker:
+        elif next_gamestate_draft_stage == DraftStage.discard_attacker:
             next_friendly_team_permutation.select_discarded_attacker(enemy_team_selection)
             next_friendly_team_permutation = teampermutation.get_none_team_permutation(next_friendly_team_permutation)
 

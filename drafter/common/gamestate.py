@@ -1,6 +1,6 @@
 import drafter.common.utilities as utilities  # local source
 import drafter.common.teampermutation as teampermutation
-
+import drafter.common.draftstage as draftstage
 
 class GameState:
     def __init__(self, draft_stage, friendly_team_permutation, enemy_team_permutation):
@@ -29,7 +29,7 @@ class GameState:
     # Returns the name of the draft iteration that follows this gamestate.
     def get_strategy_dictionary_name(self):
         n = self.get_n()
-        draft_stage_to_solve = utilities.get_next_draft_stage(self.draft_stage)
+        draft_stage_to_solve = draftstage.get_next_draft_stage(self.draft_stage)
         strategy_dictionary_name = utilities.get_strategy_dictionary_name(n, draft_stage_to_solve)
         return strategy_dictionary_name
 
@@ -46,7 +46,7 @@ def get_next_gamestates(game_permutation):
 
 
 def get_next_gamestate_matrix(gamestate):
-    next_draft_stage = utilities.get_next_draft_stage(gamestate.draft_stage)
+    next_draft_stage = draftstage.get_next_draft_stage(gamestate.draft_stage)
     next_friendly_team_permutations = teampermutation.get_team_permutations_for_stage(
         next_draft_stage, gamestate.friendly_team_permutation, gamestate.enemy_team_permutation)
 

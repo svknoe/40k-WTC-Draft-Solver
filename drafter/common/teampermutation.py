@@ -4,6 +4,7 @@ from copy import deepcopy
 import re
 
 import drafter.common.utilities as utilities  # local source
+from drafter.common.draftstage import DraftStage
 import drafter.data.matchinfo as matchinfo
 
 restrict_attackers_k = None
@@ -48,13 +49,13 @@ class TeamPermutation:
 
     def get_draft_stage(self):
         if self.discarded_attacker is not None:
-            return utilities.DraftStage.discard_attacker
+            return DraftStage.discard_attacker
         elif self.attacker_A is not None:
-            return utilities.DraftStage.select_attackers
+            return DraftStage.select_attackers
         elif self.defender is not None:
-            return utilities.DraftStage.select_defender
+            return DraftStage.select_defender
         else:
-            return utilities.DraftStage.none
+            return DraftStage.none
 
     def get_n(self):
         n = len(self.remaining_players)
@@ -202,13 +203,13 @@ def get_team_permutations(draft_stage, n, team_players):
 
 
 def get_team_permutations_for_stage(draft_stage, parent_team_permutation, opposing_parent_team_permutation):
-    if (draft_stage == utilities.DraftStage.none):
+    if (draft_stage == DraftStage.none):
         return [get_none_team_permutation(parent_team_permutation)]
-    elif (draft_stage == utilities.DraftStage.select_defender):
+    elif (draft_stage == DraftStage.select_defender):
         return get_defender_team_permutations(parent_team_permutation)
-    elif (draft_stage == utilities.DraftStage.select_attackers):
+    elif (draft_stage == DraftStage.select_attackers):
         return get_attackers_team_permutations(parent_team_permutation, opposing_parent_team_permutation)
-    elif (draft_stage == utilities.DraftStage.discard_attacker):
+    elif (draft_stage == DraftStage.discard_attacker):
         return get_discard_team_permutations(parent_team_permutation)
     else:
         raise ValueError("{} is an unknown draft stage.".format(draft_stage))

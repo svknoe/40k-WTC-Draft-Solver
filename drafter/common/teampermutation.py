@@ -3,7 +3,7 @@ from argparse import ArgumentError
 from copy import deepcopy
 import re
 
-import utilities # local source
+import drafter.common.utilities as utilities # local source
 
 restrict_attackers_k = None
 regular_pairing_dictionary = None

@@ -1,10 +1,10 @@
 import time # standard libraries
 
-import utilities # local source
-import strategydictionaries
-import gamestatedictionaries
-import teampermutation
-import draft
+import drafter.common.utilities as utilities  # local source
+import drafter.common.teampermutation as teampermutation
+import drafter.solver.strategydictionaries as strategydictionaries
+import drafter.solver.gamestatedictionaries as gamestatedictionaries
+import drafter.solver.draft as draft
 
 # Settings
 friendly_team_name = "Norway"
@@ -23,7 +23,7 @@ restricted_attackers_count = 4 # Maximum number of attacker players considered b
 
 def run():
     utilities.friendly_team_name = friendly_team_name
-    utilities.enemy_team_name = input("Select enemy team by entering the name of a folder in ../Matches:\n")
+    utilities.enemy_team_name = input("Select enemy team by entering the name of a folder in ..\\drafter\\resources\\matches:\n")
     utilities.show_friendly_strategy_suggestions = show_friendly_strategy_suggestions
     utilities.show_enemy_strategy_suggestions = show_enemy_strategy_suggestions
 

@@ -174,11 +174,15 @@ def print_overview(game_overview, roundTo = 3):
     print("Value: ", round_value)
 
 def get_path(filename):
+    drafter_folder = Path(__file__).parent.parent
+    print("PARENT:")
+    print(drafter_folder)
+
     if enemy_team_name == None:
-        path = Path(__file__).parent / (filename)
+        path = drafter_folder / (filename)
     else:
-        subfolder = "Matches/" + enemy_team_name
-        path = Path(__file__).parent / (subfolder + "/" + filename)
+        subfolder = "resources/matches/" + enemy_team_name
+        path = drafter_folder / (subfolder + "/" + filename)
 
     return path
 

@@ -1,0 +1,357 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"stra",
+				"strategydictionaries"
+			],
+			[
+				"games",
+				"gamestates"
+			],
+			[
+				"high",
+				"higher_level_strategy_dictionary"
+			],
+			[
+				"game",
+				"gamestate"
+			],
+			[
+				"previ",
+				"previous_draft_stage"
+			],
+			[
+				"strategy",
+				"strategy_dictionary_descriptor"
+			],
+			[
+				"st",
+				"strategy_dictionary"
+			],
+			[
+				"dra",
+				"draft_stage_to_solve"
+			],
+			[
+				"friend",
+				"friendly_team_options"
+			],
+			[
+				"frie",
+				"friendly_team_selection"
+			],
+			[
+				"use",
+				"user_selection"
+			],
+			[
+				"next",
+				"next_gamestate"
+			],
+			[
+				"fri",
+				"friendly_team_permutation"
+			],
+			[
+				"def",
+				"defender"
+			],
+			[
+				"selec",
+				"select_attackers"
+			],
+			[
+				"user",
+				"user_selection"
+			],
+			[
+				"option",
+				"option_combinations"
+			],
+			[
+				"sele",
+				"selection_player"
+			],
+			[
+				"se",
+				"selection"
+			],
+			[
+				"team",
+				"team_strategy"
+			],
+			[
+				"opti",
+				"options_string"
+			],
+			[
+				"optio",
+				"options_string"
+			],
+			[
+				"ene",
+				"enemy_team_selections"
+			],
+			[
+				"in",
+				"input_list"
+			],
+			[
+				"prom",
+				"prompt_draft_again"
+			],
+			[
+				"p",
+				"play_draft"
+			],
+			[
+				"init",
+				"initialise_game_permutation_dictionary"
+			],
+			[
+				"add",
+				"add_game_permutations_to_dictionary"
+			],
+			[
+				"gamepermu",
+				"gamepermutations"
+			],
+			[
+				"initi",
+				"initialise_game_permutation_dictionary"
+			],
+			[
+				"Game",
+				"GamePermutation"
+			],
+			[
+				"per",
+				"permutation_key"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/drafter"
+	],
+	"file_history":
+	[
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/drafter/solver/__init__.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/Draft/gamestate.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/Draft/draft.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/Utilities/utilities.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/TeamPermutations/teampermutation.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/StandardFormGameMatrices/games.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/GameDictionaries/strategydictionaries.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/main.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/draft/__main__.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/draft/__init__.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/utilities.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/draft.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/games.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/gamestate.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/gamestatedictionaries.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/strategydictionaries.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/teampermutation.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Project/40k_wtc_draft_solver.sublime-project",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/utilities.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/teampermutation.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/main.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/strategydictionaries.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/gamestatedictionaries.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/gamestate.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/games.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/draft.py",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2023-01-17 Jorm Monster Mash",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-01-04 Ark Levi Gants",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-09-27 Lennon Kraken.md",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-10-27 Harpy Kraken.md",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelser/2022-06-30 Ansettelsesrunde Finn/Applicants/Tobias Kjellstrøm/Oppgave B/RailComplete.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelser/2022-06-30 Ansettelsesrunde Finn/Applicants/Shafaq Naz Sheikh/mileage.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelser/2022-06-30 Ansettelsesrunde Finn/Applicants/Tobias Kjellstrøm/Oppgave B draft/RailComplete.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelsesoppgaver/Ansettelse 2022-01/2022-01-20 RC Python Track Geometry Test With Solution/Tasks/2022-02-21 RC Task 1a - Line.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelsesoppgaver/Ansettelse 2022-01/2022-01-20 RC Python Track Geometry Test With Solution/Tasks/2022-01-25 RC Task 1b - Arc.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelsesoppgaver/Ansettelse 2022-01/2022-01-20 RC Python Track Geometry Test With Solution/Tasks/2022-01-25 RC Task 1a - Line.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelsesoppgaver/Ansettelse 2022-01/2022-01-20 RC Python Track Geometry Test With Solution/Tasks/2022-01-20 RC Task 2 - Alignment.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelsesoppgaver/Ansettelse 2022-01/2022-01-20 RC Python Track Geometry Test With Solution/Tasks/2022-01-20 RC Task 1b - Arc.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelsesoppgaver/Ansettelse 2022-01/2022-01-20 RC Python Track Geometry Test With Solution/Tasks/2022-01-20 RC Task 1a - Line.py",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/Ansettelsesoppgaver/Ansettelse 2022-01/2022-01-20 RC Python Track Geometry Test With Solution/PythonTest.py",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Matches/Spain/strategy_4_player_select_attackers_dictionary.json",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Matches/Spain/strategy_8_player_select_attackers_dictionary.json",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Matches/Spain/strategy_8_player_discard_attacker_dictionary.json",
+		"/C/Users/SveinungNøding/Documents/GitHub/40k-WTC-Draft-Solver/Matches/Spain/strategy_4_player_discard_attacker_dictionary.json",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-06-20 Leviathan Midrange.md",
+		"/C/Users/SveinungNøding/Google Drive/RC-Sveinung/trash/kake.py",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-06-09 Joe McMillan Leviathan Carnifexes.md",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-06-07 Leviathan Tyrants.md",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-05-18 Leviathan Battalion",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-05-18 Kraken TTL",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-05-19 Leviathan Midrange.md",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-03-26 Kraken Midrange v1",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/Powers.md",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/2022-05-02 Dual Tyrants",
+		"/C/Users/SveinungNøding/Google Drive/Spill/Warhammer/Lists/Battalion Detachment 0CP (Tyranids) [95 PL, 1,650pts] ++.md"
+	],
+	"find":
+	{
+		"height": 39.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"scrollbar_highlights": true,
+		"show_context": true,
+		"use_buffer2": true,
+		"use_gitignore": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 27.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "drafter_project.sublime-project",
+	"replace":
+	{
+		"height": 50.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 298.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

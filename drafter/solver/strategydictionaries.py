@@ -2,9 +2,9 @@ import math # standard libraries
 import sys
 import time
 
-import utilities # local source
-import games
-import gamestatedictionaries
+import drafter.common.utilities as utilities # local source
+import drafter.solver.games as games
+import drafter.solver.gamestatedictionaries as gamestatedictionaries
 
 dictionaries = {}
 dictionaries[utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_defender)] = {'descriptor':[8, utilities.DraftStage.select_defender]}
@@ -55,7 +55,7 @@ def update_dictionaries(read, write, gamestate_dictionaries):
 def process_gamestate_dictionary(read, write, gamestate_dictionary_to_solve, lower_level_strategies = None):
     arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
     strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
-    path = utilities.get_path(strategy_dictionary_name + ".json")
+    path = utilities.get_path("resources\\matches", strategy_dictionary_name + ".json")
 
     draft_stage_strategies = None
 

@@ -1,5 +1,5 @@
-import utilities # local source
-import teampermutation
+import drafter.common.utilities as utilities # local source
+import drafter.common.teampermutation as teampermutation
 
 class GameState:
     def __init__(self, draft_stage, friendly_team_permutation, enemy_team_permutation):

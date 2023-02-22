@@ -4,11 +4,11 @@ from random import random
 import itertools
 from copy import deepcopy
 
-import utilities # local source
-import strategydictionaries
-import gamestatedictionaries
-from gamestate import GameState
-import teampermutation
+import drafter.common.utilities # local source
+import drafter.common.teampermutation as teampermutation
+from drafter.common.gamestate import GameState
+import drafter.solver.strategydictionaries as strategydictionaries
+import drafter.solver.gamestatedictionaries as gamestatedictionaries
 
 def play_draft():
     print("\nPlaying draft against {}!\n".format(utilities.enemy_team_name))

@@ -1,8 +1,9 @@
 from tkinter.messagebox import NO
-import utilities # local source
-import gamestate
-from gamestate import GameState
-from teampermutation import TeamPermutation
+
+import drafter.common.utilities as utilities # local source
+import drafter.common.gamestate as gamestate
+from drafter.common.gamestate import GameState
+from drafter.common.teampermutation import TeamPermutation
 
 global_gamestate_dictionary_names = [
 utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.none),

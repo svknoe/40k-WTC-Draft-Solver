@@ -1,21 +1,39 @@
-import math # standard libraries
+import math  # standard libraries
 import sys
 import time
 
-import drafter.common.utilities as utilities # local source
+import drafter.common.utilities as utilities  # local source
 import drafter.solver.games as games
 import drafter.solver.gamestatedictionaries as gamestatedictionaries
 
 dictionaries = {}
-dictionaries[utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_defender)] = {'descriptor':[8, utilities.DraftStage.select_defender]}
-dictionaries[utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_attackers)] = {'descriptor':[8, utilities.DraftStage.select_attackers]}
-dictionaries[utilities.get_strategy_dictionary_name(8, utilities.DraftStage.discard_attacker)] = {'descriptor':[8, utilities.DraftStage.discard_attacker]}
-dictionaries[utilities.get_strategy_dictionary_name(6, utilities.DraftStage.select_defender)] = {'descriptor':[6, utilities.DraftStage.select_defender]}
-dictionaries[utilities.get_strategy_dictionary_name(6, utilities.DraftStage.select_attackers)] = {'descriptor':[6, utilities.DraftStage.select_attackers]}
-dictionaries[utilities.get_strategy_dictionary_name(6, utilities.DraftStage.discard_attacker)] = {'descriptor':[6, utilities.DraftStage.discard_attacker]}
-dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.select_defender)] = {'descriptor':[4, utilities.DraftStage.select_defender]}
-dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.select_attackers)] = {'descriptor':[4, utilities.DraftStage.select_attackers]}
-dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.discard_attacker)] = {'descriptor':[4, utilities.DraftStage.discard_attacker]}
+dictionaries[utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_defender)] \
+    = {'descriptor': [8, utilities.DraftStage.select_defender]}
+
+dictionaries[utilities.get_strategy_dictionary_name(8, utilities.DraftStage.select_attackers)] \
+    = {'descriptor': [8, utilities.DraftStage.select_attackers]}
+
+dictionaries[utilities.get_strategy_dictionary_name(8, utilities.DraftStage.discard_attacker)] \
+    = {'descriptor': [8, utilities.DraftStage.discard_attacker]}
+
+dictionaries[utilities.get_strategy_dictionary_name(6, utilities.DraftStage.select_defender)] \
+    = {'descriptor': [6, utilities.DraftStage.select_defender]}
+
+dictionaries[utilities.get_strategy_dictionary_name(6, utilities.DraftStage.select_attackers)] \
+    = {'descriptor': [6, utilities.DraftStage.select_attackers]}
+
+dictionaries[utilities.get_strategy_dictionary_name(6, utilities.DraftStage.discard_attacker)] \
+    = {'descriptor': [6, utilities.DraftStage.discard_attacker]}
+
+dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.select_defender)] \
+    = {'descriptor': [4, utilities.DraftStage.select_defender]}
+
+dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.select_attackers)] \
+    = {'descriptor': [4, utilities.DraftStage.select_attackers]}
+
+dictionaries[utilities.get_strategy_dictionary_name(4, utilities.DraftStage.discard_attacker)] \
+    = {'descriptor': [4, utilities.DraftStage.discard_attacker]}
+
 
 def initialise_dictionaries(read, write):
     final_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(4, utilities.DraftStage.select_attackers)
@@ -23,14 +41,14 @@ def initialise_dictionaries(read, write):
 
     strategy_dictionary = process_gamestate_dictionary(read, write, gamestate_dictionary)
 
-    while strategy_dictionary != None:
+    while strategy_dictionary is not None:
         gamestate_dictionary = gamestatedictionaries.get_previous_gamestate_dictionary(gamestate_dictionary)
 
         if (gamestate_dictionary is None):
             break
 
         arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary)
-        if (arbitrary_gamestate == None):
+        if (arbitrary_gamestate is None):
             break
         elif (arbitrary_gamestate.draft_stage == utilities.DraftStage.discard_attacker):
             gamestate_dictionary = gamestatedictionaries.get_previous_gamestate_dictionary(gamestate_dictionary)
@@ -39,6 +57,7 @@ def initialise_dictionaries(read, write):
             break
 
         strategy_dictionary = process_gamestate_dictionary(read, write, gamestate_dictionary, strategy_dictionary)
+
 
 def update_dictionaries(read, write, gamestate_dictionaries):
     reversed_gamestate_dictionaries = reversed(gamestate_dictionaries)
@@ -52,25 +71,26 @@ def update_dictionaries(read, write, gamestate_dictionaries):
         lower_level_strategies = process_gamestate_dictionary(read, write, gamestate_dictionary, lower_level_strategies)
 
 
-def process_gamestate_dictionary(read, write, gamestate_dictionary_to_solve, lower_level_strategies = None):
+def process_gamestate_dictionary(read, write, gamestate_dictionary_to_solve, lower_level_strategies=None):
     arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
     strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
-    path = utilities.get_path("resources\\matches", strategy_dictionary_name + ".json")
+    path = utilities.get_path(strategy_dictionary_name + ".json")
 
     draft_stage_strategies = None
 
     if read:
         draft_stage_strategies = utilities.read_dictionary(path)
 
-    if draft_stage_strategies == None:
+    if draft_stage_strategies is None:
         draft_stage_strategies = get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategies)
 
         if write:
             utilities.write_dictionary(path, draft_stage_strategies)
-        
+
     dictionaries[strategy_dictionary_name].update(draft_stage_strategies)
 
     return dictionaries[strategy_dictionary_name]
+
 
 def get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategies):
     arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
@@ -95,9 +115,11 @@ def get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategie
             print("    - {}%: ".format(10 * percentage), counter, "/", len(list(gamestate_dictionary_to_solve)))
             previous_time = new_time
         elif new_time - previous_time > 30:
-            print("    - {}%: ".format(round(100 * counter / len(gamestate_dictionary_to_solve), 1)), counter, "/", len(list(gamestate_dictionary_to_solve)))
+            print("    - {}%: ".format(round(100 * counter / len(gamestate_dictionary_to_solve), 1)),
+                counter, "/", len(list(gamestate_dictionary_to_solve)))
+
             previous_time = new_time
-        
+
         if draft_stage_to_solve == utilities.DraftStage.select_defender:
             strategy = games.select_defender(n, gamestate_to_solve, lower_level_strategies)
         elif draft_stage_to_solve == utilities.DraftStage.select_attackers:
@@ -105,11 +127,12 @@ def get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategie
         elif draft_stage_to_solve == utilities.DraftStage.discard_attacker:
             strategy = games.discard_attacker(n, gamestate_to_solve, lower_level_strategies)
         else:
-            raise ValueError("Unsolvavle draft stage: {}.".format(draft_stage_to_solve))       
+            raise ValueError("Unsolvavle draft stage: {}.".format(draft_stage_to_solve))
 
         draft_stage_strategies[gamestate_to_solve.get_key()] = strategy
 
     return draft_stage_strategies
+
 
 def extend_dictionary(new_gamestates_to_solve, lower_level_strategies):
     arbitrary_gamestate = new_gamestates_to_solve[list(new_gamestates_to_solve.keys())[0]]
@@ -118,8 +141,9 @@ def extend_dictionary(new_gamestates_to_solve, lower_level_strategies):
     strategies = get_strategy_dictionary(new_gamestates_to_solve, lower_level_strategies)
     dictionary_to_update = dictionaries[strategy_dictionary_name]
     dictionary_to_update.update(strategies)
-        
+
     return strategies
+
 
 def get_previous_strategy_dictionary(strategy_dictionary):
     strategy_dictionary_descriptor = strategy_dictionary['descriptor']
@@ -139,6 +163,7 @@ def get_previous_strategy_dictionary(strategy_dictionary):
     previous_strategy_dictionary = dictionaries[previous_strategy_dictionary_name]
 
     return previous_strategy_dictionary
+
 
 def get_dictionary_for_gamestate(achieved_gamestate):
     n = achieved_gamestate.get_n()
@@ -164,5 +189,5 @@ def get_dictionary_for_gamestate(achieved_gamestate):
 
         if n == descriptor[0] and supporting_draft_stage == descriptor[1]:
             return dictionary
-    
+
     return None

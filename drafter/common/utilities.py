@@ -1,10 +1,9 @@
-import sys # standard libraries
+import sys  # standard libraries
 import json
 from pathlib import Path
 from enum import Enum
-from tokenize import Double
 
-import nashpy # 3rd party packages
+import nashpy  # 3rd party packages
 
 friendly_team_name = None
 enemy_team_name = None
@@ -19,15 +18,18 @@ map_importance_dictionary = {}
 class DraftStage(Enum):
     none, select_defender, select_attackers, discard_attacker = range(4)
 
+
 def get_next_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value + 1) % 4)
     return next_draft_stage
+
 
 def get_previous_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value - 1) % 4)
     return next_draft_stage
 
-def initialise_input_dictionary(empty_input_dictionary, filename, hard_crash, encoding = {'--':-8, '-':-4, '0':0, '+':4, '++':8}):
+
+def initialise_input_dictionary(empty_input_dictionary, filename, hard_crash, encoding={'--': -8, '-': -4, '0': 0, '+': 4, '++': 8}):
     path = get_path(filename)
 
     try:
@@ -71,7 +73,8 @@ def initialise_input_dictionary(empty_input_dictionary, filename, hard_crash, en
                 if element in encoding:
                     tmpMatchup.append(encoding[element])
                 else:
-                    error_message = "File {} contains unknown element {}. Use number values, specify encoding or use default encoding: {}.".format(path, element, encoding)
+                    error_message = ("File {} contains unknown element {}. Use number values, specify encoding or use "
+                        + "default encoding: {}.").format(path, element, encoding)
                     raise ValueError(error_message)
         tmpMatchups.append(tmpMatchup)
     matchups = tmpMatchups
@@ -93,6 +96,7 @@ def initialise_input_dictionary(empty_input_dictionary, filename, hard_crash, en
         empty_input_dictionary[friend] = row
         friendCounter += 1
 
+
 def get_transposed_pairing_dictionary():
     friends = [friend for friend in pairing_dictionary]
     enemies = [enemy for enemy in pairing_dictionary[friends[0]]]
@@ -107,20 +111,22 @@ def get_transposed_pairing_dictionary():
 
     return transposed_pairing_dictionary
 
+
 def get_game_solution(game):
     support_value = get_game_overview_from_equilibria(game, game.support_enumeration())
-    if support_value != None:
+    if support_value is not None:
         return support_value
 
     vertex_value = get_game_overview_from_equilibria(game, game.vertex_enumeration())
-    if vertex_value != None:
+    if vertex_value is not None:
         return vertex_value
 
     lemke_howson_value = get_game_overview_from_equilibria(game, game.lemke_howson_enumeration())
-    if lemke_howson_value != None:
+    if lemke_howson_value is not None:
         return lemke_howson_value
 
     return None
+
 
 def get_game_strategy(game_solution_cache, game_array, friendly_team_options, enemy_team_options):
     game_array_hash = hash(game_array.tostring())
@@ -148,6 +154,7 @@ def get_game_strategy(game_solution_cache, game_array, friendly_team_options, en
 
     return game_strategy
 
+
 # Returns overview of first equilibrium.
 def get_game_overview_from_equilibria(game, equilibria):
     for equilibrium in equilibria:
@@ -165,7 +172,8 @@ def get_game_overview_from_equilibria(game, equilibria):
 
     return None
 
-def print_overview(game_overview, roundTo = 3):
+
+def print_overview(game_overview, roundTo=3):
     round_row_strategy = [round(x, roundTo) for x in game_overview[0]]
     round_column_strategy = [round(x, roundTo) for x in game_overview[1]]
     round_value = round(game_overview[2], roundTo)
@@ -173,12 +181,11 @@ def print_overview(game_overview, roundTo = 3):
     print("Column strategy: ", round_column_strategy)
     print("Value: ", round_value)
 
+
 def get_path(filename):
     drafter_folder = Path(__file__).parent.parent
-    print("PARENT:")
-    print(drafter_folder)
 
-    if enemy_team_name == None:
+    if enemy_team_name is None:
         path = drafter_folder / (filename)
     else:
         subfolder = "resources/matches/" + enemy_team_name
@@ -186,26 +193,30 @@ def get_path(filename):
 
     return path
 
+
 def read_dictionary(path):
     try:
-        with path.open('r', encoding='utf-8') as data_file:    
+        with path.open('r', encoding='utf-8') as data_file:
             print("   Reading file {} ...".format(path))
             dictionary = json.load(data_file)
-            print('       ...done.') 
+            print('       ...done.')
 
         return dictionary
     except:
         return None
 
+
 def write_dictionary(path, dictionary):
     with path.open('w', encoding='utf-8') as f:
         print("   Writing file {} ...".format(path))
         json.dump(dictionary, f, ensure_ascii=False, indent=4)
-        print('       ...done.') 
-    
+        print('       ...done.')
+
+
 def get_empty_matrix(n, m):
-    empty_matrix = { (i,j):None for i in range(n) for j in range(m)}
+    empty_matrix = {(i, j): None for i in range(n) for j in range(m)}
     return empty_matrix
+
 
 def get_cartesian_product(list_A, list_B):
     cartesian_product = get_empty_matrix(len(list_A), len(list_B))
@@ -215,6 +226,7 @@ def get_cartesian_product(list_A, list_B):
             cartesian_product[(i, j)] = [list_A[i], list_B[j]]
 
     return cartesian_product
+
 
 def list_to_string(input_list):
     output_string = ""
@@ -226,19 +238,23 @@ def list_to_string(input_list):
 
     return output_string
 
+
 def get_gamestate_dictionary_name(n, draft_stage):
     return get_dictionary_name(n, draft_stage, "gamestate")
 
+
 def get_strategy_dictionary_name(n, draft_stage):
     return get_dictionary_name(n, draft_stage, "strategy")
+
 
 def get_dictionary_name(n, draft_stage, dictionary_type):
     if not (n == 4 or n == 6 or n == 8):
         raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
 
-    dictionary_name =  "{}_{}_player_{}_dictionary".format(dictionary_type, n, draft_stage.name)
+    dictionary_name = "{}_{}_player_{}_dictionary".format(dictionary_type, n, draft_stage.name)
 
     return dictionary_name
+
 
 def get_arbitrary_dictionary_entry(dictionary):
     dictionary_keys = list(dictionary.keys())
@@ -251,6 +267,7 @@ def get_arbitrary_dictionary_entry(dictionary):
         return arbitrary_dictionary_entry
     else:
         return None
+
 
 def get_value_from_input_dictionary(input_dictionary, friendly_player, enemy_player):
     if friendly_player in input_dictionary:
@@ -265,10 +282,11 @@ def get_value_from_input_dictionary(input_dictionary, friendly_player, enemy_pla
 
     return value
 
-def get_pairing_value(n, friendly_player, enemy_player, defender = None):
+
+def get_pairing_value(n, friendly_player, enemy_player, defender=None):
     value = get_value_from_input_dictionary(pairing_dictionary, friendly_player, enemy_player)
 
-    if len(map_importance_dictionary) > 0 and defender != None:
+    if len(map_importance_dictionary) > 0 and defender is not None:
         if n == 8:
             map_importance_multiplier = 1
         elif n == 6:
@@ -288,15 +306,16 @@ def get_pairing_value(n, friendly_player, enemy_player, defender = None):
         else:
             raise ValueError("Unknown defender: {}".format(defender))
 
-    return value        
+    return value
 
-def get_pairing_string(n, friendly_player, enemy_player, defender = None):
+
+def get_pairing_string(n, friendly_player, enemy_player, defender=None):
     value = get_pairing_value(n, friendly_player, enemy_player, defender)
 
     friendly_player_string = friendly_player
     enemy_player_string = enemy_player
 
-    if defender != None:
+    if defender is not None:
         if friendly_player == defender:
             friendly_player_string += " (D)"
         elif enemy_player == defender:

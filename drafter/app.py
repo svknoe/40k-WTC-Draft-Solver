@@ -1,4 +1,4 @@
-import time # standard libraries
+import time  # standard libraries
 
 import drafter.common.utilities as utilities  # local source
 import drafter.common.teampermutation as teampermutation
@@ -18,12 +18,15 @@ write_gamestates = True
 read_strategies = True
 write_strategies = True
 
+# Maximum number of attacker players considered by each team in each select attackers step.
 restrict_attackers = True
-restricted_attackers_count = 4 # Maximum number of attacker players considered by each team in each select attackers step.
+restricted_attackers_count = 2
+
 
 def run():
     utilities.friendly_team_name = friendly_team_name
-    utilities.enemy_team_name = input("Select enemy team by entering the name of a folder in ..\\drafter\\resources\\matches:\n")
+    enemy_team_prompt = "Select enemy team by entering the name of a folder in ..\\drafter\\resources\\matches:\n"
+    utilities.enemy_team_name = input(enemy_team_prompt)
     utilities.show_friendly_strategy_suggestions = show_friendly_strategy_suggestions
     utilities.show_enemy_strategy_suggestions = show_enemy_strategy_suggestions
 
@@ -35,6 +38,7 @@ def run():
         draft_again = prompt_draft_again()
         if not draft_again:
             break
+
 
 def initialise():
     utilities.initialise_input_dictionary(utilities.pairing_dictionary, "pairing_matrix.txt", True)
@@ -59,9 +63,12 @@ def initialise():
         elif restrict_attackers and restricted_attackers_count < 5:
             print("Initialising strategy dictionaries (This might take an hour.):")
         else:
-            print("Initialising strategy dictionaries (This might take many hours. Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):")
+            long_runtime_warning = "Initialising strategy dictionaries (This might take many hours."
+            + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):"
+            print(long_runtime_warning)
     strategydictionaries.initialise_dictionaries(read_strategies, write_strategies)
     print("time: {}s".format(round(time.time() - t0, 2)))
+
 
 def prompt_draft_again():
     def valid_input(prompt_input):
@@ -79,5 +86,6 @@ def prompt_draft_again():
         return False
 
     return True
+
 
 run()

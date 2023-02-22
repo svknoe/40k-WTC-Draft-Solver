@@ -1,5 +1,4 @@
-import sys  # standard libraries
-import json
+import json  # standard libraries
 from pathlib import Path
 from enum import Enum
 
@@ -19,74 +18,6 @@ def get_next_draft_stage(draft_stage):
 def get_previous_draft_stage(draft_stage):
     next_draft_stage = DraftStage((draft_stage.value - 1) % 4)
     return next_draft_stage
-
-
-def initialise_input_dictionary(empty_input_dictionary, filename, hard_crash, encoding={'--': -8, '-': -4, '0': 0, '+': 4, '++': 8}):
-    path = get_path(filename)
-
-    try:
-        with path.open(encoding="UTF-8") as f:
-            lines = f.read().splitlines()
-    except:
-        if hard_crash:
-            raise SystemError("Missing file: {}".format(path))
-        else:
-            print("Warning: Missing file: {}".format(path))
-            return
-
-    lines = [line for line in lines if line != ""]
-
-    tmpLines = []
-    for line in lines:
-        if line.count('|') > 0:
-            line = line.split('|')
-        else:
-            line = line.split()
-        tmpLines.append(line)
-    lines = tmpLines
-
-    for line in lines:
-        if (len(line) != len(lines[0])):
-            print("The following line has a number of elements not equal to the number of elements in the first line:")
-            print(line)
-            sys.exit()
-
-    matchups = []
-    for i in range(2, len(lines)):
-        matchups.append(lines[i])
-
-    tmpMatchups = []
-    for matchup in matchups:
-        tmpMatchup = []
-        for element in matchup:
-            try:
-                tmpMatchup.append(float(element))
-            except ValueError:
-                if element in encoding:
-                    tmpMatchup.append(encoding[element])
-                else:
-                    error_message = ("File {} contains unknown element {}. Use number values, specify encoding or use "
-                        + "default encoding: {}.").format(path, element, encoding)
-                    raise ValueError(error_message)
-        tmpMatchups.append(tmpMatchup)
-    matchups = tmpMatchups
-
-    friends = lines[0]
-    enemies = lines[1]
-
-    for friend in friends:
-        if friend in enemies:
-            raise ValueError("Player {} present on both teams. All player names must be unique.".format(friend))
-
-    friendCounter = 0
-    for friend in friends:
-        row = {}
-        enemyCounter = 0
-        for enemy in enemies:
-            row[enemy] = matchups[friendCounter][enemyCounter]
-            enemyCounter += 1
-        empty_input_dictionary[friend] = row
-        friendCounter += 1
 
 
 def get_transposed_pairing_dictionary():

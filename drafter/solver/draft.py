@@ -12,11 +12,15 @@ import drafter.data.matchinfo as matchinfo
 import drafter.solver.strategydictionaries as strategydictionaries
 import drafter.solver.gamestatedictionaries as gamestatedictionaries
 
+keyword_quit = "quit()"
+keyword_back = "back()"
+
 
 def play_draft():
     print("\nPlaying draft against {}!\n".format(matchinfo.enemy_team_name))
     pairings = []
     current_gamestate = gamestatedictionaries.get_initial_game_state()
+    gamestate_tree = [current_gamestate]
 
     while True:
         next_draft_stage = draftstage.get_next_draft_stage(current_gamestate.draft_stage)
@@ -30,8 +34,15 @@ def play_draft():
         if len(new_pairings) > 0:
             pairings.extend(new_pairings)
 
-        if current_gamestate is None:
+        if current_gamestate is None or current_gamestate == keyword_quit:
             break
+
+        if (current_gamestate == keyword_back):
+            if (len(gamestate_tree) > 1):
+                gamestate_tree.pop()
+            current_gamestate = gamestate_tree[-1]
+        else:
+            gamestate_tree.append(current_gamestate)
 
         update_dictionaries(current_gamestate)
 
@@ -172,10 +183,12 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
 
         while (user_selection is None) or (user_selection not in team_options):
             user_selection = input(("Provide {} selection (press 'enter' for suggested default, "
-                + "write 'quit()' to abort draft'):\n").format(team_name))
+                + "write '{}' to abort draft or '{}' to revert one step'):\n").format(team_name, keyword_quit, keyword_back))
 
-            if user_selection == "quit()":
-                return None
+            if user_selection == keyword_quit:
+                return keyword_quit
+            elif user_selection == keyword_back:
+                return keyword_back
             elif (user_selection == ""):
                 if isinstance(suggested_selection, str):
                     user_selection = suggested_selection
@@ -262,14 +275,23 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     enemy_team_options, suggested_enemy_selection = print_team_options(matchinfo.enemy_team_name,
         enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, settings.show_enemy_strategy_suggestions)
 
-    friendly_team_selection = prompt_team_selection(settings.friendly_team_name, friendly_team_options, suggested_friendly_selection)
+    friendly_team_selection = None
+    enemy_team_selection = None
 
-    if friendly_team_selection is None:
-        return None, []
+    while friendly_team_selection is None or enemy_team_selection is None:
+        friendly_team_selection = prompt_team_selection(settings.friendly_team_name, friendly_team_options, suggested_friendly_selection)
 
-    enemy_team_selection = prompt_team_selection(matchinfo.enemy_team_name, enemy_team_options, suggested_enemy_selection)
-    if enemy_team_selection is None:
-        return None, []
+        if friendly_team_selection is None or friendly_team_selection == keyword_quit or friendly_team_selection == keyword_back:
+            return friendly_team_selection, []
+
+        enemy_team_selection = prompt_team_selection(matchinfo.enemy_team_name, enemy_team_options, suggested_enemy_selection)
+
+        if enemy_team_selection is None or enemy_team_selection == keyword_quit:
+            return enemy_team_selection, []
+
+        if enemy_team_selection == keyword_back:
+            friendly_team_selection = None
+            enemy_team_selection = None
 
     next_gamestate, new_pairings = get_next_gamestate()
 

@@ -177,6 +177,13 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                 else:
                     roll -= selection[1]
 
+        # Hacky fix to select opposing attacker rather than discard opposing attacker.
+        if next_draft_stage == DraftStage.discard_attacker:
+            if suggested_selection == opponent_team_permutation.attacker_A:
+                suggested_selection = opponent_team_permutation.attacker_B
+            elif suggested_selection == opponent_team_permutation.attacker_B:
+                suggested_selection = opponent_team_permutation.attacker_A
+
         if (show_suggestions):
             print("\n    --- Suggested {} selection: {} ---\n".format(team_name, suggested_selection))
 
@@ -186,6 +193,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
         user_selection = None
 
         while (user_selection is None) or (user_selection not in team_options):
+            print()
             user_selection = input(("Provide {} selection (press 'enter' for suggested default, "
                 + "write '{}' to abort draft or '{}' to revert one step'):\n").format(team_name, keyword_quit, keyword_back))
 
@@ -212,6 +220,13 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                         break
 
         print(" - Selection made: {}".format(user_selection))
+
+        # Hacky fix to select opposing attacker rather than discard opposing attacker.
+        if next_draft_stage == DraftStage.discard_attacker:
+            if user_selection == team_options[0]:
+                user_selection = team_options[1]
+            elif user_selection == team_options[1]:
+                user_selection = team_options[0]
 
         return user_selection
 

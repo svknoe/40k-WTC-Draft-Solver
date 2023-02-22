@@ -2,33 +2,15 @@ import time  # standard libraries
 
 import drafter.common.utilities as utilities  # local source
 import drafter.common.teampermutation as teampermutation
+import drafter.data.settings as settings
 import drafter.solver.strategydictionaries as strategydictionaries
 import drafter.solver.gamestatedictionaries as gamestatedictionaries
 import drafter.solver.draft as draft
 
-# Settings
-friendly_team_name = "Norway"
-show_friendly_strategy_suggestions = True
-show_enemy_strategy_suggestions = True
-
-# Configuration
-read_gamestates = True
-write_gamestates = True
-
-read_strategies = True
-write_strategies = True
-
-# Maximum number of attacker players considered by each team in each select attackers step.
-restrict_attackers = True
-restricted_attackers_count = 2
-
 
 def run():
-    utilities.friendly_team_name = friendly_team_name
     enemy_team_prompt = "Select enemy team by entering the name of a folder in ..\\drafter\\resources\\matches:\n"
     utilities.enemy_team_name = input(enemy_team_prompt)
-    utilities.show_friendly_strategy_suggestions = show_friendly_strategy_suggestions
-    utilities.show_enemy_strategy_suggestions = show_enemy_strategy_suggestions
 
     initialise()
 
@@ -44,29 +26,29 @@ def initialise():
     utilities.initialise_input_dictionary(utilities.pairing_dictionary, "pairing_matrix.txt", True)
     utilities.initialise_input_dictionary(utilities.map_importance_dictionary, "map_importance_matrix.txt", False)
 
-    if (restrict_attackers):
-        teampermutation.enable_restricted_attackers(restricted_attackers_count)
+    if (settings.restrict_attackers):
+        teampermutation.enable_restricted_attackers(settings.restricted_attackers_count)
 
     t0 = time.time()
     print()
     print("Initialising gamestate dictionaries (This might take a few minutes):")
-    gamestatedictionaries.initialise_dictionaries(read_gamestates, write_gamestates)
+    gamestatedictionaries.initialise_dictionaries(settings.read_gamestates, settings.write_gamestates)
     print("time: {}s".format(round(time.time() - t0, 2)))
 
     t0 = time.time()
     print()
-    if read_strategies:
+    if settings.read_strategies:
         print("Initialising strategy dictionaries (This might take a few minutes):")
     else:
-        if restrict_attackers and restricted_attackers_count < 4:
+        if settings.restrict_attackers and settings.restricted_attackers_count < 4:
             print("Initialising strategy dictionaries (This might take a few minutes):")
-        elif restrict_attackers and restricted_attackers_count < 5:
+        elif settings.restrict_attackers and settings.restricted_attackers_count < 5:
             print("Initialising strategy dictionaries (This might take an hour.):")
         else:
             long_runtime_warning = "Initialising strategy dictionaries (This might take many hours."
             + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):"
             print(long_runtime_warning)
-    strategydictionaries.initialise_dictionaries(read_strategies, write_strategies)
+    strategydictionaries.initialise_dictionaries(settings.read_strategies, settings.write_strategies)
     print("time: {}s".format(round(time.time() - t0, 2)))
 
 

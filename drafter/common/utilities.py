@@ -5,11 +5,7 @@ from enum import Enum
 
 import nashpy  # 3rd party packages
 
-friendly_team_name = None
 enemy_team_name = None
-
-show_friendly_strategy_suggestions = True
-show_enemy_strategy_suggestions = True
 
 pairing_dictionary = {}
 map_importance_dictionary = {}

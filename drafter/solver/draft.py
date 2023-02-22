@@ -5,6 +5,7 @@ from copy import deepcopy
 import drafter.common.utilities as utilities  # local source
 import drafter.common.teampermutation as teampermutation
 from drafter.common.gamestate import GameState
+import drafter.data.settings as settings
 import drafter.solver.strategydictionaries as strategydictionaries
 import drafter.solver.gamestatedictionaries as gamestatedictionaries
 
@@ -252,18 +253,18 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     friendly_team_strategy = gamestate_team_strategies[0]
     enemy_team_strategy = gamestate_team_strategies[1]
 
-    friendly_team_options, suggested_friendly_selection = print_team_options(utilities.friendly_team_name,
-        friendly_team_permutation, friendly_team_strategy, enemy_team_permutation, utilities.show_friendly_strategy_suggestions)
+    friendly_team_options, suggested_friendly_selection = print_team_options(settings.friendly_team_name,
+        friendly_team_permutation, friendly_team_strategy, enemy_team_permutation, settings.show_friendly_strategy_suggestions)
 
-    enemy_team_options, suggested_enemy_selection = print_team_options(utilities.enemy_team_name,
-        enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, utilities.show_enemy_strategy_suggestions)
+    enemy_team_options, suggested_enemy_selection = print_team_options(settings.enemy_team_name,
+        enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, settings.show_enemy_strategy_suggestions)
 
-    friendly_team_selection = prompt_team_selection(utilities.friendly_team_name, friendly_team_options, suggested_friendly_selection)
+    friendly_team_selection = prompt_team_selection(settings.friendly_team_name, friendly_team_options, suggested_friendly_selection)
 
     if friendly_team_selection is None:
         return None, []
 
-    enemy_team_selection = prompt_team_selection(utilities.enemy_team_name, enemy_team_options, suggested_enemy_selection)
+    enemy_team_selection = prompt_team_selection(settings.enemy_team_name, enemy_team_options, suggested_enemy_selection)
     if enemy_team_selection is None:
         return None, []
 

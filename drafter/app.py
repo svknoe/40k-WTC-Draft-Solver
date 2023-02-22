@@ -3,6 +3,7 @@ import time  # standard libraries
 import drafter.common.utilities as utilities  # local source
 import drafter.common.teampermutation as teampermutation
 import drafter.data.settings as settings
+import drafter.data.matchinfo as matchinfo
 import drafter.solver.strategydictionaries as strategydictionaries
 import drafter.solver.gamestatedictionaries as gamestatedictionaries
 import drafter.solver.draft as draft
@@ -10,7 +11,7 @@ import drafter.solver.draft as draft
 
 def run():
     enemy_team_prompt = "Select enemy team by entering the name of a folder in ..\\drafter\\resources\\matches:\n"
-    utilities.enemy_team_name = input(enemy_team_prompt)
+    matchinfo.enemy_team_name = input(enemy_team_prompt)
 
     initialise()
 
@@ -23,8 +24,8 @@ def run():
 
 
 def initialise():
-    utilities.initialise_input_dictionary(utilities.pairing_dictionary, "pairing_matrix.txt", True)
-    utilities.initialise_input_dictionary(utilities.map_importance_dictionary, "map_importance_matrix.txt", False)
+    utilities.initialise_input_dictionary(matchinfo.pairing_dictionary, "pairing_matrix.txt", True)
+    utilities.initialise_input_dictionary(matchinfo.map_importance_dictionary, "map_importance_matrix.txt", False)
 
     if (settings.restrict_attackers):
         teampermutation.enable_restricted_attackers(settings.restricted_attackers_count)

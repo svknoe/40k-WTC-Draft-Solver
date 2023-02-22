@@ -2,6 +2,7 @@ import drafter.common.utilities as utilities  # local source
 import drafter.common.gamestate as gamestate
 from drafter.common.gamestate import GameState
 from drafter.common.teampermutation import TeamPermutation
+import drafter.data.matchinfo as matchinfo
 
 global_gamestate_dictionary_names = [
     utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.none),
@@ -56,8 +57,8 @@ def write_dictionaries():
 
 
 def get_initial_game_state():
-    friends = [friend for friend in utilities.pairing_dictionary]
-    enemies = [enemy for enemy in utilities.pairing_dictionary[friends[0]]]
+    friends = [friend for friend in matchinfo.pairing_dictionary]
+    enemies = [enemy for enemy in matchinfo.pairing_dictionary[friends[0]]]
     initial_game_state = GameState(utilities.DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
 
     return initial_game_state

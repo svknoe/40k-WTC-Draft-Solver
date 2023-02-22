@@ -31,18 +31,22 @@ def play_draft():
         team_strategies = get_team_strategies(current_gamestate)
         current_gamestate, new_pairings = prompt_next_gamestate(current_gamestate, team_strategies, next_draft_stage)
 
-        if len(new_pairings) > 0:
-            pairings.extend(new_pairings)
-
-        if current_gamestate is None or current_gamestate == keyword_quit:
+        if current_gamestate == keyword_quit:
             break
-
-        if (current_gamestate == keyword_back):
+        elif (current_gamestate == keyword_back):
             if (len(gamestate_tree) > 1):
                 gamestate_tree.pop()
+            if (len(pairings) > 0):
+                pairings.pop()
             current_gamestate = gamestate_tree[-1]
         else:
             gamestate_tree.append(current_gamestate)
+
+            if len(new_pairings) > 0:
+                pairings.extend(new_pairings)
+
+        if current_gamestate is None:
+            break
 
         update_dictionaries(current_gamestate)
 

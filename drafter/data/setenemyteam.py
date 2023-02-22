@@ -11,9 +11,13 @@ def prompt_enemy_team():
 
     teams = [x[0] for x in os.walk(matches_path)]
 
-    enemy_team_prompt = "Select enemy team by entering the name of a folder in ..\\drafter\\resources\\matches:\n"
+    enemy_team_prompt = "Select enemy team by entering the name of a folder in ..\\drafter\\resources\\matches:"
 
-    for team in teams:
-        print("    - " + team)
+    for team_path in teams:
+        team = team_path.split('\\')[-1]
+        if (team != "matches"):
+            enemy_team_prompt += "\n    - " + team
+
+    enemy_team_prompt += '\n'
 
     matchinfo.enemy_team_name = input(enemy_team_prompt)

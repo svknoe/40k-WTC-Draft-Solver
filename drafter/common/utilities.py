@@ -3,7 +3,7 @@ from enum import Enum
 
 import nashpy  # 3rd party packages
 
-import drafter.data.matchinfo as matchinfo
+import drafter.data.matchinfo as matchinfo  # local source
 
 class DraftStage(Enum):
     none, select_defender, select_attackers, discard_attacker = range(4)
@@ -105,13 +105,13 @@ def print_overview(game_overview, roundTo=3):
 
 
 def get_path(filename):
-    drafter_folder = Path(__file__).parent.parent
+    drafter_path = Path(__file__).parent.parent
 
     if matchinfo.enemy_team_name is None:
-        path = drafter_folder / (filename)
+        path = drafter_path / (filename)
     else:
         subfolder = "resources/matches/" + matchinfo.enemy_team_name
-        path = drafter_folder / (subfolder + "/" + filename)
+        path = drafter_path / (subfolder + "/" + filename)
 
     return path
 

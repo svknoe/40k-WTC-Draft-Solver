@@ -3,6 +3,7 @@ import drafter.common.gamestate as gamestate
 from drafter.common.gamestate import GameState
 from drafter.common.teampermutation import TeamPermutation
 import drafter.data.matchinfo as matchinfo
+import drafter.data.readwrite as readwrite
 
 global_gamestate_dictionary_names = [
     utilities.get_gamestate_dictionary_name(8, utilities.DraftStage.none),
@@ -39,7 +40,7 @@ def initialise_dictionaries(read, write):
 def read_dictionaries():
     for name in global_gamestate_dictionary_names:
         path = utilities.get_path(name + ".json")
-        key_list = utilities.read_dictionary(path)
+        key_list = readwrite.read_dictionary(path)
 
         if (key_list is not None and len(key_list) > 0):
             dictionaries[name] = {key: gamestate.get_gamestate_from_key(key) for key in key_list}
@@ -53,7 +54,7 @@ def write_dictionaries():
     for name in global_gamestate_dictionary_names:
         path = utilities.get_path(name + ".json")
         string_representation = [key for key in dictionaries[name]]
-        utilities.write_dictionary(path, string_representation)
+        readwrite.write_dictionary(path, string_representation)
 
 
 def get_initial_game_state():

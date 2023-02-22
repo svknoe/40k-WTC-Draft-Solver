@@ -3,6 +3,7 @@ import sys
 import time
 
 import drafter.common.utilities as utilities  # local source
+import drafter.data.readwrite as readwrite
 import drafter.solver.games as games
 import drafter.solver.gamestatedictionaries as gamestatedictionaries
 
@@ -79,13 +80,13 @@ def process_gamestate_dictionary(read, write, gamestate_dictionary_to_solve, low
     draft_stage_strategies = None
 
     if read:
-        draft_stage_strategies = utilities.read_dictionary(path)
+        draft_stage_strategies = readwrite.read_dictionary(path)
 
     if draft_stage_strategies is None:
         draft_stage_strategies = get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategies)
 
         if write:
-            utilities.write_dictionary(path, draft_stage_strategies)
+            readwrite.write_dictionary(path, draft_stage_strategies)
 
     dictionaries[strategy_dictionary_name].update(draft_stage_strategies)
 

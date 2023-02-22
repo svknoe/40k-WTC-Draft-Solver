@@ -7,6 +7,7 @@ def run():
     setenemyteam.prompt_enemy_team()
     initialisedictionaries.initialise()
     draftloop.play()
+    exit()
 
 
 run()

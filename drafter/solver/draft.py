@@ -168,8 +168,6 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
 
             if (show_suggestions):
                 if settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
-                    print(team_strategy)
-
                     if selection_player == team_strategy[0][0]:
                         inverted_selection_player = team_strategy[1][0]
                     else:

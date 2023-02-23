@@ -32,7 +32,13 @@ def play_draft():
         n = current_gamestate.get_n()
         print(("\n----------------------------------------------------------------------------------"
             + "-------------------\nDraft stage: {}-player {}\n").format(n, display_draft_stage))
-        print("Current gamestate:\n{}\n".format(current_gamestate.get_key()))
+        print("   Current gamestate:")
+        if len(pairings) > 0:
+            print("      Matches:")
+            counter = 1
+            for pairing in pairings:
+                print("         " + "[{}] ".format(pairing[0]) + pairing[1])
+        print('\n' + current_gamestate.get_key("      ") + '\n')
         team_strategies = get_team_strategies(current_gamestate)
         current_gamestate, new_pairings = prompt_next_gamestate(current_gamestate, team_strategies, next_draft_stage)
 

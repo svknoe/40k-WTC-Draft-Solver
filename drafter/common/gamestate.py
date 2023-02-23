@@ -8,9 +8,9 @@ class GameState:
         self.friendly_team_permutation = friendly_team_permutation
         self.enemy_team_permutation = enemy_team_permutation
 
-    def get_key(self):
-        return "Friends: {}\nEnemies: {}".format(
-            self.friendly_team_permutation.get_key(), self.enemy_team_permutation.get_key())
+    def get_key(self, leading_whitespace = ""):
+        return "{}Friends: {}\n{}Enemies: {}".format(leading_whitespace, self.friendly_team_permutation.get_key(), 
+            leading_whitespace, self.enemy_team_permutation.get_key())
 
     def get_n(self):
         friendly_n = self.friendly_team_permutation.get_n()

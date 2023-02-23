@@ -92,9 +92,10 @@ def initialise_input_dictionary(empty_input_dictionary, filename, hard_crash, en
     friends = lines[0]
     enemies = lines[1]
 
-    for friend in friends:
-        if friend in enemies:
-            raise ValueError("Player {} present on both teams. All player names must be unique.".format(friend))
+    if settings.require_unique_names:
+        for friend in friends:
+            if friend in enemies:
+                raise ValueError("Player {} present on both teams. All player names must be unique.".format(friend))
 
     friendCounter = 0
     for friend in friends:

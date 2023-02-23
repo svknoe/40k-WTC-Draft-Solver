@@ -6,12 +6,12 @@ invert_discard_attackers = True  # User to insert chosen enemy attacker instead 
 require_unique_names = True  # A friendly player can't have the same name as an enemy player.
 
 # Configuration
-read_gamestates = True
+read_gamestates = False
 write_gamestates = True
 
-read_strategies = True
+read_strategies = False
 write_strategies = True
 
 # Maximum number of attacker players considered by each team in each select attackers step.
 restrict_attackers = True
-restricted_attackers_count = 2
+restricted_attackers_count = 4

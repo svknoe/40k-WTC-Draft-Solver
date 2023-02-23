@@ -167,7 +167,16 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                 selection_player = selection_player[0] + " & " + selection_player[1]
 
             if (show_suggestions):
-                print("      [p={}]: {}".format(selection_probability, selection_player))
+                if settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
+                    print(team_strategy)
+
+                    if selection_player == team_strategy[0][0]:
+                        inverted_selection_player = team_strategy[1][0]
+                    else:
+                        inverted_selection_player = team_strategy[0][0]
+                    print("      [p={}]: {}".format(selection_probability, inverted_selection_player))
+                else:
+                    print("      [p={}]: {}".format(selection_probability, selection_player))
 
         suggested_selection = None
 

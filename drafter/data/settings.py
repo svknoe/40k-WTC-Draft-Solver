@@ -14,4 +14,4 @@ write_strategies = True
 
 # Maximum number of attacker players considered by each team in each select attackers step.
 restrict_attackers = True
-restricted_attackers_count = 4
+restricted_attackers_count = 3 # Default 4

@@ -6,6 +6,7 @@ Required third party packages:
  - nashpy
 
  Run the script by navigating to ../40k-WTC-Draft-Solver in the terminal and writing:
+```
  python -m drafter
-
+```
  By default has long runtime. Change drafter.data.settings.restricted_attackers_count from 4 to 3 for more reasonable runtime.

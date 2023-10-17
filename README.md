@@ -9,4 +9,4 @@ Required third party packages:
 ```
  python -m drafter
 ```
- By default has long runtime. Change drafter.data.settings.restricted_attackers_count from 4 to 3 for more reasonable runtime.
+ By default has long runtime (typically more than an hour). Change drafter.data.settings.restricted_attackers_count from 4 to 3 for more reasonable runtime (typically around 15 minutes).

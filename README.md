@@ -5,7 +5,7 @@ Required third party packages:
  - numpy
  - nashpy
 
- Run the script by navigating to ../40k-WTC-Draft-Solver in the terminal and writing:
+ Run the script by navigating to ./40k-WTC-Draft-Solver in the terminal and writing:
 ```
  python -m drafter
 ```

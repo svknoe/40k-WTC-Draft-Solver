@@ -1,0 +1,6 @@
+Deprecated==1.2.14
+nashpy==0.0.41
+networkx==3.3
+numpy==2.0.0
+scipy==1.14.0
+wrapt==1.16.0

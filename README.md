@@ -15,6 +15,20 @@ Run the script by navigating to ./40k-WTC-Draft-Solver in the terminal and writi
 
 By default has long runtime (typically more than an hour). Change drafter.data.settings.restricted_attackers_count from 4 to 3 for more reasonable runtime (typically around 15 minutes).
 
+## Docker setup
+
+You need to have [Docker Desktop](https://www.docker.com/products/docker-desktop/) or [Orbstack](https://orbstack.dev/) installed.
+
+```bash
+# build
+docker build . -t drafter
+
+# run container and get access to container console
+docker run -it -v $(pwd):/code -p 8888:8888 drafter bash
+# note: -p 8888:8888 maps port 8888 to your host machine and is needed for jupyter notebooks
+# note: -v $(pwd):/code mounts your current working directory (presumably your project directory) and makes any changes instantly available in the running container
+```
+
 ## Package manager
 
 The project uses the `requirements.txt` file to handle packages.

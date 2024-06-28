@@ -3,11 +3,11 @@ import sys
 import time
 
 import drafter.common.utilities as utilities  # local source
-import drafter.common.draftstage as draftstage
-from drafter.common.draftstage import DraftStage
-import drafter.data.readwrite as readwrite
+import drafter.common.draft_stage as draft_stage
+from drafter.common.draft_stage import DraftStage
+import drafter.data.read_write as read_write
 import drafter.solver.games as games
-import drafter.solver.gamestatedictionaries as gamestatedictionaries
+import drafter.solver.game_state_dictionaries as game_state_dictionaries
 
 dictionaries = {}
 dictionaries[utilities.get_strategy_dictionary_name(8, DraftStage.select_defender)] \
@@ -40,12 +40,12 @@ dictionaries[utilities.get_strategy_dictionary_name(4, DraftStage.discard_attack
 
 def initialise_dictionaries(read, write):
     final_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(4, DraftStage.select_attackers)
-    gamestate_dictionary = gamestatedictionaries.dictionaries[final_gamestate_dictionary_name]
+    gamestate_dictionary = game_state_dictionaries.dictionaries[final_gamestate_dictionary_name]
 
     strategy_dictionary = process_gamestate_dictionary(read, write, gamestate_dictionary)
 
     while strategy_dictionary is not None:
-        gamestate_dictionary = gamestatedictionaries.get_previous_gamestate_dictionary(gamestate_dictionary)
+        gamestate_dictionary = game_state_dictionaries.get_previous_gamestate_dictionary(gamestate_dictionary)
 
         if (gamestate_dictionary is None):
             break
@@ -54,7 +54,7 @@ def initialise_dictionaries(read, write):
         if (arbitrary_gamestate is None):
             break
         elif (arbitrary_gamestate.draft_stage == DraftStage.discard_attacker):
-            gamestate_dictionary = gamestatedictionaries.get_previous_gamestate_dictionary(gamestate_dictionary)
+            gamestate_dictionary = game_state_dictionaries.get_previous_gamestate_dictionary(gamestate_dictionary)
 
         if (gamestate_dictionary is None):
             break
@@ -82,13 +82,13 @@ def process_gamestate_dictionary(read, write, gamestate_dictionary_to_solve, low
     draft_stage_strategies = None
 
     if read:
-        draft_stage_strategies = readwrite.read_dictionary(path)
+        draft_stage_strategies = read_write.read_dictionary(path)
 
     if draft_stage_strategies is None:
         draft_stage_strategies = get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategies)
 
         if write:
-            readwrite.write_dictionary(path, draft_stage_strategies)
+            read_write.write_dictionary(path, draft_stage_strategies)
 
     dictionaries[strategy_dictionary_name].update(draft_stage_strategies)
 
@@ -98,7 +98,7 @@ def process_gamestate_dictionary(read, write, gamestate_dictionary_to_solve, low
 def get_strategy_dictionary(gamestate_dictionary_to_solve, lower_level_strategies):
     arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
     n = arbitrary_gamestate.get_n()
-    draft_stage_to_solve = draftstage.get_next_draft_stage(arbitrary_gamestate.draft_stage)
+    draft_stage_to_solve = draft_stage.get_next_draft_stage(arbitrary_gamestate.draft_stage)
 
     if (not (n == 4 or n == 6 or n == 8)):
         sys.exit("{} is not a valid number of players. Choose 4, 6 or 8.".format(n))
@@ -153,7 +153,7 @@ def get_previous_strategy_dictionary(strategy_dictionary):
     n = strategy_dictionary_descriptor[0]
     draft_stage = strategy_dictionary_descriptor[0]
 
-    previous_draft_stage = draftstage.get_previous_draft_stage(draft_stage)
+    previous_draft_stage = draft_stage.get_previous_draft_stage(draft_stage)
 
     if (previous_draft_stage == DraftStage.none):
         previous_draft_stage = DraftStage.discard_attacker
@@ -172,13 +172,13 @@ def get_dictionary_for_gamestate(achieved_gamestate):
     n = achieved_gamestate.get_n()
     achieved_draft_stage = achieved_gamestate.draft_stage
 
-    draft_stage_to_solve = draftstage.get_next_draft_stage(achieved_draft_stage)
+    draft_stage_to_solve = draft_stage.get_next_draft_stage(achieved_draft_stage)
     if draft_stage_to_solve == DraftStage.none:
-        draft_stage_to_solve = draftstage.get_next_draft_stage(draft_stage_to_solve)
+        draft_stage_to_solve = draft_stage.get_next_draft_stage(draft_stage_to_solve)
 
-    supporting_draft_stage = draftstage.get_next_draft_stage(draft_stage_to_solve)
+    supporting_draft_stage = draft_stage.get_next_draft_stage(draft_stage_to_solve)
     if supporting_draft_stage == DraftStage.none:
-        supporting_draft_stage = draftstage.get_next_draft_stage(supporting_draft_stage)
+        supporting_draft_stage = draft_stage.get_next_draft_stage(supporting_draft_stage)
 
     if supporting_draft_stage.value < achieved_draft_stage.value:
         n -= 2

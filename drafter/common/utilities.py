@@ -3,19 +3,19 @@ from enum import Enum
 
 import nashpy  # 3rd party packages
 
-import drafter.data.matchinfo as matchinfo  # local source
+import drafter.data.match_info as match_info  # local source
 
 
 def get_transposed_pairing_dictionary():
-    friends = [friend for friend in matchinfo.pairing_dictionary]
-    enemies = [enemy for enemy in matchinfo.pairing_dictionary[friends[0]]]
+    friends = [friend for friend in match_info.pairing_dictionary]
+    enemies = [enemy for enemy in match_info.pairing_dictionary[friends[0]]]
 
     transposed_pairing_dictionary = {}
 
     for enemy in enemies:
         row = {}
         for friend in friends:
-            row[friend] = matchinfo.pairing_dictionary[friend][enemy]
+            row[friend] = match_info.pairing_dictionary[friend][enemy]
         transposed_pairing_dictionary[enemy] = row
 
     return transposed_pairing_dictionary
@@ -94,10 +94,10 @@ def print_overview(game_overview, roundTo=3):
 def get_path(filename):
     drafter_path = Path(__file__).parent.parent
 
-    if matchinfo.enemy_team_name is None:
+    if match_info.enemy_team_name is None:
         path = drafter_path / (filename)
     else:
-        subfolder = "resources/matches/" + matchinfo.enemy_team_name
+        subfolder = "resources/matches/" + match_info.enemy_team_name
         path = drafter_path / (subfolder + "/" + filename)
 
     return path
@@ -174,9 +174,9 @@ def get_value_from_input_dictionary(input_dictionary, friendly_player, enemy_pla
 
 
 def get_pairing_value(n, friendly_player, enemy_player, defender=None):
-    value = get_value_from_input_dictionary(matchinfo.pairing_dictionary, friendly_player, enemy_player)
+    value = get_value_from_input_dictionary(match_info.pairing_dictionary, friendly_player, enemy_player)
 
-    if len(matchinfo.map_importance_dictionary) > 0 and defender is not None:
+    if len(match_info.map_importance_dictionary) > 0 and defender is not None:
         if n == 8:
             map_importance_multiplier = 1
         elif n == 6:
@@ -186,7 +186,7 @@ def get_pairing_value(n, friendly_player, enemy_player, defender=None):
         else:
             raise ValueError("Incorrect n: {}. Must be 4, 6 or 8.".format(n))
 
-        map_importance_entry = get_value_from_input_dictionary(matchinfo.map_importance_dictionary, friendly_player, enemy_player)
+        map_importance_entry = get_value_from_input_dictionary(match_info.map_importance_dictionary, friendly_player, enemy_player)
         map_importance = map_importance_multiplier * map_importance_entry
 
         if friendly_player == defender:

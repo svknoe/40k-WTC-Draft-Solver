@@ -1,10 +1,10 @@
 import numpy as np  # standard libraries
 
 import drafter.common.utilities as utilities  # local source
-import drafter.common.gamestate as gamestate
-from drafter.common.gamestate import GameState
-from drafter.common.teampermutation import TeamPermutation
-from drafter.common.draftstage import DraftStage
+import drafter.common.game_state as game_state
+from drafter.common.game_state import GameState
+from drafter.common.team_permutation import TeamPermutation
+from drafter.common.draft_stage import DraftStage
 
 select_defender_cache = {}
 select_defender_cache_4 = {}
@@ -16,7 +16,7 @@ select_defender_cache[8] = select_defender_cache_8
 
 
 def select_defender(n, none_gamestate, select_attackers_strategies):
-    gamestate_matrix = gamestate.get_next_gamestate_matrix(none_gamestate)
+    gamestate_matrix = game_state.get_next_gamestate_matrix(none_gamestate)
     friendly_team_options = [row[0].friendly_team_permutation.defender for row in gamestate_matrix]
     enemy_team_options = [_gamestate.enemy_team_permutation.defender for _gamestate in gamestate_matrix[0]]
     game_array = get_game_array(gamestate_matrix, select_attackers_strategies)
@@ -36,7 +36,7 @@ select_attackers_cache[8] = select_attackers_cache_8
 
 
 def select_attackers(n, selected_defender_gamestate, discard_attacker_strategies):
-    gamestate_matrix = gamestate.get_next_gamestate_matrix(selected_defender_gamestate)
+    gamestate_matrix = game_state.get_next_gamestate_matrix(selected_defender_gamestate)
 
     friendly_team_options = [[row[0].friendly_team_permutation.attacker_A,
         row[0].friendly_team_permutation.attacker_B] for row in gamestate_matrix]

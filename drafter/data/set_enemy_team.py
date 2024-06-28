@@ -2,7 +2,7 @@ import os  # standard libraries
 from pathlib import Path
 from InquirerPy import inquirer
 
-import drafter.data.matchinfo as match_info  # local source
+import drafter.data.match_info as match_info  # local source
 
 
 def prompt_enemy_team():

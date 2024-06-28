@@ -1,11 +1,11 @@
 import drafter.common.utilities as utilities  # local source
-import drafter.common.gamestate as gamestate
-from drafter.common.gamestate import GameState
-from drafter.common.teampermutation import TeamPermutation
-from drafter.common.draftstage import DraftStage
-import drafter.common.draftstage as draftstage
-import drafter.data.matchinfo as matchinfo
-import drafter.data.readwrite as readwrite
+import drafter.common.game_state as game_state
+from drafter.common.game_state import GameState
+from drafter.common.team_permutation import TeamPermutation
+from drafter.common.draft_stage import DraftStage
+import drafter.common.draft_stage as draft_stage
+import drafter.data.match_info as match_info
+import drafter.data.read_write as read_write
 
 global_gamestate_dictionary_names = [
     utilities.get_gamestate_dictionary_name(8, DraftStage.none),
@@ -42,10 +42,10 @@ def initialise_dictionaries(read, write):
 def read_dictionaries():
     for name in global_gamestate_dictionary_names:
         path = utilities.get_path(name + ".json")
-        key_list = readwrite.read_dictionary(path)
+        key_list = read_write.read_dictionary(path)
 
         if (key_list is not None and len(key_list) > 0):
-            dictionaries[name] = {key: gamestate.get_gamestate_from_key(key) for key in key_list}
+            dictionaries[name] = {key: game_state.get_gamestate_from_key(key) for key in key_list}
         else:
             return False
 
@@ -56,12 +56,12 @@ def write_dictionaries():
     for name in global_gamestate_dictionary_names:
         path = utilities.get_path(name + ".json")
         string_representation = [key for key in dictionaries[name]]
-        readwrite.write_dictionary(path, string_representation)
+        read_write.write_dictionary(path, string_representation)
 
 
 def get_initial_game_state():
-    friends = [friend for friend in matchinfo.pairing_dictionary]
-    enemies = [enemy for enemy in matchinfo.pairing_dictionary[friends[0]]]
+    friends = [friend for friend in match_info.pairing_dictionary]
+    enemies = [enemy for enemy in match_info.pairing_dictionary[friends[0]]]
     initial_game_state = GameState(DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
 
     return initial_game_state
@@ -107,7 +107,7 @@ def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_
     if (new_gamestate_dictionaries is not None):
         new_gamestate_dictionaries.append(added_subdictionary)
 
-    next_draft_stage = draftstage.get_next_draft_stage(current_draft_stage)
+    next_draft_stage = draft_stage.get_next_draft_stage(current_draft_stage)
     next_n = current_n
 
     if (next_n == 4 and next_draft_stage == DraftStage.discard_attacker):
@@ -120,7 +120,7 @@ def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_
     generated_gamestate_dictionary = {}
     for parent_key in parent_dictionary:
         parent_gamestate = parent_dictionary[parent_key]
-        child_gamestates = gamestate.get_next_gamestates(parent_gamestate)
+        child_gamestates = game_state.get_next_gamestates(parent_gamestate)
         add_gamestates_to_dictionary(generated_gamestate_dictionary, child_gamestates)
 
     extend_gamestate_tree_from_seed_dictionary(generated_gamestate_dictionary, new_gamestate_dictionaries)
@@ -158,7 +158,7 @@ def get_previous_gamestate_dictionary(gamestate_dictionary):
     if n == 8 and draft_stage == DraftStage.none:
         return None
 
-    previous_draft_stage = draftstage.get_previous_draft_stage(draft_stage)
+    previous_draft_stage = draft_stage.get_previous_draft_stage(draft_stage)
 
     if (previous_draft_stage == DraftStage.discard_attacker):
         n += 2

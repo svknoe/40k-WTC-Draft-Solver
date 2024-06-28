@@ -2,24 +2,24 @@ import time  # standard libraries
 import sys
 
 import drafter.common.utilities as utilities  # local source
-import drafter.common.teampermutation as teampermutation
+import drafter.common.team_permutation as team_permutation
 import drafter.data.settings as settings
-import drafter.data.matchinfo as matchinfo
-import drafter.solver.strategydictionaries as strategydictionaries
-import drafter.solver.gamestatedictionaries as gamestatedictionaries
+import drafter.data.match_info as match_info
+import drafter.solver.strategy_dictionaries as strategy_dictionaries
+import drafter.solver.game_state_dictionaries as game_state_dictionaries
 
 
 def initialise():
-    initialise_input_dictionary(matchinfo.pairing_dictionary, "pairing_matrix.txt", True)
-    initialise_input_dictionary(matchinfo.map_importance_dictionary, "map_importance_matrix.txt", False)
+    initialise_input_dictionary(match_info.pairing_dictionary, "pairing_matrix.txt", True)
+    initialise_input_dictionary(match_info.map_importance_dictionary, "map_importance_matrix.txt", False)
 
     if (settings.restrict_attackers):
-        teampermutation.enable_restricted_attackers(settings.restricted_attackers_count)
+        team_permutation.enable_restricted_attackers(settings.restricted_attackers_count)
 
     t0 = time.time()
     print()
     print("Initialising gamestate dictionaries (This might take a few minutes):")
-    gamestatedictionaries.initialise_dictionaries(settings.read_gamestates, settings.write_gamestates)
+    game_state_dictionaries.initialise_dictionaries(settings.read_gamestates, settings.write_gamestates)
     print("time: {}s".format(round(time.time() - t0, 2)))
 
     t0 = time.time()
@@ -35,7 +35,7 @@ def initialise():
             long_runtime_warning = "Initialising strategy dictionaries (This might take many hours."
             + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):"
             print(long_runtime_warning)
-    strategydictionaries.initialise_dictionaries(settings.read_strategies, settings.write_strategies)
+    strategy_dictionaries.initialise_dictionaries(settings.read_strategies, settings.write_strategies)
     print("time: {}s".format(round(time.time() - t0, 2)))
 
 

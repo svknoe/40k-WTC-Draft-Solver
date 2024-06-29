@@ -32,7 +32,7 @@ docker run -it -v $(pwd):/code -p 8888:8888 drafter bash
 
 ### Installation
 
-You need to have the correct local environment and install all the needed packages.
+You need to have a local environment and install all the needed packages.
 See [Package manager](#package-manager) section for the full setup.
 
 ### Run project
@@ -49,12 +49,24 @@ The project uses the `requirements.txt` file to handle packages.
 
 ### Setup
 
-The `myenv` folder should automatically be used as a local environment by the code editor. If it is not, type the following to set the correct local environment:
+To create a local environment, in the root of your project, run:
 
 ```bash
-source myenv/bin/activate    # on Linux/Mac
-myenv\Scripts\activate.bat  # on Windows
+python -m venv ./.venv
 ```
+
+Then, if your code editor or terminal is not in updated to the newly created environemnt, run:
+
+```bash
+source ./.venv/bin/activate # MacOS bash/zsh
+source ./.venv/bin/activate.fish # MacOS fish
+./.venv/Scripts/activate.bat # Windows cmd.exe
+./.venv/Scripts/activate.ps1 # Windows PoerShell
+```
+
+### Install
+
+
 
 ### Updating a package
 

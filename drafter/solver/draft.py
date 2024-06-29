@@ -214,7 +214,6 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
         user_selection = None
 
         while (user_selection is None) or (user_selection not in team_options):
-            print()
             user_selection = input(("Provide {} selection (press 'enter' for suggested default, "
                 + "write '{}' to abort draft or '{}' to revert one step'):\n").format(team_name, keyword_quit, keyword_back))
 

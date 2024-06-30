@@ -16,7 +16,7 @@ def initialise():
     initialise_input_dictionary(match_info.map_importance_dictionary, "map_importance_matrix.csv", False)
 
     if (settings.restrict_attackers):
-        team_permutation.enable_restricted_attackers(settings.restricted_attackers_count)
+        team_permutation.enable_restricted_attackers()
 
     t0 = time.time()
     print("Initialising gamestate dictionaries (This might take a few minutes):")

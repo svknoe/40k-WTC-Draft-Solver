@@ -7,6 +7,7 @@ import drafter.data.match_info as match_info  # local source
 
 
 def get_transposed_pairing_dictionary():
+    # TODO: friends and ennemies are already generated in the initialisation of the pairing dictionary. Use them.
     friends = [friend for friend in match_info.pairing_dictionary]
     enemies = [enemy for enemy in match_info.pairing_dictionary[friends[0]]]
 

@@ -2,7 +2,7 @@ import os  # standard libraries
 from pathlib import Path
 from InquirerPy import inquirer
 
-import drafter.data.match_info as match_info  # local source
+from drafter.store import store  # local source
 
 
 def prompt_enemy_team():
@@ -11,7 +11,7 @@ def prompt_enemy_team():
     teams = os.listdir(matches_path)
     if "matches" in teams: teams.remove("matches")
 
-    match_info.enemy_team_name = inquirer.select(
+    store.enemy_team.name = inquirer.select(
         message="Select enemy team:",
         choices=teams,
     ).execute()

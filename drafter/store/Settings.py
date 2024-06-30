@@ -1,20 +1,3 @@
-class Store:
-    def __init__(self):
-        self.enemy_team = Team()
-        self.friendly_team = Team("Norway")
-        self.settings = Settings()
-        # Dictionary of gamestates
-        self.pairing = {}
-        self.map_importance = {}
-
-
-class Team:
-    def __init__(self, name: str = None, show_strategy_sugegstions: bool = True):
-        self.name: str = None
-        """ Name of the team. """
-        self.show_strategy_sugegstions: bool = True
-        """ Show strategy suggestions for this team. """
-
 class Settings:
     def __init__(self):
         self.invert_discard_attackers: bool = True

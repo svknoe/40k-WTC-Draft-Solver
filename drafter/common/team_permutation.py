@@ -7,10 +7,7 @@ import drafter.common.utilities as utilities  # local source
 from drafter.common.draft_stage import DraftStage
 from drafter.data import settings
 import drafter.data.match_info as match_info
-
-restrict_attackers_k = None
-regular_pairing_dictionary = None
-transposed_pairing_dictionary = None
+from drafter.store import store
 
 
 class TeamPermutation:
@@ -239,7 +236,7 @@ def get_attackers_team_permutations(defender_team_permutation, opposing_defender
 
     eligable_attackers = defender_team_permutation.remaining_players
 
-    if (restrict_attackers_k is not None):
+    if (settings.restricted_attackers_count is not None):
         eligable_attackers = get_heuristically_best_attackers(
             eligable_attackers, opposing_defender_team_permutation)
 
@@ -258,18 +255,15 @@ def get_attackers_team_permutations(defender_team_permutation, opposing_defender
 
 
 def enable_restricted_attackers():
-    global restrict_attackers_k, regular_pairing_dictionary, transposed_pairing_dictionary
-    restrict_attackers_k = settings.restricted_attackers_count
-    regular_pairing_dictionary = match_info.pairing_dictionary
-    transposed_pairing_dictionary = utilities.get_transposed_pairing_dictionary()
+    store.transposed_pairing = utilities.transpose_pairing_dictionary()
 
 
 def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_permutation):
     ranking_sign = -1
-    if eligable_attackers[0] in regular_pairing_dictionary:
-        pairing_dictionary = regular_pairing_dictionary
-    elif eligable_attackers[0] in transposed_pairing_dictionary:
-        pairing_dictionary = transposed_pairing_dictionary
+    if eligable_attackers[0] in match_info.pairing_dictionary:
+        pairing_dictionary = match_info.pairing_dictionary
+    elif eligable_attackers[0] in store.transposed_pairing:
+        pairing_dictionary = store.transposed_pairing
         ranking_sign *= -1
     else:
         raise ArgumentError("Inconsistent pairing matrices.")
@@ -285,7 +279,7 @@ def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_
         attackers_with_relative_advantages_against_defender.append([attacker, relative_advantage])
 
     ranked_attackers = sorted(attackers_with_relative_advantages_against_defender, key=lambda k: (ranking_sign * k[1]))
-    restricted_attackers_with_relatives_advantages = ranked_attackers[0:restrict_attackers_k]
+    restricted_attackers_with_relatives_advantages = ranked_attackers[0:settings.restricted_attackers_count]
     restricted_attackers = [pair[0] for pair in restricted_attackers_with_relatives_advantages]
 
     return restricted_attackers

@@ -3,20 +3,21 @@ from enum import Enum
 
 import nashpy  # 3rd party packages
 
-import drafter.data.match_info as match_info  # local source
+import drafter.data.match_info as match_info
+from drafter.store import store  # local source
 
 
-def get_transposed_pairing_dictionary():
-    # TODO: friends and ennemies are already generated in the initialisation of the pairing dictionary. Use them.
-    friends = [friend for friend in match_info.pairing_dictionary]
-    enemies = [enemy for enemy in match_info.pairing_dictionary[friends[0]]]
+# ! Using Pandas or NumPy might be a better option for matrix manipulation.
+def transpose_pairing_dictionary():
+    friends = [friend for friend in store.pairing]
+    enemies = [enemy for enemy in store.pairing[friends[0]]]
 
     transposed_pairing_dictionary = {}
 
     for enemy in enemies:
         row = {}
         for friend in friends:
-            row[friend] = match_info.pairing_dictionary[friend][enemy]
+            row[friend] = store.pairing[friend][enemy]
         transposed_pairing_dictionary[enemy] = row
 
     return transposed_pairing_dictionary
@@ -92,14 +93,14 @@ def print_overview(game_overview, roundTo=3):
     print("Value: ", round_value)
 
 
-def get_path(filename):
+def get_path(filename: str):
     drafter_path = Path(__file__).parent.parent
 
-    if match_info.enemy_team_name is None:
-        path = drafter_path / (filename)
+    if store.enemy_team.name is None:
+        path: Path = drafter_path / (filename)
     else:
-        subfolder = "resources/matches/" + match_info.enemy_team_name
-        path = drafter_path / (subfolder + "/" + filename)
+        subfolder = "resources/matches/" + store.enemy_team.name
+        path: Path = drafter_path / (subfolder + "/" + filename)
 
     return path
 

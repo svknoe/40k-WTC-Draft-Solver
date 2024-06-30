@@ -2,11 +2,10 @@ import os  # standard libraries
 from pathlib import Path
 from InquirerPy import inquirer
 
-import drafter.data.match_info as match_info
-from drafter.data.store import Store  # local source
+from drafter.store import store  # local source
 
 
-def prompt_enemy_team(store: Store):
+def prompt_enemy_team():
     source_path = Path(__file__).parent.parent
     matches_path = source_path / "resources/matches"
     teams = os.listdir(matches_path)

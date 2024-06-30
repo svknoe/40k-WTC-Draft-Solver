@@ -5,6 +5,7 @@ import re
 
 import drafter.common.utilities as utilities  # local source
 from drafter.common.draft_stage import DraftStage
+from drafter.data import settings
 import drafter.data.match_info as match_info
 
 restrict_attackers_k = None
@@ -256,9 +257,9 @@ def get_attackers_team_permutations(defender_team_permutation, opposing_defender
     return attackers_team_permutations
 
 
-def enable_restricted_attackers(k):
+def enable_restricted_attackers():
     global restrict_attackers_k, regular_pairing_dictionary, transposed_pairing_dictionary
-    restrict_attackers_k = k
+    restrict_attackers_k = settings.restricted_attackers_count
     regular_pairing_dictionary = match_info.pairing_dictionary
     transposed_pairing_dictionary = utilities.get_transposed_pairing_dictionary()
 

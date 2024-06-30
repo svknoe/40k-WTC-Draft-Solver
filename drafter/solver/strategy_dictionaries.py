@@ -8,6 +8,8 @@ from drafter.common.draft_stage import DraftStage
 import drafter.data.read_write as read_write
 import drafter.solver.games as games
 import drafter.solver.game_state_dictionaries as game_state_dictionaries
+from drafter.store import store
+from drafter.utils.wrapper import timing
 
 dictionaries = {}
 dictionaries[utilities.get_strategy_dictionary_name(8, DraftStage.select_defender)] \
@@ -38,7 +40,20 @@ dictionaries[utilities.get_strategy_dictionary_name(4, DraftStage.discard_attack
     = {'descriptor': [4, DraftStage.discard_attacker]}
 
 
-def initialise_dictionaries(read, write):
+@timing
+def initialise_dictionaries():
+    message = "Initialising strategy dictionaries (This might take a few minutes):"
+    if not store.settings.read_strategies:
+        if store.settings.restrict_attackers and store.settings.restricted_attackers_count < 5:
+            message = "Initialising strategy dictionaries (This might take an hour.):"
+        else:
+            message = "Initialising strategy dictionaries (This might take many hours."
+            + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):"
+    print(message)
+    
+    read = store.settings.read_strategies
+    write = store.settings.write_strategies
+    
     final_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(4, DraftStage.select_attackers)
     gamestate_dictionary = game_state_dictionaries.dictionaries[final_gamestate_dictionary_name]
 

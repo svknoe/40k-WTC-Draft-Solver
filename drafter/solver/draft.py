@@ -7,17 +7,16 @@ import drafter.common.team_permutation as team_permutation
 from drafter.common.game_state import GameState
 import drafter.common.draft_stage as draft_stage
 from drafter.common.draft_stage import DraftStage
-import drafter.data.settings as settings
-import drafter.data.match_info as match_info
 import drafter.solver.strategy_dictionaries as strategy_dictionaries
 import drafter.solver.game_state_dictionaries as game_state_dictionaries
+from drafter.store import store
 
 keyword_quit = "quit()"
 keyword_back = "back()"
 
 
 def play_draft():
-    print("\nPlaying draft against {}!\n".format(match_info.enemy_team_name))
+    print("\nPlaying draft against {}!\n".format(store.enemy_team.name))
     pairings = []
     current_gamestate = game_state_dictionaries.get_initial_game_state()
     gamestate_tree = [current_gamestate]
@@ -26,7 +25,7 @@ def play_draft():
         next_draft_stage = draft_stage.get_next_draft_stage(current_gamestate.draft_stage)
         
         display_draft_stage = next_draft_stage
-        if (settings.invert_discard_attackers and display_draft_stage == DraftStage.discard_attacker):
+        if (store.settings.invert_discard_attackers and display_draft_stage == DraftStage.discard_attacker):
             display_draft_stage = "select enemy attacker"
 
         n = current_gamestate.get_n()
@@ -35,7 +34,6 @@ def play_draft():
         print("   Current gamestate:")
         if len(pairings) > 0:
             print("      Matches:")
-            counter = 1
             for pairing in pairings:
                 print("         " + "[{}] ".format(pairing[0]) + pairing[1])
         print('\n' + current_gamestate.get_key("      ") + '\n')
@@ -62,7 +60,7 @@ def play_draft():
         update_dictionaries(current_gamestate)
 
     if len(pairings) == 8:
-        print("\nDraft vs. {} finished!\n".format(match_info.enemy_team_name))
+        print("\nDraft vs. {} finished!\n".format(store.enemy_team.name))
         print("Pairings:")
         for new_pairings in pairings:
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))
@@ -77,9 +75,9 @@ def play_draft():
         print("Difference: {}".format(round(difference, 2)))
 
         if difference > 0:
-            winner = settings.friendly_team_name
+            winner = store.friendly_team.name
         else:
-            winner = match_info.enemy_team_name
+            winner = store.enemy_team.name
 
         if abs(difference) <= 1:
             winner_message = "Draw"
@@ -154,7 +152,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
             option_combinations = itertools.combinations(options, 2)
             options = ["{} & {}".format(option[0], option[1]) for option in option_combinations]
 
-        if settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
+        if store.settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
             print("   {} options: {} vs\n    - {}\n".format(team_name, team_permutation.defender, options_string))
         else:
             print("   {} options:\n    - {}\n".format(team_name, options_string))
@@ -173,7 +171,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                 selection_player = selection_player[0] + " & " + selection_player[1]
 
             if (show_suggestions):
-                if settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
+                if store.settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
                     if selection_player == team_strategy[0][0]:
                         inverted_selection_player = team_strategy[1][0]
                     else:
@@ -198,7 +196,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                 else:
                     roll -= selection[1]
 
-        if settings.invert_discard_attackers:
+        if store.settings.invert_discard_attackers:
             if next_draft_stage == DraftStage.discard_attacker:
                 if suggested_selection == opponent_team_permutation.attacker_A:
                     suggested_selection = opponent_team_permutation.attacker_B
@@ -241,7 +239,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
 
         print(" - Selection made: {}".format(user_selection))
 
-        if settings.invert_discard_attackers:
+        if store.settings.invert_discard_attackers:
             if next_draft_stage == DraftStage.discard_attacker:
                 if user_selection == team_options[0]:
                     user_selection = team_options[1]
@@ -308,22 +306,22 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     friendly_team_strategy = gamestate_team_strategies[0]
     enemy_team_strategy = gamestate_team_strategies[1]
 
-    friendly_team_options, suggested_friendly_selection = print_team_options(settings.friendly_team_name,
-        friendly_team_permutation, friendly_team_strategy, enemy_team_permutation, settings.show_friendly_strategy_suggestions)
+    friendly_team_options, suggested_friendly_selection = print_team_options(store.settings.friendly_team_name,
+        friendly_team_permutation, friendly_team_strategy, enemy_team_permutation, store.settings.show_friendly_strategy_suggestions)
 
-    enemy_team_options, suggested_enemy_selection = print_team_options(match_info.enemy_team_name,
-        enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, settings.show_enemy_strategy_suggestions)
+    enemy_team_options, suggested_enemy_selection = print_team_options(store.enemy_team.name,
+        enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, store.settings.show_enemy_strategy_suggestions)
 
     friendly_team_selection = None
     enemy_team_selection = None
 
     while friendly_team_selection is None or enemy_team_selection is None:
-        friendly_team_selection = prompt_team_selection(settings.friendly_team_name, friendly_team_options, suggested_friendly_selection)
+        friendly_team_selection = prompt_team_selection(store.settings.friendly_team_name, friendly_team_options, suggested_friendly_selection)
 
         if friendly_team_selection is None or friendly_team_selection == keyword_quit or friendly_team_selection == keyword_back:
             return friendly_team_selection, []
 
-        enemy_team_selection = prompt_team_selection(match_info.enemy_team_name, enemy_team_options, suggested_enemy_selection)
+        enemy_team_selection = prompt_team_selection(store.enemy_team.name, enemy_team_options, suggested_enemy_selection)
 
         if enemy_team_selection is None or enemy_team_selection == keyword_quit:
             return enemy_team_selection, []

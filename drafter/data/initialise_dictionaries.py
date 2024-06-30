@@ -1,11 +1,9 @@
-import time  # standard libraries
 import sys
 import csv 
 from loguru import logger
 
 import drafter.common.utilities as utilities  # local source
 import drafter.common.team_permutation as team_permutation
-import drafter.data.settings as settings
 from drafter.store import store
 import drafter.solver.strategy_dictionaries as strategy_dictionaries
 import drafter.solver.game_state_dictionaries as game_state_dictionaries
@@ -18,25 +16,8 @@ def initialise():
     if (store.settings.restrict_attackers):
         team_permutation.enable_restricted_attackers()
 
-    t0 = time.time()
-    print("Initialising gamestate dictionaries (This might take a few minutes):")
-    game_state_dictionaries.initialise_dictionaries(store.settings.read_gamestates, store.settings.write_gamestates)
-    print("time: {}s".format(round(time.time() - t0, 2)))
-
-    t0 = time.time()
-    if store.settings.read_strategies:
-        print("Initialising strategy dictionaries (This might take a few minutes):")
-    else:
-        if store.settings.restrict_attackers and store.settings.restricted_attackers_count < 4:
-            print("Initialising strategy dictionaries (This might take a few minutes):")
-        elif store.settings.restrict_attackers and store.settings.restricted_attackers_count < 5:
-            print("Initialising strategy dictionaries (This might take an hour.):")
-        else:
-            long_runtime_warning = "Initialising strategy dictionaries (This might take many hours."
-            + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):"
-            print(long_runtime_warning)
-    strategy_dictionaries.initialise_dictionaries(store.settings.read_strategies, store.settings.write_strategies)
-    print("time: {}s".format(round(time.time() - t0, 2)))
+    game_state_dictionaries.initialise_dictionaries()
+    strategy_dictionaries.initialise_dictionaries()
 
 
 # ? This whole function seems to be used for formatting the csv file into a dictionary. Is it really needed?
@@ -79,7 +60,7 @@ def initialise_input_dictionary(filename: str, hard_crash: bool):
                         sys.exit()
 
             # ? Is this really needed? 2 people can have the same name.
-            if settings.require_unique_names & any(ally in enemies for ally in allies):
+            if store.settings.require_unique_names & any(ally in enemies for ally in allies):
                 raise ValueError("Player present on both teams. All player names must be unique.")    
             
             return matchup_matrice
@@ -88,4 +69,4 @@ def initialise_input_dictionary(filename: str, hard_crash: bool):
             raise SystemError("Missing file: {}".format(filename))
         else:
             logger.error("Warning: Missing file: {}", filename)
-            return
+            return {}

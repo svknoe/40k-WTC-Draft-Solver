@@ -1,9 +1,5 @@
 from pathlib import Path  # standard libraries
-from enum import Enum
-
 import nashpy  # 3rd party packages
-
-import drafter.data.match_info as match_info
 from drafter.store import store  # local source
 
 
@@ -176,9 +172,9 @@ def get_value_from_input_dictionary(input_dictionary, friendly_player, enemy_pla
 
 
 def get_pairing_value(n, friendly_player, enemy_player, defender=None):
-    value = get_value_from_input_dictionary(match_info.pairing_dictionary, friendly_player, enemy_player)
+    value = get_value_from_input_dictionary(store.pairing, friendly_player, enemy_player)
 
-    if len(match_info.map_importance_dictionary) > 0 and defender is not None:
+    if len(store.map_importance) > 0 and defender is not None:
         if n == 8:
             map_importance_multiplier = 1
         elif n == 6:
@@ -188,7 +184,7 @@ def get_pairing_value(n, friendly_player, enemy_player, defender=None):
         else:
             raise ValueError("Incorrect n: {}. Must be 4, 6 or 8.".format(n))
 
-        map_importance_entry = get_value_from_input_dictionary(match_info.map_importance_dictionary, friendly_player, enemy_player)
+        map_importance_entry = get_value_from_input_dictionary(store.map_importance, friendly_player, enemy_player)
         map_importance = map_importance_multiplier * map_importance_entry
 
         if friendly_player == defender:

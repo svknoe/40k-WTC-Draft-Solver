@@ -4,8 +4,9 @@ from drafter.common.game_state import GameState
 from drafter.common.team_permutation import TeamPermutation
 from drafter.common.draft_stage import DraftStage
 import drafter.common.draft_stage as draft_stage
-import drafter.data.match_info as match_info
 import drafter.data.read_write as read_write
+from drafter.store import store
+from drafter.utils.wrapper import timing
 
 global_gamestate_dictionary_names = [
     utilities.get_gamestate_dictionary_name(8, DraftStage.none),
@@ -18,15 +19,21 @@ global_gamestate_dictionary_names = [
     utilities.get_gamestate_dictionary_name(6, DraftStage.discard_attacker),
     utilities.get_gamestate_dictionary_name(4, DraftStage.none),
     utilities.get_gamestate_dictionary_name(4, DraftStage.select_defender),
-    utilities.get_gamestate_dictionary_name(4, DraftStage.select_attackers)]
+    utilities.get_gamestate_dictionary_name(4, DraftStage.select_attackers)
+]
 
 dictionaries = {}
 for name in global_gamestate_dictionary_names:
     dictionaries[name] = {}
 
+@timing
+def initialise_dictionaries():
+    print("Initialising gamestate dictionaries (This might take a few minutes):")
 
-def initialise_dictionaries(read, write):
+    read = store.settings.read_gamestates
+    write = store.settings.write_gamestates
     dictionaries_loaded_from_files = False
+
     if read:
         dictionaries_loaded_from_files = read_dictionaries()
 
@@ -60,8 +67,8 @@ def write_dictionaries():
 
 
 def get_initial_game_state():
-    friends = [friend for friend in match_info.pairing_dictionary]
-    enemies = [enemy for enemy in match_info.pairing_dictionary[friends[0]]]
+    friends = [friend for friend in store.pairing]
+    enemies = [enemy for enemy in store.pairing[friends[0]]]
     initial_game_state = GameState(DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
 
     return initial_game_state

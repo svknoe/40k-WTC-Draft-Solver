@@ -1,1 +1,1 @@
-from drafter.store.main import store
+from drafter.store.main import store, DraftStage

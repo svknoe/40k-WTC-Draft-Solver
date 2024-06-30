@@ -1,8 +1,8 @@
-import os  # standard libraries
+import os
 from pathlib import Path
 from InquirerPy import inquirer
 
-from drafter.store import store  # local source
+from drafter.store import store
 
 
 def prompt_enemy_team():

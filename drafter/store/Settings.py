@@ -13,5 +13,5 @@ class Settings:
         # Maximum number of attacker players considered by each team in each select attackers step.
         self.restrict_attackers: bool = True
         """ Explain what this is for """
-        self.restricted_attackers_count: int = 4
+        self.restricted_attackers_count: int = 3
         """ Explain what this is for """

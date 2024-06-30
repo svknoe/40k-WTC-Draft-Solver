@@ -5,8 +5,6 @@ import re
 
 import drafter.common.utilities as utilities  # local source
 from drafter.common.draft_stage import DraftStage
-from drafter.data import settings
-import drafter.data.match_info as match_info
 from drafter.store import store
 
 
@@ -236,7 +234,7 @@ def get_attackers_team_permutations(defender_team_permutation, opposing_defender
 
     eligable_attackers = defender_team_permutation.remaining_players
 
-    if (settings.restricted_attackers_count is not None):
+    if (store.settings.restricted_attackers_count is not None):
         eligable_attackers = get_heuristically_best_attackers(
             eligable_attackers, opposing_defender_team_permutation)
 
@@ -260,8 +258,8 @@ def enable_restricted_attackers():
 
 def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_permutation):
     ranking_sign = -1
-    if eligable_attackers[0] in match_info.pairing_dictionary:
-        pairing_dictionary = match_info.pairing_dictionary
+    if eligable_attackers[0] in store.pairing:
+        pairing_dictionary = store.pairing
     elif eligable_attackers[0] in store.transposed_pairing:
         pairing_dictionary = store.transposed_pairing
         ranking_sign *= -1
@@ -279,7 +277,7 @@ def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_
         attackers_with_relative_advantages_against_defender.append([attacker, relative_advantage])
 
     ranked_attackers = sorted(attackers_with_relative_advantages_against_defender, key=lambda k: (ranking_sign * k[1]))
-    restricted_attackers_with_relatives_advantages = ranked_attackers[0:settings.restricted_attackers_count]
+    restricted_attackers_with_relatives_advantages = ranked_attackers[0:store.settings.restricted_attackers_count]
     restricted_attackers = [pair[0] for pair in restricted_attackers_with_relatives_advantages]
 
     return restricted_attackers

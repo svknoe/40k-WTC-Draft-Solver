@@ -1,3 +1,4 @@
+from drafter.store.Gamestate import GameState
 from drafter.store.Settings import Settings
 from drafter.store.Team import Team
 
@@ -8,8 +9,6 @@ class Store:
         self.friendly_team = Team("Norway")
         self.settings = Settings()
         # Dictionary of gamestates
-        self.pairing = {}
-        self.map_importance = {}
-        self.transposed_pairing = {}
-
+        self.pairing = GameState()
+        self.map_importance = GameState()
 

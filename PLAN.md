@@ -154,15 +154,34 @@ upload honest ratings to someone's server. That decides the architecture:
 Effort: M–L (the UI is the bulk). Depends on B for the portable core and on
 C for the current-edition rules being in that core.
 
-## Sequencing
+## Sequencing (agreed 2026-07)
 
 ```
 M0 (done)  Restore + benchmarks + docs
-M1         A1 CI/golden tests → B1 LP → B2 int states → B3 value-only
-           C in parallel (small, independent)          → fast, current-rules CLI
-M2         B5 exact-solve decision → core-language decision → D1 web trainer MVP
-M3         Polish: exact mode in browser, sharing, README/site
+M1         Foundation: merge to main, golden tests, CI, pyproject
+M2         11th edition: best/worst map model + data migration
+           (before the rewrite, so golden tests pin the final rules)
+M3         Speedup: B1 LP → B2 states/context → B3 value-only → B4 parallel
+           → B5 exact-mode decision; small backend fixes ride along
+M4         Web: core-tech spike (TS vs WASM) + short design doc,
+           then vertical slices published to GitHub Pages from the first PR:
+           matrix editor → solve + strategy tables → full trainer
 ```
+
+Web MVP scope (decided 2026-07): **full train-against-the-bot**, shipped in
+the slices above.
+
+## Process
+
+Work happens as GitHub issues + PRs against a stable `main`:
+
+- one issue per plan step, with acceptance criteria (golden values, timing,
+  RAM); milestones M1–M4 group them;
+- one PR per step, CI must be green — nothing bigger than one plan step per
+  PR, so no refactor can strand half-finished again;
+- PLAN.md stays the direction document (ordering + decisions, updated when a
+  decision changes); GitHub is the status tracker — status is not duplicated
+  here.
 
 ## Non-goals (for now)
 
@@ -172,9 +191,3 @@ M3         Polish: exact mode in browser, sharing, README/site
 - **Exact WTC table-pool modelling:** the best/worst two-map model above is
   the agreed approximation; neutral games (refused-vs-refused, last players)
   use the 50/50 midpoint unless drafts show it matters.
-
-## Open questions (user input wanted)
-
-1. **Web app scope:** is training-vs-bot the MVP (recommended), or is
-   "solve + show me the strategy tables" alone already valuable to ship
-   earlier?

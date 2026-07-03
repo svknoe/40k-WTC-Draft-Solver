@@ -153,12 +153,12 @@ def add_gamestates_to_dictionary(dictionary, gamestates):
 def get_previous_gamestate_dictionary(gamestate_dictionary):
     arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary)
     n = arbitrary_gamestate.get_n()
-    draft_stage = arbitrary_gamestate.draft_stage
+    current_draft_stage = arbitrary_gamestate.draft_stage
 
-    if n == 8 and draft_stage == DraftStage.none:
+    if n == 8 and current_draft_stage == DraftStage.none:
         return None
 
-    previous_draft_stage = draft_stage.get_previous_draft_stage(draft_stage)
+    previous_draft_stage = draft_stage.get_previous_draft_stage(current_draft_stage)
 
     if (previous_draft_stage == DraftStage.discard_attacker):
         n += 2

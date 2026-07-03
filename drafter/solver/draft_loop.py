@@ -4,12 +4,17 @@ import drafter.solver.draft as draft  # local source
 
 
 def play():
+    completed_drafts = 0
+
     while True:
-        draft.play_draft()
+        if draft.play_draft():
+            completed_drafts += 1
         time.sleep(1)
         draft_again = prompt_draft_again()
         if not draft_again:
             break
+
+    return completed_drafts
 
 
 def prompt_draft_again():

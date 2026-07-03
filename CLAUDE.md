@@ -140,6 +140,10 @@ Notes for agents:
 - Packaging is `pyproject.toml` (setuptools backend, pinned deps, `drafter`
   console entry point); there is no `requirements.txt` anymore. Edit
   dependency pins directly in `pyproject.toml`.
+- Tests: `pytest` runs the fast golden-value suite (~15 s; the slow Scotland
+  test needs `-m slow`, ~5 min). CI (`.github/workflows/ci.yml`) runs the
+  smoke test + fast suite on every push/PR — keep it green; run `pytest`
+  before pushing solver changes.
 - JSON caches under `drafter/resources/matches/` are gitignored; never commit
   them. Never commit `.venv/` or `__pycache__/`.
 - PLAN.md holds the current revival roadmap (performance, 11th-edition map

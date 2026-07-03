@@ -8,6 +8,3 @@ def run():
     initialise_dictionaries.initialise()
     draft_loop.play()
     exit()
-
-
-run()

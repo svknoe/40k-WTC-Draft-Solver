@@ -106,9 +106,13 @@ The matrix is square (8×8; 4×4 and 6×6 also work — n must be 4, 6 or 8).
 ```powershell
 python -m venv .venv                 # Python 3.12
 ./.venv/Scripts/Activate.ps1         # or ./.venv/Scripts/activate.bat (cmd)
-pip install -r requirements.txt
+pip install -e ".[dev]"
 python -m drafter                    # pick opponent folder from the menu
 ```
+
+`pip install -e ".[dev]"` also installs a `drafter` console script (same
+entry point as `python -m drafter`), so `pipx install .` / `uvx --from .
+drafter` work too.
 
 Notes for agents:
 
@@ -120,8 +124,11 @@ Notes for agents:
 - `drafter/resources/matches/Smoke/` is a 4×4 fixture that solves in ~1 s —
   use it to verify changes end to end. `Test/` holds an 8-player matrix whose
   full 630 MB cache may exist locally from old runs.
-- `drafter/app.py` calls `run()` at import time (quirk: importing the module
-  starts the app). `python -m drafter` works because of it, not despite it.
+- `drafter/app.py` only defines `run()`; importing it is side-effect-free.
+  `drafter/__main__.py` defines `main()` (calls `app.run()`) and calls it
+  under the `if __name__ == '__main__':` guard, so `python -m drafter` and
+  the `drafter` console script (`drafter.__main__:main`) both go through the
+  same explicit call.
 - Settings are plain module globals in `drafter/data/settings.py`; there are
   no CLI flags. Monkeypatch settings before `initialise()` in scripts.
 - nashpy prints "degenerate game" RuntimeWarnings during solving — harmless,
@@ -130,9 +137,9 @@ Notes for agents:
 ## Conventions & state
 
 - Remote: https://github.com/svknoe/40k-WTC-Draft-Solver.git, default branch `main`.
-- No tests/CI as of 2026-07 beyond `scripts/smoke_draft.py`. No packaging
-  (`requirements.txt` only). Keep `requirements.txt` UTF-8 (a PowerShell
-  `pip freeze >` writes UTF-16 — avoid that).
+- Packaging is `pyproject.toml` (setuptools backend, pinned deps, `drafter`
+  console entry point); there is no `requirements.txt` anymore. Edit
+  dependency pins directly in `pyproject.toml`.
 - JSON caches under `drafter/resources/matches/` are gitignored; never commit
   them. Never commit `.venv/` or `__pycache__/`.
 - PLAN.md holds the current revival roadmap (performance, 11th-edition map

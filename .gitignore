@@ -5,3 +5,8 @@ drafter/resources/matches/**/*.json
 todo.txt
 
 */lib
+
+# packaging artifacts (pip install -e . builds these in-tree)
+*.egg-info/
+build/
+dist/

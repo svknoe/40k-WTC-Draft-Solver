@@ -61,21 +61,3 @@ When adding/updating/deleting a package through `pip`, it is needed to update th
 ```bash
 pip freeze > requirements.txt
 ```
-
-## Docker setup
-
-### Prerequisites
-
-- Have [Docker Desktop](https://www.docker.com/products/docker-desktop/) or [Orbstack](https://orbstack.dev/) installed
-
-### Run project
-
-```bash
-# build
-docker build . -t drafter
-
-# run container and get access to container console
-docker run -it -v $(pwd):/code -p 8888:8888 drafter bash
-# note: -p 8888:8888 maps port 8888 to your host machine and is needed for jupyter notebooks
-# note: -v $(pwd):/code mounts your current working directory (presumably your project directory) and makes any changes instantly available in the running container
-```

@@ -173,6 +173,9 @@ the slices above.
 
 ## Process
 
+Status is tracked on GitHub: milestones M1–M4 with one issue per step —
+https://github.com/svknoe/40k-WTC-Draft-Solver/milestones
+
 Work happens as GitHub issues + PRs against a stable `main`:
 
 - one issue per plan step, with acceptance criteria (golden values, timing,

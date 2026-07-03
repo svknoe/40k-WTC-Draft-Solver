@@ -61,14 +61,15 @@ def play_draft():
 
         update_dictionaries(current_gamestate)
 
-    if len(pairings) == 8:
+    initial_n = gamestate_tree[0].get_n()
+    if len(pairings) == initial_n:
         print("\nDraft vs. {} finished!\n".format(match_info.enemy_team_name))
         print("Pairings:")
         for new_pairings in pairings:
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))
         result_sum = sum([pairing[0] for pairing in pairings])
         print("\nTotal: {}".format(round(result_sum, 2)))
-        initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(8, DraftStage.select_defender)
+        initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(initial_n, DraftStage.select_defender)
         initial_strategy_dictionary = strategy_dictionaries.dictionaries[initial_strategy_dictionary_name]
         initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dictionary)
         expected_result = initial_strategy[2]

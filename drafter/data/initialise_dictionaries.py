@@ -32,8 +32,8 @@ def initialise():
         elif settings.restrict_attackers and settings.restricted_attackers_count < 5:
             print("Initialising strategy dictionaries (This might take an hour.):")
         else:
-            long_runtime_warning = "Initialising strategy dictionaries (This might take many hours."
-            + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):"
+            long_runtime_warning = ("Initialising strategy dictionaries (This might take many hours."
+                + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):")
             print(long_runtime_warning)
     strategy_dictionaries.initialise_dictionaries(settings.read_strategies, settings.write_strategies)
     print("time: {}s".format(round(time.time() - t0, 2)))

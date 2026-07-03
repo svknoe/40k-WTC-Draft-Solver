@@ -25,9 +25,17 @@ In the root of the project, run.
  python -m drafter
 ```
 
+Once installed (see below), the `drafter` console command runs the same
+entry point:
+
+```bash
+drafter
+```
+
 ## Package manager
 
-The project uses the `requirements.txt` file to handle packages.
+The project uses `pyproject.toml` (setuptools backend, pinned dependencies)
+to handle packages.
 
 ### Setup
 
@@ -48,20 +56,18 @@ source ./.venv/bin/activate.fish # MacOS fish
 
 ### Install
 
-To install all the required packages, run:
+To install the project and its dependencies (editable install, includes
+`pytest` for running tests), run:
 
 ```bash
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
+
+This also installs the `drafter` console script, so `pipx install .` or
+`uvx --from . drafter` run the bot without a manual venv/activate step.
 
 ### Updating a package
 
-When adding/updating/deleting a package through `pip`, it is needed to update the `requirements.txt` using the following command:
-
-```bash
-pip freeze > requirements.txt
-```
-
-> **Windows note:** run this from cmd or Git Bash, not PowerShell — PowerShell's
-> `>` writes UTF-16, which breaks the file for other tools. From PowerShell use:
-> `pip freeze | Set-Content -Encoding utf8 requirements.txt`
+When adding/updating/deleting a dependency, edit the `dependencies` (or
+`[project.optional-dependencies] dev`) list in `pyproject.toml` directly and
+pin the new version with `==`.

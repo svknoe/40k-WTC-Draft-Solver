@@ -61,3 +61,7 @@ When adding/updating/deleting a package through `pip`, it is needed to update th
 ```bash
 pip freeze > requirements.txt
 ```
+
+> **Windows note:** run this from cmd or Git Bash, not PowerShell — PowerShell's
+> `>` writes UTF-16, which breaks the file for other tools. From PowerShell use:
+> `pip freeze | Set-Content -Encoding utf8 requirements.txt`

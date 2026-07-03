@@ -148,26 +148,6 @@ def extend_dictionary(new_gamestates_to_solve, lower_level_strategies):
     return strategies
 
 
-def get_previous_strategy_dictionary(strategy_dictionary):
-    strategy_dictionary_descriptor = strategy_dictionary['descriptor']
-    n = strategy_dictionary_descriptor[0]
-    draft_stage = strategy_dictionary_descriptor[0]
-
-    previous_draft_stage = draft_stage.get_previous_draft_stage(draft_stage)
-
-    if (previous_draft_stage == DraftStage.none):
-        previous_draft_stage = DraftStage.discard_attacker
-        n += 2
-
-        if n > 8:
-            return None
-
-    previous_strategy_dictionary_name = utilities.get_strategy_dictionary_name(n, previous_draft_stage)
-    previous_strategy_dictionary = dictionaries[previous_strategy_dictionary_name]
-
-    return previous_strategy_dictionary
-
-
 def get_dictionary_for_gamestate(achieved_gamestate):
     n = achieved_gamestate.get_n()
     achieved_draft_stage = achieved_gamestate.draft_stage

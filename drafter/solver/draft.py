@@ -21,6 +21,8 @@ def play_draft():
     pairings = []
     current_gamestate = game_state_dictionaries.get_initial_game_state()
     gamestate_tree = [current_gamestate]
+    step_pairing_counts = []
+    draft_finished = False
 
     while True:
         next_draft_stage = draft_stage.get_next_draft_stage(current_gamestate.draft_stage)
@@ -47,22 +49,25 @@ def play_draft():
         elif (current_gamestate == keyword_back):
             if (len(gamestate_tree) > 1):
                 gamestate_tree.pop()
-            if (len(pairings) > 0):
-                pairings.pop()
+                reverted_pairings_count = step_pairing_counts.pop()
+                if reverted_pairings_count > 0:
+                    del pairings[-reverted_pairings_count:]
             current_gamestate = gamestate_tree[-1]
         else:
             gamestate_tree.append(current_gamestate)
+            step_pairing_counts.append(len(new_pairings))
 
             if len(new_pairings) > 0:
                 pairings.extend(new_pairings)
 
         if current_gamestate is None:
+            draft_finished = True
             break
 
         update_dictionaries(current_gamestate)
 
-    initial_n = gamestate_tree[0].get_n()
-    if len(pairings) == initial_n:
+    if draft_finished:
+        initial_n = gamestate_tree[0].get_n()
         print("\nDraft vs. {} finished!\n".format(match_info.enemy_team_name))
         print("Pairings:")
         for new_pairings in pairings:
@@ -94,6 +99,8 @@ def play_draft():
         print("\n - " + winner_message + "!\n")
     else:
         print("Draft aborted.")
+
+    return draft_finished
 
 
 def get_team_strategies(_gamestate):

@@ -7,6 +7,7 @@ networkx==3.3
 numpy==2.0.0
 pfzy==0.3.4
 prompt_toolkit==3.0.47
+pytest==8.3.2
 scipy==1.14.0
 wcwidth==0.2.13
 win32-setctime==1.1.0

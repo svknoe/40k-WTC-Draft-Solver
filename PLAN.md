@@ -7,8 +7,9 @@ Roadmap for bringing the WTC draft solver back to life. Four workstreams:
 ## Where we are (baseline, measured 2026-07-03)
 
 The 2024 breakage is fixed (a mass-rename introduced a module-shadowing bug
-that crashed every fresh solve; see commit b070378). Verified working again
-end to end. Baseline numbers on a Ryzen 9800X3D, Scotland 8×8 matrix:
+that crashed every fresh solve; see
+https://github.com/svknoe/40k-WTC-Draft-Solver/pull/5). Verified working
+again end to end. Baseline numbers on a Ryzen 9800X3D, Scotland 8×8 matrix:
 
 | Metric | k=3 fresh solve | full cache load (k=4-era) |
 |---|---|---|

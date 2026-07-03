@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        # Explicit bash gets -o pipefail, so a failure on either side of the
+        # smoke test's pipe fails the step.
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Smoke test (scripts/smoke_draft.py)
+        run: printf '\n\n\n\n\n\nn\n' | python scripts/smoke_draft.py
+
+      - name: Fast golden tests
+        run: python -m pytest

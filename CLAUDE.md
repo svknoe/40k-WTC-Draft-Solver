@@ -135,7 +135,5 @@ Notes for agents:
   `pip freeze >` writes UTF-16 — avoid that).
 - JSON caches under `drafter/resources/matches/` are gitignored; never commit
   them. Never commit `.venv/` or `__pycache__/`.
-- `origin/refactor-*` branches are abandoned 2024 WIP (a "data store"
-  refactor) — reference only.
 - PLAN.md holds the current revival roadmap (performance, 11th-edition map
   rules, web distribution). Read it before starting substantial work.

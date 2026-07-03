@@ -110,6 +110,14 @@ the friendly side's perspective.
     as a 50/50 model of who ends up with map advantage. Make this a setting.
 - **Remove** the old map-importance path and its n-scaled multiplier
   (0.5/0.75/1.0) — the new model needs no free parameters.
+- **Rating-scale convention (decided 2026-07):** the engine keeps the
+  internal symmetric margin scale (-8…+8; zero-sum math and verdicts stay
+  clean), but every human-facing surface — website above all — speaks the
+  community's 0–20 language: a matchup reads "15 / 12" (expected score out
+  of 20 on best map / worst map), a team result reads "83 – 77". Conversion
+  is affine (score = 10 + margin/2) and lives strictly in the presentation
+  layer. CSV inputs should accept 0–20 numbers (and the legacy --/-/0/+/++
+  tokens) and normalise on read.
 - Note: the WTC 2026 in-person procedure (see PDF) is a shared pool of 8
   tables with a table-choice token alternating between teams. Modelling the
   pool exactly would multiply the state space by table-subsets; the

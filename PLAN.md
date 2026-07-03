@@ -69,7 +69,11 @@ Plan, in order, each step measurable against the golden tests:
    players → packs into one 32-bit int; a gamestate is two ints. Values live
    in `dict[int64] → float` or numpy arrays. Names only exist at the
    presentation layer. Expected: RAM ~2 GB → tens of MB at k=3; caches shrink
-   accordingly (or become unnecessary).
+   accordingly (or become unnecessary). This step also retires the
+   module-level globals (`match_info`, mutable `settings`) in favour of an
+   explicit solver-context object passed around — a from-scratch rebuild of
+   the idea behind the abandoned 2024 "store" refactor (branches deleted
+   2026-07; recoverable from GitHub PR refs if ever needed).
 3. **B3 — value-only backward induction.** Persist/propagate only game
    *values*; recompute the mixed strategy on demand for the state currently
    shown in the draft loop (one LP, instant). Kills the 271 MB strategy
@@ -88,12 +92,14 @@ fixes (B1–B3) are language-independent and likely sufficient for the CLI, and
 they define the small portable core that D needs. Effort: M (B1–B3), each
 step landable separately.
 
-## C. 11th-edition map model
+## C. 11th-edition map model (decided 2026-07)
 
 Rule change to model: for every pairing the possible missions/maps are known
-in advance and **the defender picks the map** (1 of 3). So captains rate each
-matchup twice: on the pairing's **best map** and **worst map** (from the
-friendly side's perspective).
+in advance and **the defender picks the map** (1 of 3). Because map choice is
+zero-sum, the middle map is never picked in practice: whoever defends takes
+the map best for themselves, which is the worst for the opponent. So captains
+rate each matchup on exactly **two** maps — the pairing's best and worst from
+the friendly side's perspective.
 
 - **Inputs:** `pairing_matrix_best.csv` + `pairing_matrix_worst.csv`
   (same shape as today). Replaces `map_importance_matrix.csv`.
@@ -155,20 +161,20 @@ M0 (done)  Restore + benchmarks + docs
 M1         A1 CI/golden tests → B1 LP → B2 int states → B3 value-only
            C in parallel (small, independent)          → fast, current-rules CLI
 M2         B5 exact-solve decision → core-language decision → D1 web trainer MVP
-M3         Polish: 5-player format(?), exact mode in browser, sharing, README/site
+M3         Polish: exact mode in browser, sharing, README/site
 ```
+
+## Non-goals (for now)
+
+- **5-player teams:** deliberately deferred indefinitely (decided 2026-07).
+  The engine stays 4/6/8-per-side; a 5-player draft has a different stage
+  graph and gets its own workstream if it ever becomes relevant.
+- **Exact WTC table-pool modelling:** the best/worst two-map model above is
+  the agreed approximation; neutral games (refused-vs-refused, last players)
+  use the 50/50 midpoint unless drafts show it matters.
 
 ## Open questions (user input wanted)
 
-1. **5-player teams:** the engine supports 4/6/8 per side. You mentioned
-   "typically 8 or 5" — which events use 5, and what is their exact draft
-   procedure? (Different structure: needs its own stage graph, medium
-   effort.)
-2. **Map model:** confirm the best/worst-map scheme above matches how your
-   team wants to rate matchups under 11th edition (vs. modelling the WTC
-   8-table pool explicitly).
-3. **Neutral-game map assumption:** midpoint of best/worst OK, or do you
-   want the roll-off/alternating-table detail modelled?
-4. **Web app scope:** is training-vs-bot the MVP (recommended), or is
+1. **Web app scope:** is training-vs-bot the MVP (recommended), or is
    "solve + show me the strategy tables" alone already valuable to ship
    earlier?

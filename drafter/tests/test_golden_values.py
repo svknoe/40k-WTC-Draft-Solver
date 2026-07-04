@@ -52,6 +52,10 @@ from drafter.tests.conftest import solve_fixture, strategy_probabilities, suppor
 # 10 + (pairing +/- importance)/2) doubles the file notation; no Smoke cell
 # clamps, so the internal values -- and this pin -- are bit-identical.
 # Re-verified: 3x bit-identical fresh solves + the independent brute force.
+#
+# discard_attacker child-key fix (issue #32): UNCHANGED again, provably --
+# the bug lived in the n=6/8 recursion; a 4-player draft only uses the
+# closed-form endgame. Re-verified 3x bit-identical.
 
 SMOKE_K = 4
 SMOKE_EXPECTED_VALUE = 4.997553182223153
@@ -87,13 +91,17 @@ def test_smoke_4_player_top_level_strategies():
 # repo's Ryzen 9800X3D-class dev box, cold Python start included): ~12s.
 # Comfortably under the ~30s CI-friendly target from the issue.
 #
-# Value re-pinned for the best/worst map model (issue #9): 3 bit-identical
-# fresh solves via scripts/compute_golden_value.py Six 4. Unchanged by the
-# deviation-scale correction (issue #30) -- parse halving and notation
-# doubling cancel exactly, no Six cell clamps (re-verified 3x).
+# Value re-pinned for the discard_attacker child-key fix (issue #32): 3
+# bit-identical fresh solves via scripts/compute_golden_value.py Six 4, and
+# cross-checked against the independent scripts/brute_force_oracle.py
+# (explicit recursion + scipy linprog): oracle 1.9058104884743514 on the
+# unrestricted tree, fixed engine 1.9058104884743512 unrestricted AND at k=4
+# (the k-heuristic does not bind on this fixture) -- 1 ulp agreement, same
+# top-level mix (Cleo 0.103 / Elin 0.897). Previous pins: 1.5140341559225499
+# (issues #9/#30, encoding the pre-#32 child-key bug).
 
 SIX_K = 4
-SIX_EXPECTED_VALUE = 1.5140341559225499
+SIX_EXPECTED_VALUE = 1.9058104884743512
 
 
 def test_six_player_top_level_value():
@@ -107,13 +115,13 @@ def test_six_player_top_level_value():
 # by default (see pytest.ini's `addopts = -m "not slow"`). Run explicitly:
 #     .venv\\Scripts\\python.exe -m pytest -m slow
 #
-# The full-precision value was re-pinned for the best/worst map model
-# (issue #9) via two bit-identical fresh solves of
+# The full-precision value was re-pinned for the discard_attacker child-key
+# fix (issue #32) via two bit-identical fresh solves of
 # scripts/compute_golden_value.py Scotland 3 (~4.5 min each on this repo's
-# dev box); see the issue #9 PR for the raw run output. Unchanged by the
-# deviation-scale correction (issue #30): parse halving and notation doubling
-# cancel, and the one clamped cell (Bjorn vs Sisters worst map, -13 -> -10)
-# never reaches the k=3 equilibrium path (re-verified 2x bit-identical).
+# dev box); see the issue #32 PR for the raw run output. The fix moved the
+# value from 6.348743764113647 (pinned in #9, unchanged by #30) and flipped
+# the friendly defender equilibrium from pure Petter to pure Mariusz -- the
+# bug had double-counted kept attackers, inflating continuations.
 #
 # Only the value is pinned exactly. The top-level strategy *support sets*
 # (which players get non-negligible probability) are pinned as sets, but the
@@ -121,12 +129,12 @@ def test_six_player_top_level_value():
 # top-level game can return different (but equally valid) equilibria/orderings
 # depending on nashpy's internal enumeration order, while the *value* of a
 # zero-sum game's equilibria is unique and stable. The support sets below have
-# been identical across independent fresh solves (2026-07, post-#9 re-pin:
-# both top-level strategies are pure under the new model).
+# been identical across independent fresh solves (2026-07, post-#32 re-pin:
+# both top-level strategies are pure).
 
 SCOTLAND_K = 3
-SCOTLAND_EXPECTED_VALUE = 6.348743764113647
-SCOTLAND_EXPECTED_FRIENDLY_SUPPORT = frozenset({"Petter"})
+SCOTLAND_EXPECTED_VALUE = 5.875946490218083
+SCOTLAND_EXPECTED_FRIENDLY_SUPPORT = frozenset({"Mariusz"})
 SCOTLAND_EXPECTED_ENEMY_SUPPORT = frozenset({"Drukhari"})
 
 

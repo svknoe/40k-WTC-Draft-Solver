@@ -94,16 +94,18 @@ def test_six_player_top_level_value():
 # repo's dev box, matching the ~5 min / 275s PLAN.md baseline) and hard-coded
 # here; see the PR report for the raw run output.
 #
-# Only the value is pinned exactly. The top-level strategy support set (which
-# players get non-negligible probability) is asserted too, since it is stable
-# across runs at this precision, but the exact probabilities are not asserted
-# here -- support enumeration over an 8-player top-level game can return
-# different (but equally valid) equilibria/orderings depending on nashpy's
-# internal enumeration order, while the *value* of a zero-sum game's
-# equilibria is unique and stable.
+# Only the value is pinned exactly. The top-level strategy *support sets*
+# (which players get non-negligible probability) are pinned as sets, but the
+# exact probabilities are not -- support enumeration over an 8-player
+# top-level game can return different (but equally valid) equilibria/orderings
+# depending on nashpy's internal enumeration order, while the *value* of a
+# zero-sum game's equilibria is unique and stable. The support sets below have
+# been identical across independent fresh solves (2026-07 baseline runs).
 
 SCOTLAND_K = 3
 SCOTLAND_EXPECTED_VALUE = 6.189614531232928
+SCOTLAND_EXPECTED_FRIENDLY_SUPPORT = frozenset({"Mariusz", "Petter"})
+SCOTLAND_EXPECTED_ENEMY_SUPPORT = frozenset({"AdMech", "Drukhari"})
 
 
 @pytest.mark.slow
@@ -111,5 +113,5 @@ def test_scotland_8_player_k3():
     result = solve_fixture("Scotland", SCOTLAND_K, timeout=900)
     assert result["n"] == 8
     assert result["value"] == pytest.approx(SCOTLAND_EXPECTED_VALUE, abs=1e-6)
-    assert len(support_set(result["friendly"])) >= 1
-    assert len(support_set(result["enemy"])) >= 1
+    assert support_set(result["friendly"]) == SCOTLAND_EXPECTED_FRIENDLY_SUPPORT
+    assert support_set(result["enemy"]) == SCOTLAND_EXPECTED_ENEMY_SUPPORT

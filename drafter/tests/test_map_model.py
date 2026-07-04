@@ -48,6 +48,14 @@ def test_parse_rating_rejects_junk_and_out_of_scale(value):
         initialise_dictionaries.parse_rating(value)
 
 
+@pytest.mark.parametrize("value,margin", [(" 0", 0), ("0 ", 0), (" ++", 8), (" 15", 10)])
+def test_parse_rating_strips_whitespace_before_token_lookup(value, margin):
+    # float() ignores whitespace but a dict lookup does not; without stripping,
+    # ' 0' would silently parse as the 0-20 score 0 (margin -20) instead of the
+    # legacy even-matchup token.
+    assert initialise_dictionaries.parse_rating(value) == margin
+
+
 # --- get_pairing_value: defender picks the map ---
 
 @pytest.fixture

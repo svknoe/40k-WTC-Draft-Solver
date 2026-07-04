@@ -68,7 +68,13 @@ def parse_rating(value):
     Accepts the legacy --/-/0/+/++ tokens (margins -8..+8) or a number on the
     community 0-20 scale (expected score out of 20), converted via
     margin = 2 * (score - 10). Raises ValueError for anything else.
+
+    Stripping first matters: float() ignores whitespace, so without it ' 0'
+    (a space after the comma in the CSV) would skip the token lookup and
+    silently parse as the score 0 (margin -20) instead of an even matchup.
     """
+    value = value.strip()
+
     if value in legacy_token_encoding:
         return legacy_token_encoding[value]
 

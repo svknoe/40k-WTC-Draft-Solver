@@ -19,10 +19,12 @@ again end to end. Baseline numbers on a Ryzen 9800X3D, Scotland 8×8 matrix:
 | Peak RAM | ~2 GB | — |
 | Cache size on disk | — | ~630 MB JSON |
 
+Measured 2026-07-04 (interactive run, same machine): **k=4 fresh solve ≈ 15
+min** — the primary number workstream B's acceptance criteria measure against.
 Historical report: k=4 fresh solve ≈ 1 h / 16 GB on older hardware. State
-count fans out ~4× per k increment at each select-attackers stage, so that is
-consistent. The 4-player stages dominate everything (705k of the 1.55M states
-at k=3).
+count fans out ~4× per k increment at each select-attackers stage, so both
+timings are consistent. The 4-player stages dominate everything (705k of the
+1.55M states at k=3).
 
 ## A. Foundation (small, do first)
 

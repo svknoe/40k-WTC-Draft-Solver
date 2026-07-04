@@ -4,18 +4,19 @@ from enum import Enum
 import nashpy  # 3rd party packages
 
 import drafter.data.match_info as match_info  # local source
+import drafter.data.settings as settings
 
 
-def get_transposed_pairing_dictionary():
-    friends = [friend for friend in match_info.pairing_dictionary]
-    enemies = [enemy for enemy in match_info.pairing_dictionary[friends[0]]]
+def get_transposed_pairing_dictionary(pairing_dictionary):
+    friends = [friend for friend in pairing_dictionary]
+    enemies = [enemy for enemy in pairing_dictionary[friends[0]]]
 
     transposed_pairing_dictionary = {}
 
     for enemy in enemies:
         row = {}
         for friend in friends:
-            row[friend] = match_info.pairing_dictionary[friend][enemy]
+            row[friend] = pairing_dictionary[friend][enemy]
         transposed_pairing_dictionary[enemy] = row
 
     return transposed_pairing_dictionary
@@ -173,34 +174,30 @@ def get_value_from_input_dictionary(input_dictionary, friendly_player, enemy_pla
     return value
 
 
-def get_pairing_value(n, friendly_player, enemy_player, defender=None):
-    value = get_value_from_input_dictionary(match_info.pairing_dictionary, friendly_player, enemy_player)
+# The defender picks the map (11th-edition rule, PLAN.md workstream C): a
+# friendly defender gets the pairing's best-map value, an enemy defender
+# forces the worst-map value, and games without a defender (refused-vs-refused,
+# last players) fall settings.neutral_map_weight of the way from worst to best.
+def get_pairing_value(friendly_player, enemy_player, defender=None):
+    best_value = get_value_from_input_dictionary(match_info.pairing_dictionary_best, friendly_player, enemy_player)
+    worst_value = get_value_from_input_dictionary(match_info.pairing_dictionary_worst, friendly_player, enemy_player)
 
-    if len(match_info.map_importance_dictionary) > 0 and defender is not None:
-        if n == 8:
-            map_importance_multiplier = 1
-        elif n == 6:
-            map_importance_multiplier = 0.75
-        elif n == 4:
-            map_importance_multiplier = 0.5
-        else:
-            raise ValueError("Incorrect n: {}. Must be 4, 6 or 8.".format(n))
-
-        map_importance_entry = get_value_from_input_dictionary(match_info.map_importance_dictionary, friendly_player, enemy_player)
-        map_importance = map_importance_multiplier * map_importance_entry
-
-        if friendly_player == defender:
-            value += map_importance
-        elif enemy_player == defender:
-            value -= map_importance
-        else:
-            raise ValueError("Unknown defender: {}".format(defender))
-
-    return value
+    if defender is None:
+        return get_neutral_value(best_value, worst_value)
+    elif friendly_player == defender:
+        return best_value
+    elif enemy_player == defender:
+        return worst_value
+    else:
+        raise ValueError("Unknown defender: {}".format(defender))
 
 
-def get_pairing_string(n, friendly_player, enemy_player, defender=None):
-    value = get_pairing_value(n, friendly_player, enemy_player, defender)
+def get_neutral_value(best_value, worst_value):
+    return worst_value + settings.neutral_map_weight * (best_value - worst_value)
+
+
+def get_pairing_string(friendly_player, enemy_player, defender=None):
+    value = get_pairing_value(friendly_player, enemy_player, defender)
 
     friendly_player_string = friendly_player
     enemy_player_string = enemy_player

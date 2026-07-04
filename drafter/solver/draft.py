@@ -292,14 +292,12 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
             e_nondiscarded_attacker = enemy_team_permutation.get_nondiscarded_attacker(e_discarded_attacker)
             e_remaining_players = enemy_team_permutation.remaining_players
 
-            n = _gamestate.get_n()
-
-            pairings.append(utilities.get_pairing_string(n, f_defender, e_nondiscarded_attacker, f_defender))
-            pairings.append(utilities.get_pairing_string(n, f_nondiscarded_attacker, e_defender, e_defender))
+            pairings.append(utilities.get_pairing_string(f_defender, e_nondiscarded_attacker, f_defender))
+            pairings.append(utilities.get_pairing_string(f_nondiscarded_attacker, e_defender, e_defender))
 
             if len(f_remaining_players) == 1:
-                pairings.append(utilities.get_pairing_string(n, f_discarded_attacker, e_discarded_attacker))
-                pairings.append(utilities.get_pairing_string(n, f_remaining_players[0], e_remaining_players[0]))
+                pairings.append(utilities.get_pairing_string(f_discarded_attacker, e_discarded_attacker))
+                pairings.append(utilities.get_pairing_string(f_remaining_players[0], e_remaining_players[0]))
 
             next_gamestate_draft_stage = draft_stage.get_next_draft_stage(next_gamestate_draft_stage)
 

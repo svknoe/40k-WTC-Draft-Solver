@@ -34,16 +34,22 @@ from drafter.tests.conftest import solve_fixture, strategy_probabilities, suppor
 
 # --- Smoke: 4-player fixture (drafter/resources/matches/Smoke) ---
 #
-# Values below were computed by running this exact test's solve 3 times
+# Values below were re-pinned for the 11th-edition best/worst map model
+# (issue #9) by running this exact test's solve 3 times
 # (scripts/compute_golden_value.py Smoke 4) and confirming bit-identical
-# results each time. The value is a plain float; strategy probabilities are
-# nashpy's own `round(..., 3)` output (see drafter/common/utilities.py
-# get_game_strategy), so 1e-9 tolerance is appropriate there too.
+# results each time, and additionally cross-checked against an independent
+# brute-force implementation (explicit 4-player draft enumeration, zero-sum
+# games solved by scipy linprog instead of nashpy) which reproduced the value
+# to 1e-15 and the same friendly strategy; see the issue #9 PR for the run
+# outputs.
+# The value is a plain float; strategy probabilities are nashpy's own
+# `round(..., 3)` output (see drafter/common/utilities.py get_game_strategy),
+# so 1e-9 tolerance is appropriate there too.
 
 SMOKE_K = 4
-SMOKE_EXPECTED_VALUE = 5.211528940814016
-SMOKE_EXPECTED_FRIENDLY_PROBS = [0.363, -0.0, 0.637, 0.0]  # Alice, Bob, Carol, Dave
-SMOKE_EXPECTED_ENEMY_PROBS = [0.0, 0.0, 0.508, 0.492]  # Chaos, Eldar, Ork, Tau
+SMOKE_EXPECTED_VALUE = 4.997553182223153
+SMOKE_EXPECTED_FRIENDLY_PROBS = [0.293, 0.0, 0.691, 0.015]  # Alice, Bob, Carol, Dave
+SMOKE_EXPECTED_ENEMY_PROBS = [0.047, 0.0, 0.513, 0.439]  # Chaos, Eldar, Ork, Tau
 
 
 def test_smoke_4_player_top_level_value():
@@ -67,15 +73,18 @@ def test_smoke_4_player_top_level_strategies():
     assert enemy_probs == pytest.approx(SMOKE_EXPECTED_ENEMY_PROBS, abs=1e-9)
 
 
-# --- Six: 6-player fixture (drafter/resources/matches/Six), created for this
-# issue. Values not all symmetric/zero, and a map_importance_matrix.csv is
-# included so the map-bonus code path (get_pairing_value's defender bonus) is
-# exercised. Measured fresh-solve time (k=4, this repo's Ryzen 9800X3D-class
-# dev box, cold Python start included): ~12s. Comfortably under the ~30s
-# CI-friendly target from the issue.
+# --- Six: 6-player fixture (drafter/resources/matches/Six), created for the
+# golden-test issue. Values not all symmetric/zero, and its best/worst
+# matrices differ per cell so the defender-picks-the-map code path
+# (get_pairing_value) is exercised. Measured fresh-solve time (k=4, this
+# repo's Ryzen 9800X3D-class dev box, cold Python start included): ~12s.
+# Comfortably under the ~30s CI-friendly target from the issue.
+#
+# Value re-pinned for the best/worst map model (issue #9): 3 bit-identical
+# fresh solves via scripts/compute_golden_value.py Six 4.
 
 SIX_K = 4
-SIX_EXPECTED_VALUE = 1.8314427302734968
+SIX_EXPECTED_VALUE = 1.5140341559225499
 
 
 def test_six_player_top_level_value():

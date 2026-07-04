@@ -8,8 +8,10 @@ from drafter.common.draft_stage import DraftStage
 import drafter.data.match_info as match_info
 
 restrict_attackers_k = None
-regular_pairing_dictionary = None
-transposed_pairing_dictionary = None
+friendly_vs_defender_dictionary = None
+friendly_vs_field_dictionary = None
+enemy_vs_defender_dictionary = None
+enemy_vs_field_dictionary = None
 
 
 class TeamPermutation:
@@ -257,18 +259,45 @@ def get_attackers_team_permutations(defender_team_permutation, opposing_defender
 
 
 def enable_restricted_attackers(k):
-    global restrict_attackers_k, regular_pairing_dictionary, transposed_pairing_dictionary
+    global restrict_attackers_k, friendly_vs_defender_dictionary, friendly_vs_field_dictionary, \
+        enemy_vs_defender_dictionary, enemy_vs_field_dictionary
     restrict_attackers_k = k
-    regular_pairing_dictionary = match_info.pairing_dictionary
-    transposed_pairing_dictionary = utilities.get_transposed_pairing_dictionary()
+
+    neutral_pairing_dictionary = get_neutral_pairing_dictionary()
+
+    # All values are from the friendly side's perspective. An attacker plays the
+    # opposing defender, who picks the map: a friendly attacker gets the pairing's
+    # worst-map value, an enemy attacker faces the friendly defender's best-map
+    # value. Games against the rest of the field have no defender yet, so they
+    # use the neutral (weighted-midpoint) value.
+    friendly_vs_defender_dictionary = match_info.pairing_dictionary_worst
+    friendly_vs_field_dictionary = neutral_pairing_dictionary
+    enemy_vs_defender_dictionary = utilities.get_transposed_pairing_dictionary(match_info.pairing_dictionary_best)
+    enemy_vs_field_dictionary = utilities.get_transposed_pairing_dictionary(neutral_pairing_dictionary)
+
+
+def get_neutral_pairing_dictionary():
+    neutral_pairing_dictionary = {}
+
+    for friend in match_info.pairing_dictionary_best:
+        row = {}
+        for enemy in match_info.pairing_dictionary_best[friend]:
+            row[enemy] = utilities.get_neutral_value(
+                match_info.pairing_dictionary_best[friend][enemy],
+                match_info.pairing_dictionary_worst[friend][enemy])
+        neutral_pairing_dictionary[friend] = row
+
+    return neutral_pairing_dictionary
 
 
 def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_permutation):
     ranking_sign = -1
-    if eligable_attackers[0] in regular_pairing_dictionary:
-        pairing_dictionary = regular_pairing_dictionary
-    elif eligable_attackers[0] in transposed_pairing_dictionary:
-        pairing_dictionary = transposed_pairing_dictionary
+    if eligable_attackers[0] in friendly_vs_defender_dictionary:
+        vs_defender_dictionary = friendly_vs_defender_dictionary
+        vs_field_dictionary = friendly_vs_field_dictionary
+    elif eligable_attackers[0] in enemy_vs_defender_dictionary:
+        vs_defender_dictionary = enemy_vs_defender_dictionary
+        vs_field_dictionary = enemy_vs_field_dictionary
         ranking_sign *= -1
     else:
         raise ArgumentError("Inconsistent pairing matrices.")
@@ -276,8 +305,8 @@ def get_heuristically_best_attackers(eligable_attackers, opposing_defender_team_
     attackers_with_relative_advantages_against_defender = []
 
     for attacker in eligable_attackers:
-        vs_defender = pairing_dictionary[attacker][opposing_defender_team_permutation.defender]
-        vs_field = sum([pairing_dictionary[attacker][opponent] for opponent in opposing_defender_team_permutation.remaining_players]) \
+        vs_defender = vs_defender_dictionary[attacker][opposing_defender_team_permutation.defender]
+        vs_field = sum([vs_field_dictionary[attacker][opponent] for opponent in opposing_defender_team_permutation.remaining_players]) \
             / len(opposing_defender_team_permutation.remaining_players)
 
         relative_advantage = vs_defender - vs_field

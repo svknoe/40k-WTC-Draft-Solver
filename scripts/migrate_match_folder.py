@@ -56,7 +56,9 @@ def write_matrix(path, allies, enemies, values):
         writer.writerow(allies)
         writer.writerow(enemies)
         for row in values:
-            writer.writerow(["{:g}".format(value) for value in row])
+            # A score of exactly 0 must be written '0.0': a bare '0' would be
+            # re-read as the legacy even-matchup token, not the 20-0 loss.
+            writer.writerow(["0.0" if value == 0 else "{:g}".format(value) for value in row])
 
 
 def migrate(folder):

@@ -1,7 +1,10 @@
 name: CI
 
+# push is limited to main so PR-branch pushes don't trigger a duplicate run
+# alongside the pull_request event.
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:

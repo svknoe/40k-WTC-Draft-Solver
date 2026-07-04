@@ -42,7 +42,7 @@ def test_valid_matrix_loads(monkeypatch, tmp_path):
     result = read_csv(monkeypatch, tmp_path, VALID_4_PLAYER)
     assert result["Alice"]["Ork"] == 0
     assert result["Dave"]["Tau"] == 0
-    assert result["Dave"]["Ork"] == -6
+    assert result["Dave"]["Ork"] == -3
 
 
 def test_blank_lines_are_skipped_and_line_numbers_stay_real(monkeypatch, tmp_path):

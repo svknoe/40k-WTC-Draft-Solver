@@ -45,6 +45,13 @@ from drafter.tests.conftest import solve_fixture, strategy_probabilities, suppor
 # The value is a plain float; strategy probabilities are nashpy's own
 # `round(..., 3)` output (see drafter/common/utilities.py get_game_strategy),
 # so 1e-9 tolerance is appropriate there too.
+#
+# Deviation-scale correction (issue #30): value deliberately UNCHANGED. The
+# parse fix (score-10 instead of 2*(score-10)) halves parsed values, and the
+# fixture re-migration (score = 10 + pairing +/- importance instead of
+# 10 + (pairing +/- importance)/2) doubles the file notation; no Smoke cell
+# clamps, so the internal values -- and this pin -- are bit-identical.
+# Re-verified: 3x bit-identical fresh solves + the independent brute force.
 
 SMOKE_K = 4
 SMOKE_EXPECTED_VALUE = 4.997553182223153
@@ -81,7 +88,9 @@ def test_smoke_4_player_top_level_strategies():
 # Comfortably under the ~30s CI-friendly target from the issue.
 #
 # Value re-pinned for the best/worst map model (issue #9): 3 bit-identical
-# fresh solves via scripts/compute_golden_value.py Six 4.
+# fresh solves via scripts/compute_golden_value.py Six 4. Unchanged by the
+# deviation-scale correction (issue #30) -- parse halving and notation
+# doubling cancel exactly, no Six cell clamps (re-verified 3x).
 
 SIX_K = 4
 SIX_EXPECTED_VALUE = 1.5140341559225499
@@ -101,7 +110,10 @@ def test_six_player_top_level_value():
 # The full-precision value was re-pinned for the best/worst map model
 # (issue #9) via two bit-identical fresh solves of
 # scripts/compute_golden_value.py Scotland 3 (~4.5 min each on this repo's
-# dev box); see the issue #9 PR for the raw run output.
+# dev box); see the issue #9 PR for the raw run output. Unchanged by the
+# deviation-scale correction (issue #30): parse halving and notation doubling
+# cancel, and the one clamped cell (Bjorn vs Sisters worst map, -13 -> -10)
+# never reaches the k=3 equilibrium path (re-verified 2x bit-identical).
 #
 # Only the value is pinned exactly. The top-level strategy *support sets*
 # (which players get non-negligible probability) are pinned as sets, but the

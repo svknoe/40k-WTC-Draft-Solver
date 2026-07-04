@@ -103,13 +103,13 @@ v11,v12,...                            <- row i: friendly player i vs each enemy
 ```
 
 Cells accept **0–20 scores** (the community scale: expected score out of 20)
-or the **legacy tokens** `--, -, 0, +, ++` (= expected 20-0 margins -8, -4, 0,
-+4, +8). Both normalise on read to the engine's internal margin scale via
-`margin = 2 * (score - 10)` (`initialise_dictionaries.parse_rating`). One
-deliberate quirk: a bare `0` is the legacy token (an even matchup, 10-10), not
-the score 0 — write `0.0` if you really mean a 20-0 blowout loss. Numbers
-outside 0–20 are rejected, which also catches old margin-style numeric
-matrices loudly instead of misreading them.
+or the **legacy tokens** `--, -, 0, +, ++` (= deviations from an even game
+-8, -4, 0, +4, +8, so `+` is an expected 14-6 and `++` an 18-2). Both
+normalise on read to the engine's internal scale, the deviation from an even
+10-10 game: `internal = score - 10`, range -10..+10
+(`initialise_dictionaries.parse_rating`). One deliberate quirk: a bare `0` is
+the legacy token (an even matchup, 10-10), not the score 0 — write `0.0` if
+you really mean a 20-0 blowout loss. Numbers outside 0–20 are rejected.
 
 Every cell must satisfy best ≥ worst (validated on load). Friendly and enemy
 names must not overlap (settings.require_unique_names). The matrix is square

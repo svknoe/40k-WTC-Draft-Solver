@@ -1,20 +1,23 @@
 """Migrate an old-format match folder to the 11th-edition two-matrix format
 (GitHub issue #10).
 
-Old format: pairing_matrix.csv (tokens --/-/0/+/++ or raw margin numbers) plus
-optional map_importance_matrix.csv. New format: pairing_matrix_best.csv +
+Old format: pairing_matrix.csv (tokens --/-/0/+/++ or raw deviation numbers)
+plus optional map_importance_matrix.csv. New format: pairing_matrix_best.csv +
 pairing_matrix_worst.csv on the community 0-20 score scale.
 
-Conversion: at 8 players the old model gave the defender pairing + importance
-and the non-defender pairing - importance, so
+Old values are deviations from an even 10-10 game ('++' = +8 = an 18-2 game;
+PLAN.md rating-scale convention, corrected 2026-07-04). At 8 players the old
+model gave the defender pairing + importance and the non-defender
+pairing - importance, so
 
-    best_margin  = pairing + importance
-    worst_margin = pairing - importance
-    score        = 10 + margin / 2
+    best  = clamp(10 + pairing + importance, 0, 20)
+    worst = clamp(10 + pairing - importance, 0, 20)
 
-reproduces the old defender spread exactly. (At 6/4 players the old model
-scaled importance by 0.75/0.5; the migration uses the full-importance reading,
-which is the 8-player interpretation every real folder was rated at.)
+reproduces the old defender spread exactly, saturating at the 20-0 blowout --
+old pairing +/- importance can reach +/-13, and you can't lose worse than
+0-20. (At 6/4 players the old model scaled importance by 0.75/0.5; the
+migration uses the full-importance reading, which is the 8-player
+interpretation every real folder was rated at.)
 
 After converting, the script deletes the old-format inputs (recoverable from
 git history) and any cached gamestate/strategy JSONs not stamped with the
@@ -79,13 +82,17 @@ def migrate(folder):
         print("{}: no map_importance_matrix.csv; writing best = worst = pairing.".format(folder))
         importance = [[0.0] * len(enemies) for _ in allies]
 
-    best = [[10 + (p + i) / 2 for p, i in zip(pairing_row, importance_row)]
+    best = [[10 + p + i for p, i in zip(pairing_row, importance_row)]
             for pairing_row, importance_row in zip(pairing, importance)]
-    worst = [[10 + (p - i) / 2 for p, i in zip(pairing_row, importance_row)]
+    worst = [[10 + p - i for p, i in zip(pairing_row, importance_row)]
              for pairing_row, importance_row in zip(pairing, importance)]
 
-    out_of_scale = [value for row in best + worst for value in row if not 0 <= value <= 20]
-    assert not out_of_scale, "{}: converted scores outside 0-20: {}".format(folder, out_of_scale)
+    clamped_count = sum(1 for row in best + worst for value in row if not 0 <= value <= 20)
+    if clamped_count > 0:
+        print("{}: clamped {} cell(s) to the 0-20 scale (you can't lose worse than 0-20)".format(
+            folder, clamped_count))
+    best = [[min(max(value, 0), 20) for value in row] for row in best]
+    worst = [[min(max(value, 0), 20) for value in row] for row in worst]
 
     write_matrix(folder / "pairing_matrix_best.csv", allies, enemies, best)
     write_matrix(folder / "pairing_matrix_worst.csv", allies, enemies, worst)

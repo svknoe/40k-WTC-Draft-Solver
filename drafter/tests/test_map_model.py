@@ -1,5 +1,5 @@
 """Unit tests for the 11th-edition best/worst map model (GitHub issue #9 /
-PLAN.md workstream C): rating normalisation to the internal margin scale,
+PLAN.md workstream C): rating normalisation to the internal deviation scale,
 defender-dependent pairing values, best/worst consistency validation, and the
 cache-format marker that invalidates caches computed under the old value model.
 
@@ -19,27 +19,35 @@ import drafter.data.settings as settings
 
 # --- parse_rating: legacy tokens ---
 
-@pytest.mark.parametrize("token,margin", [("--", -8), ("-", -4), ("0", 0), ("+", 4), ("++", 8)])
-def test_parse_rating_legacy_tokens(token, margin):
-    assert initialise_dictionaries.parse_rating(token) == margin
+@pytest.mark.parametrize("token,deviation", [("--", -8), ("-", -4), ("0", 0), ("+", 4), ("++", 8)])
+def test_parse_rating_legacy_tokens(token, deviation):
+    assert initialise_dictionaries.parse_rating(token) == deviation
 
 
-# --- parse_rating: 0-20 scores, margin = 2 * (score - 10) ---
+# --- parse_rating: 0-20 scores, internal = score - 10 (deviation scale) ---
 
-@pytest.mark.parametrize("score,margin", [
-    ("20", 20), ("15", 10), ("12.5", 5), ("10", 0), ("3", -14), ("1", -18),
+@pytest.mark.parametrize("score,deviation", [
+    ("20", 10), ("15", 5), ("12.5", 2.5), ("10", 0), ("3", -7), ("1", -9),
 ])
-def test_parse_rating_scores(score, margin):
-    assert initialise_dictionaries.parse_rating(score) == margin
+def test_parse_rating_scores(score, deviation):
+    assert initialise_dictionaries.parse_rating(score) == deviation
+
+
+def test_parse_rating_numbers_agree_with_tokens():
+    # The bug fixed by issue #30: numeric input used to parse as
+    # 2*(score-10) while tokens kept face values, so '14' and '+' (the same
+    # expected 14-6 game) got different internal values.
+    assert initialise_dictionaries.parse_rating("14") == initialise_dictionaries.parse_rating("+") == 4
+    assert initialise_dictionaries.parse_rating("2") == initialise_dictionaries.parse_rating("--") == -8
 
 
 def test_parse_rating_bare_zero_is_the_legacy_token_not_the_score():
     # '0' collides between the two accepted notations; the legacy token (an
-    # even matchup, margin 0) wins, because '0' is the most common cell in
+    # even matchup, deviation 0) wins, because '0' is the most common cell in
     # old-style matrices and reading it as a 0-20 blowout would silently
     # corrupt all of them. '0.0' is not a token and parses as the score.
     assert initialise_dictionaries.parse_rating("0") == 0
-    assert initialise_dictionaries.parse_rating("0.0") == -20
+    assert initialise_dictionaries.parse_rating("0.0") == -10
 
 
 @pytest.mark.parametrize("value", ["21", "-1", "-4.0", "x", "+++", ""])
@@ -48,12 +56,12 @@ def test_parse_rating_rejects_junk_and_out_of_scale(value):
         initialise_dictionaries.parse_rating(value)
 
 
-@pytest.mark.parametrize("value,margin", [(" 0", 0), ("0 ", 0), (" ++", 8), (" 15", 10)])
-def test_parse_rating_strips_whitespace_before_token_lookup(value, margin):
+@pytest.mark.parametrize("value,deviation", [(" 0", 0), ("0 ", 0), (" ++", 8), (" 15", 5)])
+def test_parse_rating_strips_whitespace_before_token_lookup(value, deviation):
     # float() ignores whitespace but a dict lookup does not; without stripping,
-    # ' 0' would silently parse as the 0-20 score 0 (margin -20) instead of the
-    # legacy even-matchup token.
-    assert initialise_dictionaries.parse_rating(value) == margin
+    # ' 0' would silently parse as the 0-20 score 0 (deviation -10) instead of
+    # the legacy even-matchup token.
+    assert initialise_dictionaries.parse_rating(value) == deviation
 
 
 # --- get_pairing_value: defender picks the map ---
@@ -118,10 +126,10 @@ def test_input_dictionary_accepts_mixed_tokens_and_scores(monkeypatch, tmp_path)
     initialise_dictionaries.initialise_input_dictionary(result, "pairing_matrix_best.csv")
 
     assert result == {
-        "Alice": {"Ork": 8, "Eldar": 10.0, "Chaos": 0, "Tau": -3.0},
-        "Bob": {"Ork": -4, "Eldar": 0.0, "Chaos": 4, "Tau": 4.0},
-        "Carol": {"Ork": 0, "Eldar": -8, "Chaos": 20.0, "Tau": -12.0},
-        "Dave": {"Ork": 4, "Eldar": -20.0, "Chaos": 14.0, "Tau": -4},
+        "Alice": {"Ork": 8, "Eldar": 5.0, "Chaos": 0, "Tau": -1.5},
+        "Bob": {"Ork": -4, "Eldar": 0.0, "Chaos": 4, "Tau": 2.0},
+        "Carol": {"Ork": 0, "Eldar": -8, "Chaos": 10.0, "Tau": -6.0},
+        "Dave": {"Ork": 4, "Eldar": -10.0, "Chaos": 7.0, "Tau": -4},
     }
 
 

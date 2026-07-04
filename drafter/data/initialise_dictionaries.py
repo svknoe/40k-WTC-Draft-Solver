@@ -60,22 +60,25 @@ class InputError(ValueError):
     the old behaviour of reporting every failure as 'Missing file'."""
 
 
-# Legacy rating tokens: expected 20-0 score margins. Kept so old-style matrices
-# and captains' shorthand keep working. Note that a bare '0' is a token (an
-# even matchup, i.e. an expected 10-10 score), not the 0-20 score 0.
+# Legacy rating tokens: deviations from an even 10-10 game, so '+' = +4 is an
+# expected 14-6 and '++' = +8 an 18-2 (PLAN.md rating-scale convention,
+# corrected 2026-07-04). Kept so old-style matrices and captains' shorthand
+# keep working. Note that a bare '0' is a token (an even matchup, i.e. an
+# expected 10-10 score), not the 0-20 score 0.
 legacy_token_encoding = {'--': -8, '-': -4, '0': 0, '+': 4, '++': 8}
 
 
 def parse_rating(value):
-    """Normalise one CSV rating cell to the engine's internal margin scale.
+    """Normalise one CSV rating cell to the engine's internal scale: the
+    deviation from an even game, i.e. internal = score - 10, range -10..+10.
 
-    Accepts the legacy --/-/0/+/++ tokens (margins -8..+8) or a number on the
-    community 0-20 scale (expected score out of 20), converted via
-    margin = 2 * (score - 10). Raises ValueError for anything else.
+    Accepts the legacy --/-/0/+/++ tokens (already deviations, -8..+8) or a
+    number on the community 0-20 scale (expected score out of 20). Raises
+    ValueError for anything else.
 
     Stripping first matters: float() ignores whitespace, so without it ' 0'
     (a space after the comma in the CSV) would skip the token lookup and
-    silently parse as the score 0 (margin -20) instead of an even matchup.
+    silently parse as the score 0 (deviation -10) instead of an even matchup.
     """
     value = value.strip()
 
@@ -87,7 +90,7 @@ def parse_rating(value):
     if not 0 <= score <= 20:
         raise ValueError("Rating {} is outside the 0-20 score scale.".format(value))
 
-    return 2 * (score - 10)
+    return score - 10
 
 
 def validate_best_not_below_worst():

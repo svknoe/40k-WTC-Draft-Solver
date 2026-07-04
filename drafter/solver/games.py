@@ -112,9 +112,13 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
     fA_eD = utilities.get_pairing_value(f_attacker_A, e_defender, e_defender)
     fB_eD = utilities.get_pairing_value(f_attacker_B, e_defender, e_defender)
 
+    # The child gamestate receives the REFUSED attackers back into the pools
+    # (issue #32): in AB, e_B plays the friendly defender and f_A plays the
+    # enemy defender, so the refused pair returning to the pools is (f_B, e_A)
+    # -- and mirrored in BA. The kept attackers' games are the fD_*/f*_eD terms.
     AA = fD_eB + fB_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_A)][2]
-    AB = fD_eB + fA_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_B)][2]
-    BA = fD_eA + fB_eD + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_A)][2]
+    AB = fD_eB + fA_eD + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_A)][2]
+    BA = fD_eA + fB_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_B)][2]
     BB = fD_eA + fA_eD + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_B)][2]
 
     game_array = np.array([[AA, AB], [BA, BB]])

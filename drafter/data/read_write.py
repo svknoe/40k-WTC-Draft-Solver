@@ -4,11 +4,12 @@ import json  # standard libraries
 # Caches carry solved game values, so any change to the value model makes old
 # caches silently wrong (they would load fine and give plausible numbers).
 # Bump this whenever cached values are no longer comparable with the current
-# engine. Version 3 = numeric ratings on the deviation scale, internal =
-# score - 10 (issue #30); version 2 = the 11th-edition best/worst map model
-# (issue #9) with the mistaken 2*(score-10) conversion; version 1 (implicit --
-# no marker file existed) = the old map-importance model.
-CACHE_FORMAT_VERSION = 3
+# engine. Version 4 = discard_attacker returns the refused attackers to the
+# child pools (issue #32); version 3 = numeric ratings on the deviation scale,
+# internal = score - 10 (issue #30); version 2 = the 11th-edition best/worst
+# map model (issue #9) with the mistaken 2*(score-10) conversion; version 1
+# (implicit -- no marker file existed) = the old map-importance model.
+CACHE_FORMAT_VERSION = 4
 CACHE_FORMAT_FILENAME = "cache_format.json"
 
 

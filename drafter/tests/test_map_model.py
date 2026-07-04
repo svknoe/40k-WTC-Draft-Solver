@@ -1,5 +1,5 @@
 """Unit tests for the 11th-edition best/worst map model (GitHub issue #9 /
-PLAN.md workstream C): rating normalisation to the internal margin scale,
+PLAN.md workstream C): rating normalisation to the internal deviation scale,
 defender-dependent pairing values, best/worst consistency validation, and the
 cache-format marker that invalidates caches computed under the old value model.
 
@@ -19,9 +19,9 @@ import drafter.data.settings as settings
 
 # --- parse_rating: legacy tokens ---
 
-@pytest.mark.parametrize("token,margin", [("--", -8), ("-", -4), ("0", 0), ("+", 4), ("++", 8)])
-def test_parse_rating_legacy_tokens(token, margin):
-    assert initialise_dictionaries.parse_rating(token) == margin
+@pytest.mark.parametrize("token,deviation", [("--", -8), ("-", -4), ("0", 0), ("+", 4), ("++", 8)])
+def test_parse_rating_legacy_tokens(token, deviation):
+    assert initialise_dictionaries.parse_rating(token) == deviation
 
 
 # --- parse_rating: 0-20 scores, internal = score - 10 (deviation scale) ---

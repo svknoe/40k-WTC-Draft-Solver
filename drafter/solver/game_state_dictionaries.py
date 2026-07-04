@@ -60,8 +60,8 @@ def write_dictionaries():
 
 
 def get_initial_game_state():
-    friends = [friend for friend in match_info.pairing_dictionary]
-    enemies = [enemy for enemy in match_info.pairing_dictionary[friends[0]]]
+    friends = [friend for friend in match_info.pairing_dictionary_best]
+    enemies = [enemy for enemy in match_info.pairing_dictionary_best[friends[0]]]
     initial_game_state = GameState(DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
 
     return initial_game_state

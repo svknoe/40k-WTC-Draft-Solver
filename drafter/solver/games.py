@@ -107,10 +107,10 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
         return discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, remaining_friends[0],
             e_defender, e_attacker_A, e_attacker_B, remaining_enemies[0])
 
-    fD_eA = utilities.get_pairing_value(4, f_defender, e_attacker_A, f_defender)
-    fD_eB = utilities.get_pairing_value(4, f_defender, e_attacker_B, f_defender)
-    fA_eD = utilities.get_pairing_value(4, f_attacker_A, e_defender, e_defender)
-    fB_eD = utilities.get_pairing_value(4, f_attacker_B, e_defender, e_defender)
+    fD_eA = utilities.get_pairing_value(f_defender, e_attacker_A, f_defender)
+    fD_eB = utilities.get_pairing_value(f_defender, e_attacker_B, f_defender)
+    fA_eD = utilities.get_pairing_value(f_attacker_A, e_defender, e_defender)
+    fB_eD = utilities.get_pairing_value(f_attacker_B, e_defender, e_defender)
 
     AA = fD_eB + fB_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_A)][2]
     AB = fD_eB + fA_eD + select_defender_strategies[get_game_key(f_attacker_A, e_attacker_B)][2]
@@ -127,17 +127,17 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
 def discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, f_not_selected, e_defender,
         e_attacker_A, e_attacker_B, e_not_selected):
 
-    fD_eA = utilities.get_pairing_value(4, f_defender, e_attacker_A, f_defender)
-    fD_eB = utilities.get_pairing_value(4, f_defender, e_attacker_B, f_defender)
-    fA_eD = utilities.get_pairing_value(4, f_attacker_A, e_defender, e_defender)
-    fB_eD = utilities.get_pairing_value(4, f_attacker_B, e_defender, e_defender)
+    fD_eA = utilities.get_pairing_value(f_defender, e_attacker_A, f_defender)
+    fD_eB = utilities.get_pairing_value(f_defender, e_attacker_B, f_defender)
+    fA_eD = utilities.get_pairing_value(f_attacker_A, e_defender, e_defender)
+    fB_eD = utilities.get_pairing_value(f_attacker_B, e_defender, e_defender)
 
-    fA_eA = utilities.get_pairing_value(4, f_attacker_A, e_attacker_A)
-    fA_eB = utilities.get_pairing_value(4, f_attacker_A, e_attacker_B)
-    fB_eA = utilities.get_pairing_value(4, f_attacker_B, e_attacker_A)
-    fB_eB = utilities.get_pairing_value(4, f_attacker_B, e_attacker_B)
+    fA_eA = utilities.get_pairing_value(f_attacker_A, e_attacker_A)
+    fA_eB = utilities.get_pairing_value(f_attacker_A, e_attacker_B)
+    fB_eA = utilities.get_pairing_value(f_attacker_B, e_attacker_A)
+    fB_eB = utilities.get_pairing_value(f_attacker_B, e_attacker_B)
 
-    fN_eN = utilities.get_pairing_value(4, f_not_selected, e_not_selected)
+    fN_eN = utilities.get_pairing_value(f_not_selected, e_not_selected)
 
     AA = fD_eB + fB_eD + fA_eA + fN_eN
     AB = fD_eB + fA_eD + fB_eA + fN_eN

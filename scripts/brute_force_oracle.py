@@ -59,6 +59,7 @@ def read_matrix(name):
 
 FRIENDS, ENEMIES, BEST = read_matrix("pairing_matrix_best.csv")
 _, _, WORST = read_matrix("pairing_matrix_worst.csv")
+assert all(BEST[pair] >= WORST[pair] for pair in BEST),     "best < worst somewhere in {} -- swapped files?".format(FOLDER)
 
 
 def value(friend, enemy, defender=None):
@@ -174,4 +175,5 @@ def main():
     print("Top-level game value (repr): {!r}".format(v))
 
 
-main()
+if __name__ == "__main__":
+    main()

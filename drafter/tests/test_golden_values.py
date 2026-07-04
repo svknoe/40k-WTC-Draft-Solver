@@ -98,10 +98,10 @@ def test_six_player_top_level_value():
 # by default (see pytest.ini's `addopts = -m "not slow"`). Run explicitly:
 #     .venv\\Scripts\\python.exe -m pytest -m slow
 #
-# The full-precision value was computed once via
-# scripts/compute_golden_value.py Scotland 3 (fresh solve, ~267s on this
-# repo's dev box, matching the ~5 min / 275s PLAN.md baseline) and hard-coded
-# here; see the PR report for the raw run output.
+# The full-precision value was re-pinned for the best/worst map model
+# (issue #9) via two bit-identical fresh solves of
+# scripts/compute_golden_value.py Scotland 3 (~4.5 min each on this repo's
+# dev box); see the issue #9 PR for the raw run output.
 #
 # Only the value is pinned exactly. The top-level strategy *support sets*
 # (which players get non-negligible probability) are pinned as sets, but the
@@ -109,12 +109,13 @@ def test_six_player_top_level_value():
 # top-level game can return different (but equally valid) equilibria/orderings
 # depending on nashpy's internal enumeration order, while the *value* of a
 # zero-sum game's equilibria is unique and stable. The support sets below have
-# been identical across independent fresh solves (2026-07 baseline runs).
+# been identical across independent fresh solves (2026-07, post-#9 re-pin:
+# both top-level strategies are pure under the new model).
 
 SCOTLAND_K = 3
-SCOTLAND_EXPECTED_VALUE = 6.189614531232928
-SCOTLAND_EXPECTED_FRIENDLY_SUPPORT = frozenset({"Mariusz", "Petter"})
-SCOTLAND_EXPECTED_ENEMY_SUPPORT = frozenset({"AdMech", "Drukhari"})
+SCOTLAND_EXPECTED_VALUE = 6.348743764113647
+SCOTLAND_EXPECTED_FRIENDLY_SUPPORT = frozenset({"Petter"})
+SCOTLAND_EXPECTED_ENEMY_SUPPORT = frozenset({"Drukhari"})
 
 
 @pytest.mark.slow

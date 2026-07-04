@@ -50,6 +50,25 @@ def test_blank_lines_are_skipped_and_line_numbers_stay_real(monkeypatch, tmp_pat
     result = read_csv(monkeypatch, tmp_path, content)
     assert result["Dave"]["Tau"] == 0
 
+    # An error after the blank line must report the real file line, not the
+    # position among non-blank rows (Carol's row is line 6 in the file now).
+    content_with_error = content.replace("8,9,10,11", "8,9,x,11")
+    with pytest.raises(InputError, match=r"line 6, column 3 \(Carol vs Chaos\)"):
+        read_csv(monkeypatch, tmp_path, content_with_error)
+
+
+def test_excel_utf8_bom_is_stripped(monkeypatch, tmp_path):
+    # Excel's "CSV UTF-8" prefixes a BOM; plain utf-8 reading would glue
+    # U+FEFF onto the first player name, and str.strip() does not remove it.
+    result = read_csv(monkeypatch, tmp_path, VALID_4_PLAYER.encode("utf-8-sig"))
+    assert "Alice" in result
+
+
+def test_empty_player_name_from_trailing_comma(monkeypatch, tmp_path):
+    content = VALID_4_PLAYER.replace("Alice,Bob,Carol,Dave", "Alice,Bob,Carol,Dave,")
+    with pytest.raises(InputError, match="empty friendly player name"):
+        read_csv(monkeypatch, tmp_path, content)
+
 
 def test_missing_file(monkeypatch, tmp_path):
     monkeypatch.setattr(utilities, "get_path", lambda filename: tmp_path / "pairing_matrix_best.csv")

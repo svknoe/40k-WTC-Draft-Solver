@@ -115,13 +115,15 @@ def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, floa
             "pairing_matrix_best.csv and pairing_matrix_worst.csv.".format(path))
 
     try:
-        with path.open(encoding="UTF-8") as file:
+        # utf-8-sig: Excel's "CSV UTF-8" prefixes a BOM, which plain utf-8
+        # would silently glue onto the first player name as U+FEFF.
+        with path.open(encoding="utf-8-sig") as file:
             # Keep the real line number next to each non-blank row so errors
             # can point at the exact line even when blank lines are skipped.
             csv_reader = csv.reader(file)
             numbered_rows = [(csv_reader.line_num, row) for row in csv_reader if len(row) > 0]
     except UnicodeDecodeError as error:
-        raise InputError("{} is not UTF-8 encoded ({}). Re-save the file as UTF-8.".format(path, error))
+        raise InputError("{} is not UTF-8 encoded ({}). Re-save the file as UTF-8.".format(path, error)) from None
 
     if len(numbered_rows) < 2:
         raise InputError("{}: expected two header rows (friendly names, then enemy names) "
@@ -133,6 +135,10 @@ def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, floa
     data_rows = numbered_rows[2:]
 
     for team_name, team in [("friendly", allies), ("enemy", enemies)]:
+        if any(player == "" for player in team):
+            raise InputError("{}: empty {} player name in the header "
+                "(check for a trailing comma or a missing name).".format(path, team_name))
+
         duplicates = sorted({player for player in team if team.count(player) > 1})
         if duplicates:
             raise InputError("{}: duplicate {} player name(s): {}. "
@@ -167,7 +173,7 @@ def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, floa
                 raise InputError("{}, line {}, column {} ({} vs {}): unknown rating {!r}. "
                     "Use a 0-20 score or one of the legacy tokens {}.".format(
                         path, line_number, column_index + 1, ally, enemy,
-                        value, "/".join(legacy_token_encoding)))
+                        value, "/".join(legacy_token_encoding))) from None
 
             if ally not in empty_input_dictionary:
                 empty_input_dictionary[ally] = {}

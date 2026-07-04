@@ -105,13 +105,24 @@ def test_missing_worst_entry_raises(monkeypatch):
 
 def test_input_dictionary_accepts_mixed_tokens_and_scores(monkeypatch, tmp_path):
     csv_path = tmp_path / "pairing_matrix_best.csv"
-    csv_path.write_text("Alice,Bob\nOrk,Eldar\n++,15\n0,8.5\n", encoding="utf-8")
+    csv_path.write_text(
+        "Alice,Bob,Carol,Dave\n"
+        "Ork,Eldar,Chaos,Tau\n"
+        "++,15,0,8.5\n"
+        "-,10,+,12\n"
+        "0,--,20,4\n"
+        "+,0.0,17,-\n", encoding="utf-8")
     monkeypatch.setattr(utilities, "get_path", lambda filename: csv_path)
 
     result = {}
-    initialise_dictionaries.initialise_input_dictionary(result, "pairing_matrix_best.csv", True)
+    initialise_dictionaries.initialise_input_dictionary(result, "pairing_matrix_best.csv")
 
-    assert result == {"Alice": {"Ork": 8, "Eldar": 10.0}, "Bob": {"Ork": 0, "Eldar": -3.0}}
+    assert result == {
+        "Alice": {"Ork": 8, "Eldar": 10.0, "Chaos": 0, "Tau": -3.0},
+        "Bob": {"Ork": -4, "Eldar": 0.0, "Chaos": 4, "Tau": 4.0},
+        "Carol": {"Ork": 0, "Eldar": -8, "Chaos": 20.0, "Tau": -12.0},
+        "Dave": {"Ork": 4, "Eldar": -20.0, "Chaos": 14.0, "Tau": -4},
+    }
 
 
 # --- cache-format marker ---

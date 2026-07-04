@@ -6,6 +6,25 @@ Creates optimal strategies for WTC pairing drafts using game theoretic Nash equi
 
 > By default has long runtime (typically more than an hour). Change drafter.data.settings.restricted_attackers_count from 4 to 3 for more reasonable runtime (typically around 15 minutes).
 
+## Input data
+
+Each opponent gets a folder under `drafter/resources/matches/<Team>/`
+containing two CSVs — the matchup ratings on each pairing's **best** and
+**worst** map, from your team's perspective (11th edition: the defender picks
+the map, so only those two maps ever get played):
+
+- `pairing_matrix_best.csv`
+- `pairing_matrix_worst.csv`
+
+Both files: row 1 = your player names, row 2 = enemy player/faction names,
+then one row per friendly player with their rating against each enemy column.
+Ratings are **0–20 expected scores** (e.g. `15` = you expect to win 15–5 on
+that map) or the legacy shorthand `--, -, 0, +, ++`. A bare `0` means an even
+matchup (10–10). Best must be ≥ worst in every cell.
+
+Folders in the old single-matrix format can be converted with
+`python scripts/migrate_match_folder.py drafter/resources/matches/<Team>`.
+
 ## Local setup
 
 ### Prerequisites

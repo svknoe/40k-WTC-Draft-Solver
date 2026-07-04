@@ -17,9 +17,10 @@ lets a human train against it.
 draft process this models: both teams simultaneously reveal a defender, then
 two attackers against the enemy defender, then each refuses one attacker;
 repeat at 8/6/4 players; the last 4 games resolve automatically (defender vs
-kept attacker ×2, refused vs refused, last vs last). Map/table choice is
-currently modelled through a per-pairing "map importance" bonus for the
-defending side — this is slated to change for 11th edition (see PLAN.md).
+kept attacker ×2, refused vs refused, last vs last). Map choice follows the
+11th-edition rule (PLAN.md workstream C): the defender picks the map, and
+because that choice is zero-sum each matchup is rated on exactly two maps —
+its best and its worst from the friendly side's perspective.
 
 ## Layout
 
@@ -45,9 +46,10 @@ drafter/
     draft.py               interactive draft loop (uses plain input(), not InquirerPy)
     draft_loop.py          replay wrapper
   resources/matches/<Team>/    one folder per opponent = the "database"
-    pairing_matrix.csv     required input (see format below)
-    map_importance_matrix.csv  optional input
-    *.json                 cached preprocessing output (gitignored, can be 100s of MB)
+    pairing_matrix_best.csv    required input (see format below)
+    pairing_matrix_worst.csv   required input
+    cache_format.json          cache version marker (see read_write.py)
+    *_dictionary.json          cached preprocessing output (gitignored, can be 100s of MB)
 ```
 
 ## How it works (important for any performance work)
@@ -66,9 +68,11 @@ drafter/
    user makes a move outside the enumerated tree (possible with k-restriction),
    the tree is extended and re-solved on the fly.
 
-Values are read through `utilities.get_pairing_value(n, friend, enemy,
-defender)`: the raw pairing value, plus/minus a map-importance bonus scaled by
-n (×1 at 8, ×0.75 at 6, ×0.5 at 4) for whichever side is defending.
+Values are read through `utilities.get_pairing_value(friend, enemy,
+defender)`: the best-map value when the friendly player defends, the worst-map
+value when the enemy defends, and `settings.neutral_map_weight` (default 0.5 =
+midpoint) of the way from worst to best when neither does (refused-vs-refused
+and last-players games).
 
 **Known scale/pain points** (measured 2026-07, Ryzen 9800X3D, k as noted):
 
@@ -87,7 +91,9 @@ n (×1 at 8, ×0.75 at 6, ×0.5 at 4) for whichever side is defending.
 
 ## Input format
 
-`pairing_matrix.csv` (required), `map_importance_matrix.csv` (optional), both:
+`pairing_matrix_best.csv` and `pairing_matrix_worst.csv` (both required): the
+matchup's rating on its best and worst map, from the friendly side's
+perspective. Both files share one layout:
 
 ```
 Friendly1,Friendly2,...,Friendly8      <- row 1: friendly player names
@@ -96,10 +102,27 @@ v11,v12,...                            <- row i: friendly player i vs each enemy
 ...
 ```
 
-Pairing values accept `--, -, 0, +, ++` (= -8, -4, 0, +4, +8, i.e. expected
-20-0 score margin) or raw numbers. Map importance uses plain numbers.
-Friendly and enemy names must not overlap (settings.require_unique_names).
-The matrix is square (8×8; 4×4 and 6×6 also work — n must be 4, 6 or 8).
+Cells accept **0–20 scores** (the community scale: expected score out of 20)
+or the **legacy tokens** `--, -, 0, +, ++` (= expected 20-0 margins -8, -4, 0,
++4, +8). Both normalise on read to the engine's internal margin scale via
+`margin = 2 * (score - 10)` (`initialise_dictionaries.parse_rating`). One
+deliberate quirk: a bare `0` is the legacy token (an even matchup, 10-10), not
+the score 0 — write `0.0` if you really mean a 20-0 blowout loss. Numbers
+outside 0–20 are rejected, which also catches old margin-style numeric
+matrices loudly instead of misreading them.
+
+Every cell must satisfy best ≥ worst (validated on load). Friendly and enemy
+names must not overlap (settings.require_unique_names). The matrix is square
+(8×8; 4×4 and 6×6 also work — n must be 4, 6 or 8).
+
+Old-format folders (`pairing_matrix.csv` + optional
+`map_importance_matrix.csv`) can be converted with
+`scripts/migrate_match_folder.py`, which also deletes cached JSONs solved
+under the old value model. Caches are guarded by a `cache_format.json`
+version marker (`drafter/data/read_write.py`): caches without a current
+marker are ignored on read and re-solved, so stale old-model values can never
+leak into a draft. Bump `CACHE_FORMAT_VERSION` whenever the value model
+changes.
 
 ## Running
 
@@ -122,8 +145,8 @@ Notes for agents:
   the in-draft prompts are plain `input()` and accept piped lines (empty
   line = accept suggested move). See `scripts/smoke_draft.py`.
 - `drafter/resources/matches/Smoke/` is a 4×4 fixture that solves in ~1 s —
-  use it to verify changes end to end. `Test/` holds an 8-player matrix whose
-  full 630 MB cache may exist locally from old runs.
+  use it to verify changes end to end. `Test/` holds a near-trivial 8-player
+  matrix (best = worst) useful for timing full-size solves.
 - `drafter/app.py` only defines `run()`; importing it is side-effect-free.
   `drafter/__main__.py` defines `main()` (calls `app.run()`) and calls it
   under the `if __name__ == '__main__':` guard, so `python -m drafter` and

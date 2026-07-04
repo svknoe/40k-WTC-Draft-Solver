@@ -1,7 +1,5 @@
 import time  # standard libraries
-import sys
 import csv
-from loguru import logger
 
 import drafter.common.utilities as utilities  # local source
 import drafter.common.team_permutation as team_permutation
@@ -13,8 +11,8 @@ import drafter.solver.game_state_dictionaries as game_state_dictionaries
 
 
 def initialise():
-    initialise_input_dictionary(match_info.pairing_dictionary_best, "pairing_matrix_best.csv", True)
-    initialise_input_dictionary(match_info.pairing_dictionary_worst, "pairing_matrix_worst.csv", True)
+    initialise_input_dictionary(match_info.pairing_dictionary_best, "pairing_matrix_best.csv")
+    initialise_input_dictionary(match_info.pairing_dictionary_worst, "pairing_matrix_worst.csv")
     validate_best_not_below_worst()
 
     if (settings.restrict_attackers):
@@ -56,6 +54,12 @@ def initialise():
         read_write.write_cache_format_marker(utilities.get_path(read_write.CACHE_FORMAT_FILENAME))
 
 
+class InputError(ValueError):
+    """A problem with a match folder's input CSVs, with a message that names
+    the actual file, location and cause (GitHub issue #11) -- as opposed to
+    the old behaviour of reporting every failure as 'Missing file'."""
+
+
 # Legacy rating tokens: expected 20-0 score margins. Kept so old-style matrices
 # and captains' shorthand keep working. Note that a bare '0' is a token (an
 # even matchup, i.e. an expected 10-10 score), not the 0-20 score 0.
@@ -93,60 +97,84 @@ def validate_best_not_below_worst():
             worst_value = match_info.pairing_dictionary_worst.get(friend, {}).get(enemy)
 
             if worst_value is None:
-                raise ValueError("pairing_matrix_worst.csv is missing the {} vs {} entry "
+                raise InputError("pairing_matrix_worst.csv is missing the {} vs {} entry "
                     "present in pairing_matrix_best.csv.".format(friend, enemy))
 
             if best_value < worst_value:
-                raise ValueError("Best-map value ({}) is below worst-map value ({}) for {} vs {}. "
+                raise InputError("Best-map value ({}) is below worst-map value ({}) for {} vs {}. "
                     "Both matrices are rated from the friendly side's perspective; "
                     "check for swapped files or rows.".format(best_value, worst_value, friend, enemy))
 
 
 # TODO: don't mutate passed parameters! empty_input_dictionary should be a stored value
-# ? This whole function seems to be used for formatting the csv file into a dictionary. Is it really needed?
-def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, list[int]]], filename, hard_crash):
+def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, float]], filename):
     path = utilities.get_path(filename)
 
-    # Read file
-    # ? It might not be needed to do that if we go for object oriented.
+    if not path.is_file():
+        raise InputError("Missing input file: {}. A match folder needs both "
+            "pairing_matrix_best.csv and pairing_matrix_worst.csv.".format(path))
+
     try:
-        with utilities.get_path(filename).open(encoding="UTF-8") as file:
-            table = csv.reader(file)
+        # utf-8-sig: Excel's "CSV UTF-8" prefixes a BOM, which plain utf-8
+        # would silently glue onto the first player name as U+FEFF.
+        with path.open(encoding="utf-8-sig") as file:
+            # Keep the real line number next to each non-blank row so errors
+            # can point at the exact line even when blank lines are skipped.
+            csv_reader = csv.reader(file)
+            numbered_rows = [(csv_reader.line_num, row) for row in csv_reader if len(row) > 0]
+    except UnicodeDecodeError as error:
+        raise InputError("{} is not UTF-8 encoded ({}). Re-save the file as UTF-8.".format(path, error)) from None
 
-            # Extract the first two lines
-            allies = next(table)
-            enemies = next(table)
+    if len(numbered_rows) < 2:
+        raise InputError("{}: expected two header rows (friendly names, then enemy names) "
+            "followed by one rating row per friendly player.".format(path))
 
-            for allyIndex, row in enumerate(table):
-                # We skip empty rows
-                if (len(row) == 0):
-                    continue
+    (_, allies), (_, enemies) = numbered_rows[0], numbered_rows[1]
+    allies = [ally.strip() for ally in allies]
+    enemies = [enemy.strip() for enemy in enemies]
+    data_rows = numbered_rows[2:]
 
-                # We do an early return if the column numbers doesn't match the first row --> format error
-                if (len(row) != len(allies)):
-                    logger.error("The following line has a number of elements not equal to the number of elements in the first line: \n {}", row)
-                    sys.exit()
+    for team_name, team in [("friendly", allies), ("enemy", enemies)]:
+        if any(player == "" for player in team):
+            raise InputError("{}: empty {} player name in the header "
+                "(check for a trailing comma or a missing name).".format(path, team_name))
 
-                # We convert the values to the internal margin scale
-                for enemyIndex, value in enumerate(row):
-                    ally = allies[allyIndex]
-                    enemy = enemies[enemyIndex]
+        duplicates = sorted({player for player in team if team.count(player) > 1})
+        if duplicates:
+            raise InputError("{}: duplicate {} player name(s): {}. "
+                "Names within a team must be unique.".format(path, team_name, ", ".join(duplicates)))
 
-                    try:
-                        if ally not in empty_input_dictionary:
-                            empty_input_dictionary[ally] = {}
-                        empty_input_dictionary[ally][enemy] = parse_rating(value)
-                    except ValueError:
-                        logger.error("Unknown value {} in {}. Use 0-20 scores or the legacy tokens: {}.",
-                            value, path, list(legacy_token_encoding))
-                        sys.exit()
+    if settings.require_unique_names:
+        overlap = sorted(set(allies) & set(enemies))
+        if overlap:
+            raise InputError("{}: name(s) present on both teams: {}. Friendly and enemy "
+                "names must not overlap (settings.require_unique_names).".format(path, ", ".join(overlap)))
 
-            # ? Is this really needed? 2 people can have the same name.
-            if settings.require_unique_names & any(ally in enemies for ally in allies):
-                raise ValueError("Player present on both teams. All player names must be unique.")
-    except:
-        if hard_crash:
-            raise SystemError("Missing file: {}".format(filename))
-        else:
-            logger.error("Warning: Missing file: {}", filename)
-            return
+    if len(enemies) != len(allies):
+        raise InputError("{}: {} friendly names (line 1) but {} enemy names (line 2) "
+            "-- the matrix must be square.".format(path, len(allies), len(enemies)))
+
+    if len(data_rows) != len(allies):
+        raise InputError("{}: {} rating rows for {} friendly players "
+            "-- the matrix must be square.".format(path, len(data_rows), len(allies)))
+
+    if len(allies) not in (4, 6, 8):
+        raise InputError("{}: {} players per team; the draft needs 4, 6 or 8.".format(path, len(allies)))
+
+    for ally, (line_number, row) in zip(allies, data_rows):
+        if len(row) != len(enemies):
+            raise InputError("{}, line {} ({}): {} ratings for {} enemies "
+                "-- the matrix must be square.".format(path, line_number, ally, len(row), len(enemies)))
+
+        for column_index, (enemy, value) in enumerate(zip(enemies, row)):
+            try:
+                rating = parse_rating(value)
+            except ValueError:
+                raise InputError("{}, line {}, column {} ({} vs {}): unknown rating {!r}. "
+                    "Use a 0-20 score or one of the legacy tokens {}.".format(
+                        path, line_number, column_index + 1, ally, enemy,
+                        value, "/".join(legacy_token_encoding))) from None
+
+            if ally not in empty_input_dictionary:
+                empty_input_dictionary[ally] = {}
+            empty_input_dictionary[ally][enemy] = rating

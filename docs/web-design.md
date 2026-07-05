@@ -311,7 +311,8 @@ B5 decision (PLAN.md): the *CLI* defaults to exact; k=3 stays as fast preview.
 
 Same machine (Ryzen 9800X3D), same Scotland 8×8 matrix, single-threaded both
 sides. TS ran **in a web worker in headless Chrome** behind the real §3
-protocol (`web/bench/` harness); native Python re-measured the same day
+protocol (`web/bench/` harness — removed after the decision closed; recoverable
+at git tag `web-bench-archive`); native Python re-measured the same day
 (peak working set via psutil). Every TS root value agrees with the Python
 engine's to <1e-9 (the conformance suite pins this in CI):
 

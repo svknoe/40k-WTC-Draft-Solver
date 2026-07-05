@@ -160,8 +160,7 @@ export function App() {
       </main>
 
       <footer className="app-footer">
-        Runs entirely in your browser — your matrix never leaves the tab.{' '}
-        <a href={`${import.meta.env.BASE_URL}bench.html`}>Engine benchmark →</a>
+        Runs entirely in your browser — your matrix never leaves the tab.
       </footer>
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}

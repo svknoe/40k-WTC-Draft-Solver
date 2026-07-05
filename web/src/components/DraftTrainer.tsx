@@ -4,11 +4,15 @@ import type { BotStyle } from '../draft/sampling';
 import { sampleIndex } from '../draft/sampling';
 import type { DraftModel } from '../draft/draftState';
 import { applyStep, initDraft } from '../draft/draftState';
-import { toScore } from '../model/scale';
+import { candidateStats, projectedResult } from '../draft/cards';
+import { teamResult, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
 import type { SolveState } from '../worker/useSolve';
+import { DraftBoard } from './DraftBoard';
 import { DraftSummary } from './DraftSummary';
+import { PhaseStepper } from './PhaseStepper';
 import { ProgressBar } from './ProgressBar';
+import { RemainingMatchups } from './RemainingMatchups';
 import { WhyPanel } from './WhyPanel';
 import './trainer.css';
 
@@ -76,6 +80,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
           <li>Round {finalRound} — four players: the two refused attackers face each other and the last players pair automatically, resolving the remaining games.</li>
           <li>Both captains pick secretly at every step. The bot's choice is revealed only after you lock yours.</li>
           <li>At the end you're scored against the solver's pre-draft expectation.</li>
+          <li>Runs entirely on your computer — your matrix and drafts are never uploaded. Hints are training-only and switch off during official WTC dates.</li>
         </ul>
         {solve.status === 'solving' && <ProgressBar frac={solve.progress} label="Solving exactly for training…" />}
         <button className="primary" disabled={!ready} onClick={start}>Start practice draft</button>
@@ -102,7 +107,15 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   if (!node) return <p className="placeholder">Loading the next decision…</p>;
 
   const stage = node.stage as 'defender' | 'attackers' | 'refusal';
+  // `node` is fetched asynchronously, so during an advance or undo the model's
+  // round scratch can briefly disagree with the stale node. Wait for them to
+  // re-sync before reading model-derived card stats / board slots (otherwise
+  // candidateStats would index an unset defender or pair).
+  const modelStage = model.myDefender < 0 ? 'defender' : model.myPair === null ? 'attackers' : 'refusal';
+  if (stage !== modelStage) return <p className="placeholder">Loading the next decision…</p>;
   const copy = STAGE_COPY[stage];
+  const proj = projectedResult(model, node, expected);
+  const projScore = teamResult(proj.projected, model.n).my;
 
   const lock = () => {
     if (selected === null || !node.why) return;
@@ -136,9 +149,19 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
 
   return (
     <div className="trainer">
+      <PhaseStepper stage={stage} />
       <div className="trainer-head">
         <h2>{copy.title}</h2>
         <span className="round-badge">Round {node.round} / {finalRound}</span>
+        {showHints && (
+          <span className="projected">
+            Projected <span className="pnum">{projScore}</span>{' '}
+            <span className={proj.delta >= 0 ? 'pdelta up' : 'pdelta down'}>
+              {proj.delta >= 0 ? '+' : ''}
+              {proj.delta.toFixed(1)} vs plan
+            </span>
+          </span>
+        )}
       </div>
       <p className="trainer-sub">{copy.sub}</p>
 
@@ -184,25 +207,33 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         </div>
       )}
 
-      <div className="choices">
-        {node.choices.map((choice, i) => (
-          <button
-            key={i}
-            className={selected === i ? 'choice selected' : 'choice'}
-            onClick={() => setSelected(i)}
-          >
-            <span className="cname">
-              {stage === 'refusal' ? `Refuse ${joinName(choice.name)}` : joinName(choice.name)}
-            </span>
-            {showHints && (
-              <>
-                <span className="cbar"><span style={{ width: `${Math.min(100, choice.prob * 100)}%` }} /></span>
-                <span className="cprob">{(choice.prob * 100).toFixed(0)}%</span>
-                <span className="cev">{choice.ev >= 0 ? '+' : ''}{choice.ev.toFixed(1)}</span>
-              </>
-            )}
-          </button>
-        ))}
+      <DraftBoard model={model} myNames={myNames} enemyNames={enemyNames} stage={stage} />
+
+      <div className="choices grid">
+        {node.choices.map((choice, i) => {
+          const stats = candidateStats(model, node, i);
+          return (
+            <button
+              key={i}
+              className={selected === i ? 'choice selected' : 'choice'}
+              onClick={() => setSelected(i)}
+            >
+              <span className="cname">
+                {stage === 'refusal' ? `Refuse ${joinName(choice.name)}` : joinName(choice.name)}
+              </span>
+              <span className="cstat">
+                our map · {stats.avg === stats.floor ? `keeps ${stats.avg}` : `avg ${stats.avg} · floor ${stats.floor}`}
+              </span>
+              {showHints && (
+                <span className="chint">
+                  <span className="cbar"><span style={{ width: `${Math.min(100, choice.prob * 100)}%` }} /></span>
+                  <span className="cprob">{(choice.prob * 100).toFixed(0)}%</span>
+                  <span className="cev">{choice.ev >= 0 ? '+' : ''}{choice.ev.toFixed(1)}</span>
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div className="lock-bar">
@@ -212,9 +243,13 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
 
       {showWhy && hintsAllowed && <WhyPanel node={node} model={model} myNames={myNames} enemyNames={enemyNames} />}
 
-      {model.fixed.length > 0 && (
-        <div className="locked">
-          <div className="section-head">Locked pairings ({model.fixed.length})</div>
+      <RemainingMatchups model={model} myNames={myNames} enemyNames={enemyNames} />
+
+      <div className="locked">
+        <div className="section-head">Locked pairings ({model.fixed.length})</div>
+        {model.fixed.length === 0 ? (
+          <div className="pairing placeholder-pairing">{model.n} pairings remaining</div>
+        ) : (
           <div className="locked-list">
             {model.fixed.map((game, i) => {
               const my = toScore(game.value);
@@ -227,8 +262,8 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

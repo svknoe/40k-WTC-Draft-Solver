@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
@@ -43,7 +43,13 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
       />,
     );
 
+    // The intro restores the privacy / WTC-lock bullet.
+    expect(within(container).getByText(/never uploaded/i)).toBeInTheDocument();
+
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
+
+    // The draft board renders for the active round.
+    expect(await within(container).findByText(/Our defender · our map/i)).toBeInTheDocument();
 
     // A 4×4 draft is one round: defender → attackers → refusal.
     for (let step = 0; step < 3; step++) {

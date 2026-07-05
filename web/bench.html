@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WTC draft solver — TS engine benchmark (issue #17)</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 2rem auto; max-width: 60rem; padding: 0 1rem; color: #1a1a2e; }
+      h1 { font-size: 1.3rem; }
+      p.note { color: #555; }
+      button { font: inherit; padding: 0.4rem 0.9rem; margin-right: 0.5rem; cursor: pointer; }
+      button:disabled { cursor: wait; opacity: 0.5; }
+      table { border-collapse: collapse; margin-top: 1.2rem; width: 100%; }
+      th, td { border: 1px solid #ccc; padding: 0.35rem 0.6rem; text-align: right; font-variant-numeric: tabular-nums; }
+      th:first-child, td:first-child { text-align: left; }
+      #progress { margin-top: 1rem; height: 1.2rem; background: #eee; border-radius: 4px; overflow: hidden; }
+      #progress > div { height: 100%; width: 0; background: #4a7ddb; transition: width 0.1s; }
+      #status { margin-top: 0.4rem; color: #555; min-height: 1.2em; }
+      pre { background: #f6f6f6; padding: 0.8rem; overflow-x: auto; }
+      .ok { color: #157f3d; font-weight: 600; }
+      .fail { color: #b3261e; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <p style="margin-bottom: 1rem"><a href="./" style="color: #4a7ddb">← WTC Draft Trainer</a></p>
+    <h1>TS engine benchmark — Scotland 8×8 (issue #17 spike)</h1>
+    <p class="note">
+      Runs the real §3 worker (solve → progress → solved) on the Scotland
+      conformance fixture and validates the root value against the Python
+      engine's. Worker heap numbers come from
+      <code>performance.measureUserAgentSpecificMemory</code> (Chrome, needs
+      the cross-origin isolation the dev server sets up); "engine peak/arrays"
+      is the engine's own exact typed-array accounting and works everywhere.
+      Each run uses a fresh worker so heap baselines don't leak between
+      configurations. Append <code>?auto=1</code> to run the whole ladder
+      unattended.
+    </p>
+    <div>
+      <button data-k="3">k=3 (fast preview)</button>
+      <button data-k="4">k=4 (the decision bar)</button>
+      <button data-k="exact">exact (stretch)</button>
+      <button id="run-all">Run the whole ladder</button>
+    </div>
+    <div id="progress"><div></div></div>
+    <div id="status"></div>
+    <table id="results" hidden>
+      <thead>
+        <tr>
+          <th>config</th><th>total s</th><th>enumerate s</th><th>induct s</th>
+          <th>worker heap peak MB</th><th>retained MB</th><th>engine peak MB</th><th>engine arrays MB</th><th>value</th><th>vs Python</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <pre id="summary" hidden></pre>
+    <script type="module" src="/bench/main.ts"></script>
+  </body>
+</html>

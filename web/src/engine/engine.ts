@@ -212,6 +212,11 @@ export class DraftEngine {
     return this.allocPeakBytes;
   }
 
+  /** Off-tree gamestate values solved on demand so far (tests/diagnostics). */
+  extensionCount(): number {
+    return this.extensionValues.size;
+  }
+
   private notePeak(transientBytes: number): void {
     const total = this.allocStaticBytes + transientBytes;
     if (total > this.allocPeakBytes) this.allocPeakBytes = total;
@@ -658,7 +663,10 @@ export class DraftEngine {
     const currentN = teamN(teamCode(friendly));
     const round = (this.n - currentN) / 2 + 1 as 1 | 2 | 3;
     if (done) {
-      return { stage: 'done', side: 'simultaneous', round: 3, choices: [], why: null };
+      // `done` is set at the 4-player refusal, so the states above still sit
+      // at the 4-player level and `round` is already the final round (1 for a
+      // 4x4 matrix, 3 for 8x8).
+      return { stage: 'done', side: 'simultaneous', round, choices: [], why: null };
     }
 
     const game = this.buildGame(friendly, enemy);

@@ -31,7 +31,6 @@ export interface FixtureSolve {
   stageCounts: Record<string, number>;
   expectedValue: number;
   sampleNodes: FixtureNode[];
-  pythonSolveSeconds: number;
 }
 
 export interface Fixture {

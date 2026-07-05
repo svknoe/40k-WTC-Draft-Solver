@@ -131,9 +131,11 @@ export function solveGame(a: ArrayLike<number>, m: number, n: number): GameSolut
 // engine solves through scipy (utilities.solve_zero_sum_game_by_linear_program
 // takes the row side and reads the column side from the marginals).
 //
-// Bland's rule (first eligible entering column, lowest basis index on ratio
-// ties) guarantees termination on the degenerate games the discrete rating
-// scale produces. At <=21×21 its extra pivots are irrelevant.
+// Bland's rule (first eligible entering column, lowest basis index on exact
+// ratio ties) prevents cycling on the degenerate games the discrete rating
+// scale produces; with floating-point ratios the guarantee is heuristic, so
+// the iteration cap below is the hard backstop. At <=21×21 its extra pivots
+// are irrelevant.
 
 const EPS = 1e-12;
 
@@ -172,8 +174,7 @@ function simplexSolve(a: ArrayLike<number>, m: number, n: number): GameSolution 
       const coefficient = tableau[i * columns + pivotColumn];
       if (coefficient > EPS) {
         const ratio = tableau[i * columns + rhsColumn] / coefficient;
-        if (ratio < bestRatio - EPS
-            || (ratio < bestRatio + EPS && (pivotRow === -1 || basis[i] < basis[pivotRow]))) {
+        if (ratio < bestRatio || (ratio === bestRatio && basis[i] < basis[pivotRow])) {
           bestRatio = ratio;
           pivotRow = i;
         }
@@ -203,5 +204,18 @@ function simplexSolve(a: ArrayLike<number>, m: number, n: number): GameSolution 
   const row = new Array<number>(m);
   for (let i = 0; i < m; i++) row[i] = tableau[objectiveBase + n + i] * shiftedValue;
 
-  return { row, col, value: shiftedValue + shift - 1 };
+  // Reduced costs in (-EPS, 0] can leave strategies with tiny negative
+  // entries; clamp and renormalise so a NodeResult.prob is always a
+  // distribution (the Python side gets this from np.abs of the marginals).
+  return { row: toDistribution(row), col: toDistribution(col), value: shiftedValue + shift - 1 };
+}
+
+function toDistribution(weights: number[]): number[] {
+  let sum = 0;
+  for (let i = 0; i < weights.length; i++) {
+    if (weights[i] < 0) weights[i] = 0;
+    sum += weights[i];
+  }
+  for (let i = 0; i < weights.length; i++) weights[i] /= sum;
+  return weights;
 }

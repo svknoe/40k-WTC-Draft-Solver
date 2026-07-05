@@ -964,8 +964,7 @@
       1.0
      ]
     }
-   ],
-   "pythonSolveSeconds": 27.79
+   ]
   },
   {
    "k": 4,
@@ -1869,8 +1868,7 @@
       0.0
      ]
     }
-   ],
-   "pythonSolveSeconds": 60.69
+   ]
   },
   {
    "k": null,
@@ -3471,8 +3469,7 @@
       1.0
      ]
     }
-   ],
-   "pythonSolveSeconds": 190.39
+   ]
   }
  ]
 }

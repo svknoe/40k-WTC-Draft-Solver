@@ -30,6 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import drafter.common.game_state as game_state
 import drafter.common.utilities as utilities
 import drafter.data.initialise_dictionaries as initialise_dictionaries
 import drafter.solver.context as context
@@ -67,8 +68,12 @@ def describe_team(team_permutation):
 
 def export_node(ctx, gamestate):
     """One sample node: payoff matrix + labels + full-precision solution."""
+    def child_value(child_key):
+        return strategy_dictionaries.game_value(
+            ctx, game_state.get_gamestate_from_key(child_key))
+
     game_array, friendly_options, enemy_options = games.build_game(
-        ctx, gamestate, strategy_dictionaries._child_value_getter(ctx))
+        ctx, gamestate, child_value)
     row_strategy, column_strategy, value = utilities.get_game_solution(game_array)
 
     node = {
@@ -157,12 +162,13 @@ def export_solve(team_name, k):
 
     nodes = argmax_walk(ctx)
 
-    return ctx, {
+    # No timing metadata in the fixture: output must be deterministic so a
+    # re-export after a value-neutral change diffs empty.
+    return ctx, elapsed, {
         "k": k,
         "stageCounts": stage_counts,
         "expectedValue": nodes[0]["value"],
         "sampleNodes": nodes,
-        "pythonSolveSeconds": elapsed,
     }
 
 
@@ -170,10 +176,10 @@ def export_team(team_name, ks):
     solves = []
     ctx = None
     for k in ks:
-        ctx, solve = export_solve(team_name, k)
+        ctx, elapsed, solve = export_solve(team_name, k)
         solves.append(solve)
         print("  {} k={}: value={!r} ({}s)".format(
-            team_name, k, solve["expectedValue"], solve["pythonSolveSeconds"]))
+            team_name, k, solve["expectedValue"], elapsed))
 
     fixture = {
         "team": team_name,

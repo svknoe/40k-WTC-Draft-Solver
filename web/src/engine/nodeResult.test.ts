@@ -83,6 +83,7 @@ describe('nodeResult draft walk (Smoke, exact)', () => {
 
     const done = engine.nodeResult(path);
     expect(done.stage).toBe('done');
+    expect(done.round).toBe(1); // a 4x4 draft completes in round 1
     expect(done.choices).toHaveLength(0);
     expect(done.why).toBeNull();
   });

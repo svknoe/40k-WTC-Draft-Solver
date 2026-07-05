@@ -48,16 +48,23 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
 
   try {
     if (request.type === 'solve') {
+      if (request.k !== null && (!Number.isInteger(request.k) || request.k < 2)) {
+        post({
+          type: 'error', reqId: request.reqId, code: 'bad-request',
+          message: `k must be null (exact) or an integer >= 2, got ${request.k}.`,
+        });
+        return;
+      }
       engine = new DraftEngine(request.matrix, request.k, request.neutralWeight ?? 0.5);
 
       const started = performance.now();
-      let enumerateMs = 0;
+      let enumerateMs: number | null = null;
       let peakHeapBytes = usedHeap();
       const baselineHeapBytes = peakHeapBytes;
       let lastReport = 0;
 
       const expected = engine.solve((frac, phase) => {
-        if (phase === 'inducting' && enumerateMs === 0) {
+        if (phase === 'inducting' && enumerateMs === null) {
           enumerateMs = performance.now() - started;
         }
         const heap = usedHeap();
@@ -85,8 +92,8 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
         expected,
         root: engine.nodeResult([]),
         stats: {
-          enumerateMs,
-          inductMs: totalMs - enumerateMs,
+          enumerateMs: enumerateMs ?? totalMs,
+          inductMs: totalMs - (enumerateMs ?? totalMs),
           totalMs,
           storedBytes: engine.storedBytes(),
           peakAllocBytes: engine.peakAllocBytes(),

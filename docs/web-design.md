@@ -320,18 +320,19 @@ sub-2-second runs). "Peak alloc" is the engine's own exact accounting of live
 typed-array bytes including transient enumeration buffers — the worst-case
 transient footprint — and is corroborated by a Node-side RSS delta of ~110 MB
 on the exact solve (`web/bench/node-bench.test.ts`). Either way the exact
-solve fits a browser tab with roomy margin (~8-15× under native Python's
+solve fits a browser tab with roomy margin (~7–14× under native Python's
 801 MB).
 
 **Verdict: TypeScript, no Rust→WASM.** The spike's decision bar was "k=4 feels
 interactive"; the measured result is that even the *exact* solve is
-interactive (~2 s), so the engine-language question is closed. The speedup is
-exactly where the technical brief predicted: enumeration is pure-loop work V8
-compiles well (7.97 s → 1.26 s, ~6×), and the value phase escapes scipy's
-per-call LP overhead entirely — the bespoke ~100-line simplex + closed-form
-2×2 path turns 20.6 s into 0.76 s (~27×). The surprise is the magnitude:
-whole-solve ~70–100× rather than the predicted 2–5×, because *both* phases
-were interpreter-bound, not numpy-bound. Rust→WASM would buy nothing user-visible
+interactive (~2 s), so the engine-language question is closed. The speedup
+lands where the technical brief pointed but far bigger than its priors: on
+the exact solve, enumeration — pure-loop work V8 compiles well — went
+125.1 s → 1.26 s (~99×), and the value phase, which escapes scipy's per-call
+LP overhead entirely via the closed-form 2×2 path + the bespoke ~100-line
+simplex, went 69.8 s → 0.76 s (~92×). The brief's priors said ~2–5× overall;
+the measured ~70–100× is because *both* phases were interpreter-bound, not
+numpy-bound. Rust→WASM would buy nothing user-visible
 and cost a toolchain; it remains the escape hatch behind the same worker
 contract only if requirements change radically (e.g. much larger team
 formats). Consequences: the web app can default to **exact** (matching the

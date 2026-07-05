@@ -1,7 +1,14 @@
 # Web engine CI (docs/web-design.md §7.2): typecheck + the FULL conformance
-# suite — including the multi-minute Scotland k=4/exact solves — on every
+# suite — including the Scotland k=4/exact solves (seconds in TS) — on every
 # push/PR that touches web/ or the fixture exporter. This is the anti-drift
 # guard between the Python engine (source of truth) and the TS port.
+#
+# Known blind spot: this deliberately does NOT trigger on drafter/** (that
+# would re-run the TS suite against unchanged, committed fixtures — green but
+# meaningless). If a Python change alters the VALUE MODEL, the committed
+# fixtures are stale until re-exported: run
+# scripts/export_conformance_fixtures.py and commit the JSONs in the same PR
+# (see the fixture note in CLAUDE.md).
 name: Web CI
 
 on:

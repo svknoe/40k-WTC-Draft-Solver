@@ -164,13 +164,6 @@ export function MatrixEditor({
         </div>
 
         <div className="controls">
-          <button
-            onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}
-            disabled={!validation.ok}
-            title={validation.ok ? 'Swap which side you captain — transposes the matrix and team names' : 'Fix invalid cells before swapping'}
-          >
-            ⇄ Swap sides
-          </button>
           <label>
             Team size{' '}
             <select
@@ -206,6 +199,13 @@ export function MatrixEditor({
               Best / worst map
             </button>
           </div>
+          <button
+            onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}
+            disabled={!validation.ok}
+            title={validation.ok ? 'Swap which side you captain — transposes the matrix and team names' : 'Fix invalid cells before swapping'}
+          >
+            ⇄ Swap sides
+          </button>
         </div>
 
         <Grid

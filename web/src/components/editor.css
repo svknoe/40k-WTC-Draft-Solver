@@ -30,28 +30,31 @@
 
 .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 
-/* grid */
+/* grid — sized to fit its container so the whole matrix is visible without a
+ * horizontal scrollbar on desktop (table-layout: fixed distributes the columns
+ * evenly). The min-width only trips the scroll fallback on very narrow screens. */
 .grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-table.grid { border-collapse: collapse; width: 100%; }
+table.grid { border-collapse: collapse; width: 100%; table-layout: fixed; min-width: 34rem; }
 table.grid th, table.grid td { border: 1px solid var(--border); padding: 0; }
-table.grid .corner { color: var(--text-4); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
-  padding: 0.4rem 0.6rem; text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--bg-2); z-index: 2; }
+table.grid .corner { width: 6.5rem; color: var(--text-4); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 0.35rem 0.5rem; text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--bg-2); z-index: 2; }
 table.grid .col-head { background: var(--bg-2); }
-table.grid .row-head { position: sticky; left: 0; background: var(--bg-2); z-index: 1; }
+table.grid .row-head { width: 6.5rem; position: sticky; left: 0; background: var(--bg-2); z-index: 1; }
 
-input.name { border: 0; background: transparent; width: 100%; min-width: 6.5rem; padding: 0.4rem 0.5rem; font-weight: 600; }
+input.name { border: 0; background: transparent; width: 100%; min-width: 0; padding: 0.4rem 0.4rem; font-weight: 600;
+  font-size: 0.85rem; text-overflow: ellipsis; }
 input.name.mine { color: var(--blue); }
 input.name.enemy { color: var(--red); text-align: center; }
 input.name:focus { outline: 1px solid var(--blue); border-radius: 4px; }
 
 td.cell { text-align: center; }
 td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }
-.cell-input { border: 0; background: transparent; text-align: center; width: 3.2rem; padding: 0.45rem 0.2rem;
-  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+.cell-input { border: 0; background: transparent; text-align: center; width: 100%; padding: 0.45rem 0.1rem;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.9rem; }
 .cell-input:focus { outline: 1px solid var(--blue); border-radius: 4px; }
-.bw { display: inline-flex; align-items: center; }
-.bw .sep { color: var(--text-4); }
-.bw .cell-input { width: 2.3rem; }
+.bw { display: flex; align-items: center; justify-content: center; gap: 1px; }
+.bw .sep { color: var(--text-4); font-size: 0.8rem; }
+.bw .cell-input { width: 44%; padding: 0.45rem 0.05rem; }
 .cell-input.worst { font-weight: 500; opacity: 0.85; }
 
 /* value bands */

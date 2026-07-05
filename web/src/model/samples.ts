@@ -1,20 +1,43 @@
 import { fixtureMatrix, scotland, six, smoke } from '../conformance/fixtures';
 import type { Fixture } from '../conformance/fixtures';
-import type { EditorMatrix } from './matrix';
+import type { EditorMatrix, MatrixSize } from './matrix';
 import { toInputString } from './scale';
 
-/** Seed the editor from a conformance fixture (a known-good, solvable matrix),
- * converting the internal-scale cells back to 0-20 score strings. */
-function fromFixture(fixture: Fixture, myTeam: string, enemyTeam: string): EditorMatrix {
+// Two disjoint faction pools (names must be distinct across the whole matrix).
+const MY_FACTIONS = [
+  'Space Marines', 'Astra Militarum', 'Adeptus Custodes', 'Grey Knights',
+  'Adepta Sororitas', 'Imperial Knights', 'Adeptus Mechanicus', 'Space Wolves',
+];
+const ENEMY_FACTIONS = [
+  'Necrons', 'Orks', "T'au Empire", 'Tyranids',
+  'Aeldari', 'Drukhari', 'Death Guard', 'Chaos Knights',
+];
+
+/** A sample from a conformance fixture: keep its real (non-trivial, solvable)
+ * cell values but label the players with factions rather than the fixture's
+ * own names. */
+function fromFixture(fixture: Fixture, enemyTeam: string): EditorMatrix {
   const m = fixtureMatrix(fixture);
+  const n = m.n;
   return {
-    n: m.n,
-    myTeam,
+    n,
+    myTeam: 'Your team',
     enemyTeam,
-    myNames: [...m.myNames],
-    enemyNames: [...m.enemyNames],
-    cells: m.cells.map((row) =>
-      row.map((c) => ({ b: toInputString(c.best), w: toInputString(c.worst) }))),
+    myNames: MY_FACTIONS.slice(0, n),
+    enemyNames: ENEMY_FACTIONS.slice(0, n),
+    cells: m.cells.map((row) => row.map((c) => ({ b: toInputString(c.best), w: toInputString(c.worst) }))),
+  };
+}
+
+/** A blank starting point: dummy player names and an even 10-10 in every cell. */
+function template(n: MatrixSize): EditorMatrix {
+  return {
+    n,
+    myTeam: 'Your team',
+    enemyTeam: 'Opponent',
+    myNames: Array.from({ length: n }, (_, i) => `Player ${i + 1}`),
+    enemyNames: Array.from({ length: n }, (_, i) => `Opponent ${i + 1}`),
+    cells: Array.from({ length: n }, () => Array.from({ length: n }, () => ({ b: '10', w: '10' }))),
   };
 }
 
@@ -24,9 +47,11 @@ export interface Sample {
   matrix: EditorMatrix;
 }
 
-/** Ready-to-load opponents for the "Choose an opponent" affordance. */
+/** Ready-to-load matrices for the "Choose an opponent" affordance. Template
+ * first (a blank even 8×8 to build from); then real solvable samples by size. */
 export const SAMPLES: Sample[] = [
-  { key: 'scotland', label: 'Scotland — WTC 8×8 test opponent', matrix: fromFixture(scotland, 'Your team', 'Scotland') },
-  { key: 'six', label: 'Six — 6×6 sample', matrix: fromFixture(six, 'Your team', 'Six') },
-  { key: 'smoke', label: 'Smoke — 4×4 quick demo', matrix: fromFixture(smoke, 'Your team', 'Smoke') },
+  { key: 'template', label: 'Template', matrix: template(8) },
+  { key: 'eight', label: 'Eight', matrix: fromFixture(scotland, 'Eight') },
+  { key: 'six', label: 'Six', matrix: fromFixture(six, 'Six') },
+  { key: 'four', label: 'Four', matrix: fromFixture(smoke, 'Four') },
 ];

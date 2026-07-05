@@ -43,6 +43,23 @@ export function toInputString(internal: number): string {
 export const formatCell = (cell: { best: number; worst: number }): string =>
   `${toScore(cell.best)} / ${toScore(cell.worst)}`;
 
+export interface TeamResult {
+  /** My team's total out of 160. */
+  my: number;
+  /** Opponent's total out of 160. */
+  enemy: number;
+  /** My margin over even (= expected internal margin, rounded). */
+  favored: number;
+}
+
+/** Convert the engine's internal team margin (sum of 8 games' deviations) to a
+ * displayed 0-160 team result: my = 80 + margin, enemy = 160 - my. The two
+ * always sum to 160 (§C, PLAN.md). */
+export function teamResult(expected: number): TeamResult {
+  const my = Math.round(80 + expected);
+  return { my, enemy: 160 - my, favored: my - 80 };
+}
+
 export type ScoreBand = 'worst' | 'bad' | 'okay' | 'good' | 'best';
 
 /** Colour band for a 0-20 score, per the editor legend: worst ≤4, bad 5-8,

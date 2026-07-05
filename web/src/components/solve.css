@@ -1,0 +1,44 @@
+/* Solve view (docs/design-mockup.html "Solve"). */
+
+.solve { max-width: 44rem; }
+.solve h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+.solve .muted { margin-bottom: 1rem; }
+.solve-mode { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; }
+.solve .run { margin-top: 0.25rem; }
+
+.result-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1.25rem 1.5rem; text-align: center; margin-bottom: 1.25rem;
+}
+.big-score {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 3rem; font-weight: 700; margin: 0.35rem 0;
+}
+.big-score .mine { color: var(--blue); }
+.big-score .enemy { color: var(--red); }
+.big-score .dash { color: var(--text-4); margin: 0 0.6rem; }
+.verdict { font-size: 1.05rem; color: var(--text); font-weight: 600; }
+
+.mixes { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.strategy { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.strategy .section-head { margin-bottom: 0.6rem; }
+.strategy-table { width: 100%; border-collapse: collapse; }
+.strategy-table td { padding: 0.28rem 0.35rem; vertical-align: middle; }
+.sname { white-space: nowrap; }
+.strategy.mine .sname { color: var(--blue); }
+.strategy.enemy .sname { color: var(--red); }
+.sbar { width: 100%; }
+.sbar > span { display: block; height: 0.5rem; border-radius: 3px; background: var(--text-3); min-width: 2px; }
+.strategy.mine .sbar > span { background: var(--blue); }
+.strategy.enemy .sbar > span { background: var(--red); }
+.sprob { text-align: right; color: var(--text-2); width: 3rem; }
+.sev { text-align: right; color: var(--text-3); width: 3.2rem; }
+
+.progress-wrap { margin: 1.25rem 0; max-width: 32rem; }
+.progress { height: 0.7rem; background: var(--bg-2); border: 1px solid var(--border-strong); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--blue); transition: width 0.1s; }
+.progress-label { margin-top: 0.45rem; color: var(--text-3); font-size: 0.85rem; }
+
+.solve-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+
+@media (max-width: 640px) { .mixes { grid-template-columns: 1fr; } }

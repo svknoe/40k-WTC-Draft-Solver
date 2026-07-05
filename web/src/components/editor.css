@@ -8,13 +8,6 @@
 }
 .editor-main { flex: 1; min-width: 0; }
 
-.section-head {
-  font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--text-4); margin-bottom: 0.25rem;
-}
-
-.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem; }
-.muted { color: var(--text-3); font-size: 0.85rem; }
 .privacy { color: var(--text-4); font-size: 0.78rem; line-height: 1.45; }
 
 .saved-list { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -36,11 +29,6 @@
 .matchup .vs { color: var(--text-4); }
 
 .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-
-/* segmented toggle */
-.segmented { display: inline-flex; background: var(--bg-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
-.segmented button { border: 0; background: transparent; color: var(--text-3); padding: 0.35rem 0.7rem; border-radius: 6px; }
-.segmented button.on { background: var(--blue); color: #06101c; font-weight: 600; }
 
 /* grid */
 .grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
@@ -82,9 +70,6 @@ td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }
 .legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-3); }
 .legend .swatch { display: inline-flex; align-items: center; gap: 0.35rem; }
 .legend .chip { width: 0.7rem; height: 0.7rem; border-radius: 3px; }
-
-.errors { margin-top: 0.75rem; color: var(--red-soft); font-size: 0.85rem; }
-.errors ul { margin: 0.25rem 0 0 1.1rem; }
 
 .solve-bar { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatCell, parseRating, scoreBand, toInputString, toScore } from './scale';
+import { formatCell, parseRating, scoreBand, teamResult, toInputString, toScore } from './scale';
 
 describe('parseRating', () => {
   test('legacy tokens map to internal deviations from an even game', () => {
@@ -56,6 +56,22 @@ describe('toInputString', () => {
     expect(toInputString(-10)).toBe('0.0'); // internal -10 = score 0 (a 20-0 loss)
     expect(toInputString(0)).toBe('10'); // internal 0 = the even game, score 10
     expect(toInputString(10)).toBe('20');
+  });
+});
+
+describe('teamResult', () => {
+  test('maps the internal margin to a 0-160 team score (80 + margin)', () => {
+    expect(teamResult(5)).toEqual({ my: 85, enemy: 75, favored: 5 });
+    expect(teamResult(0)).toEqual({ my: 80, enemy: 80, favored: 0 });
+    expect(teamResult(-3)).toEqual({ my: 77, enemy: 83, favored: -3 });
+  });
+
+  test('rounds and keeps the two scores summing to 160', () => {
+    const r = teamResult(6.189614);
+    expect(r.my).toBe(86);
+    expect(r.enemy).toBe(74);
+    expect(r.my + r.enemy).toBe(160);
+    expect(r.favored).toBe(6);
   });
 });
 

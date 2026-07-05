@@ -59,9 +59,9 @@ class SolverConfig:
 # module-level globals (GitHub issue #13). Replaces drafter.data.match_info, the
 # mutable drafter.data.settings, the restrict-attackers caches that used to live
 # in drafter.common.team_permutation, and the gamestate/strategy dictionaries
-# that used to be module globals in the solver package. Names still live in the
-# key strings at this step; the packed-integer encoding (B2 second PR) moves the
-# name<->index maps here too.
+# that used to be module globals in the solver package. Gamestate keys are packed
+# integers (drafter.common.packing); the friendly/enemy NameIndex maps here are
+# the only place player names live.
 @dataclass
 class SolverContext:
     config: SolverConfig

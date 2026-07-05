@@ -59,8 +59,9 @@ def read_dictionaries(ctx):
 def write_dictionaries(ctx):
     for name in global_gamestate_dictionary_names:
         path = utilities.get_path(ctx.enemy_team_name, name + ".json")
-        string_representation = [key for key in ctx.gamestate_dictionaries[name]]
-        read_write.write_dictionary(path, string_representation)
+        # The (friendly, enemy) integer-code tuples serialise to JSON as lists.
+        key_list = [key for key in ctx.gamestate_dictionaries[name]]
+        read_write.write_dictionary(path, key_list)
 
 
 def get_initial_game_state(ctx):

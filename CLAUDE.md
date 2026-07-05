@@ -153,7 +153,11 @@ under the old value model. Caches are guarded by a `cache_format.json`
 version marker (`drafter/data/read_write.py`): caches without a current
 marker are ignored on read and re-solved, so stale old-model values can never
 leak into a draft. Bump `CACHE_FORMAT_VERSION` whenever the value model
-changes.
+changes — and in the same PR re-export the web conformance fixtures
+(`scripts/export_conformance_fixtures.py`, commit the JSONs under
+`web/src/conformance/fixtures/`): the TS engine (`web/`, issue #17) is pinned
+against them in web CI, which deliberately does not trigger on `drafter/**`,
+so stale fixtures stay silently green until re-exported.
 
 ## Running
 

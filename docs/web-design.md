@@ -275,12 +275,12 @@ real engine dropped in behind the same contract at Slice 2.
 
 | Decision | Status | Trigger / owner |
 |---|---|---|
-| **Compute-engine language** (TS vs Rust→WASM) | **Deferred** | After M3 lands; issue #17 spike measures TS-in-browser against real profile numbers. **Benchmark at the target k (4, ideally 5) — not just k=3** — since that's what decides whether TS suffices or Rust→WASM is needed (§7.1). Default TS; Rust→WASM is the escape hatch behind the same contract. Pyodide = dev-only oracle. |
+| **Compute-engine language** (TS vs Rust→WASM) | **Decided (2026-07-05): TypeScript** | Spike #17 measured the TS engine in a real browser worker at **~0.4 s (k=3) / ~0.8 s (k=4) / ~2.0 s (exact)** vs native Python's 28.6 / 71 / 195 s, values agreeing to <1e-9 — see §7.1. Rust→WASM is not needed at any rung of the ladder; it stays only as the theoretical escape hatch behind the same worker contract. Pyodide is moot. |
 | **Frontend framework** (React vs Svelte) | **Open, low-stakes** | Decide at Slice 1. Artifact is React (continuity); Claude Design can re-emit in Svelte if chosen. Does not affect this contract. |
 | **Hosting** | **Settled** | GitHub Pages; Cloudflare Pages as upgrade. |
 | **Repo layout** | **Settled (2026-07-05): `web/` subdir of this repo** | Monorepo — see §9. Deploy = Action builds `web/`, base path `/40k-WTC-Draft-Solver/`, `.nojekyll`. |
 | **CSV interop** | **Settled (2026-07-05): deferred** | MVP is JSON-only (§4.3). CSV round-trip revisited post-MVP if asked. |
-| **k (attacker restriction)** | **MVP: k=3 · target: k=4 · stretch: k=5** | k = number of best attackers considered per side (**not** team size). See §7.1 — the main pressure on the engine choice. |
+| **k (attacker restriction)** | **Resolved by #17: default the web app to exact** | The whole ladder collapsed: exact solves in ~2 s in-browser (§7.1), so k stops being a browser constraint. Keep `k` in the §3 contract (it's already there) for a near-instant preview option, but the MVP can simply ship the true equilibrium, matching the CLI's B5 default. |
 
 ### 7.1 The k / engine performance ladder (updated 2026-07-05, post-B5)
 
@@ -298,20 +298,59 @@ reproduced):
 | 7 (= exact) | ~190 s | ~840 MB |
 
 B5 decision (PLAN.md): the *CLI* defaults to exact; k=3 stays as fast preview.
-For the browser:
 
-- **k=3 — MVP floor.** Must feel interactive (tens of seconds with progress).
-- **k=4 — the benchmark that decides TS vs Rust→WASM** (issue #17).
-- **Exact (k=7) — the stretch goal, and worth probing in the spike:** it is only
-  ~2.7× the k=4 work, and an exact-in-browser solve would make the web app
-  strictly stronger than any previous version of this tool. RAM (~840 MB native)
-  may be the binding constraint in a browser tab, not time — measure both.
+#### Measured (2026-07-05, issue #17 spike): TypeScript wins every rung by ~two orders of magnitude
 
-Implication for issue #17: benchmark the TS engine at **k=4 and exact**, not just
-k=3. A TS engine on typed arrays may well beat numpy-Python here; measure, don't
-assume. Rust→WASM is the escape hatch behind the same worker contract.
+Same machine (Ryzen 9800X3D), same Scotland 8×8 matrix, single-threaded both
+sides. TS ran **in a web worker in headless Chrome** behind the real §3
+protocol (`web/bench/` harness); native Python re-measured the same day
+(peak working set via psutil). Every TS root value agrees with the Python
+engine's to <1e-9 (the conformance suite pins this in CI):
+
+| config | native Python | TS in-browser | speedup | TS worker heap (measured, retained) | TS peak alloc (engine accounting) |
+|---|---|---|---|---|---|
+| k=3 | 28.6 s / 111 MB | **0.42 s** | ~68× | 15 MB | 15 MB |
+| k=4 | 71.0 s / 286 MB | **0.81 s** | ~87× | 26 MB | 32 MB |
+| exact (k=7) | 194.9 s / 801 MB | **2.02 s** | ~96× | 57 MB | 108 MB |
+
+Memory methodology: "worker heap" is `performance.measureUserAgentSpecificMemory`
+bytes attributed to the worker realm after the solve (real Chrome; the API is
+polled during the solve too, but its resolution is coarser than these
+sub-2-second runs). "Peak alloc" is the engine's own exact accounting of live
+typed-array bytes including transient enumeration buffers — the worst-case
+transient footprint — and is corroborated by a Node-side RSS delta of ~110 MB
+on the exact solve (`web/bench/node-bench.test.ts`). Either way the exact
+solve fits a browser tab with roomy margin (~7–14× under native Python's
+801 MB).
+
+**Verdict: TypeScript, no Rust→WASM.** The spike's decision bar was "k=4 feels
+interactive"; the measured result is that even the *exact* solve is
+interactive (~2 s), so the engine-language question is closed. The speedup
+lands where the technical brief pointed but far bigger than its priors: on
+the exact solve, enumeration — pure-loop work V8 compiles well — went
+125.1 s → 1.26 s (~99×), and the value phase, which escapes scipy's per-call
+LP overhead entirely via the closed-form 2×2 path + the bespoke ~100-line
+simplex, went 69.8 s → 0.76 s (~92×). The brief's priors said ~2–5× overall;
+the measured ~70–100× is because *both* phases were interpreter-bound, not
+numpy-bound. Rust→WASM would buy nothing user-visible
+and cost a toolchain; it remains the escape hatch behind the same worker
+contract only if requirements change radically (e.g. much larger team
+formats). Consequences: the web app can default to **exact** (matching the
+CLI's B5 decision), progress bars are nearly moot, and per-node `NodeResult`
+queries are instant.
 
 ### 7.2 Engine port notes (read before writing any TS engine code)
+
+> **Status (2026-07-05):** the port landed with the #17 spike. The engine
+> lives at `web/src/engine/` behind the §3 worker (`web/src/worker/`); the
+> conformance suite at `web/src/conformance/` (fixtures exported by
+> `scripts/export_conformance_fixtures.py`) asserts values to 1e-9, exact
+> per-stage gamestate counts, exact sample-node payoff matrices/labels, and
+> strategies as ε-equilibria — it runs in web CI
+> (`.github/workflows/web-ci.yml`) on every push, including the Scotland
+> k=4/exact solves. Everything below was applied as written. Still ahead of
+> the single-engine end state: port the brute-force oracle, feature parity,
+> and the real-usage trust window.
 
 - **53-bit trap:** JS numbers hold only 53 safe integer bits. Do **not** port the
   Python engine's int64 packed gamestate keys via `BigInt` (slow, off V8 fast

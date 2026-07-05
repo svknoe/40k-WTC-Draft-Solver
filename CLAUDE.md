@@ -36,7 +36,8 @@ drafter/
     pairing.py             PairingTables: defender-picks-the-map value lookups for one match
   data/
     initialise_dictionaries.py  reads CSVs (read_pairing_matrix), builds the SolverContext, solves
-    set_enemy_team.py      InquirerPy menu over drafter/resources/matches/<team>/ (returns the name)
+    paths.py               match-folder + cache resolution (platformdirs, issue #26)
+    set_enemy_team.py      InquirerPy menu over paths.list_available_teams() (returns the name)
     read_write.py          JSON cache IO
   solver/
     context.py             SolverConfig (the knobs) + SolverContext (all per-run state, passed explicitly)
@@ -45,12 +46,20 @@ drafter/
     games.py               build the payoff matrix for one gamestate from child values
     draft.py               interactive draft loop (uses plain input(), not InquirerPy)
     draft_loop.py          replay wrapper
-  resources/matches/<Team>/    one folder per opponent = the "database"
+  resources/matches/<Team>/    packaged read-only SAMPLE opponents (issue #26)
     pairing_matrix_best.csv    required input (see format below)
     pairing_matrix_worst.csv   required input
-    cache_format.json          cache version marker (see read_write.py)
-    *_dictionary.json          cached preprocessing output (gitignored, can be 100s of MB)
 ```
+
+Match folders resolve from a **per-user data dir first, packaged samples
+second** (`drafter/data/paths.py`, issue #26): a user's own opponents live in
+`platformdirs.user_data_dir("wtc-draft-solver")/matches/<Team>/`
+(`%APPDATA%\wtc-draft-solver\matches` on Windows), searched before the bundled
+samples under `drafter/resources/matches/`. Solver JSON caches
+(`cache_format.json`, `*_dictionary.json`) are written to the platform **cache**
+dir (`user_cache_dir(...)/matches/<Team>/`), never into the package — so a
+pip/pipx install stays clean. `ctx.paths` (a `MatchPaths`) carries `input_dir`
+and `cache_dir` for the current match.
 
 ## How it works (important for any performance work)
 
@@ -182,7 +191,8 @@ Notes for agents:
   test needs `-m slow`, ~5 min). CI (`.github/workflows/ci.yml`) runs the
   smoke test + fast suite on every push/PR — keep it green; run `pytest`
   before pushing solver changes.
-- JSON caches under `drafter/resources/matches/` are gitignored; never commit
-  them. Never commit `.venv/` or `__pycache__/`.
+- Solver JSON caches now live in the platform cache dir (issue #26), not the
+  repo; any stray `*.json` under `drafter/resources/matches/` is gitignored —
+  never commit caches, `.venv/`, or `__pycache__/`.
 - PLAN.md holds the current revival roadmap (performance, 11th-edition map
   rules, web distribution). Read it before starting substantial work.

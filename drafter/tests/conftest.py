@@ -15,8 +15,21 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+import drafter.data.paths as paths
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SOLVE_FIXTURE_SCRIPT = Path(__file__).resolve().parent / "_solve_fixture.py"
+
+
+@pytest.fixture(autouse=True)
+def isolate_user_cache_dir(monkeypatch, tmp_path):
+    """Keep every in-process test off the real platform cache dir (issue #26):
+    redirect the solver cache root to a per-test temp dir. Tests that need a
+    specific location override this with their own monkeypatch. (Golden tests run
+    in subprocesses and disable cache I/O, so they are unaffected either way.)"""
+    monkeypatch.setattr(paths, "user_cache_root", lambda: tmp_path / "solver-cache")
 
 
 def solve_fixture(fixture_name, k, timeout=None):

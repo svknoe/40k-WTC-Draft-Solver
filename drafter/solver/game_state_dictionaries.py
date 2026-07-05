@@ -42,7 +42,7 @@ def initialise_dictionaries(ctx, read, write):
 
 def read_dictionaries(ctx):
     for name in global_gamestate_dictionary_names:
-        path = utilities.get_path(ctx.enemy_team_name, name + ".json")
+        path = ctx.paths.cache_file(name + ".json")
         key_list = read_write.read_dictionary(path)
 
         if (key_list is not None and len(key_list) > 0):
@@ -58,7 +58,7 @@ def read_dictionaries(ctx):
 
 def write_dictionaries(ctx):
     for name in global_gamestate_dictionary_names:
-        path = utilities.get_path(ctx.enemy_team_name, name + ".json")
+        path = ctx.paths.cache_file(name + ".json")
         # The (friendly, enemy) integer-code tuples serialise to JSON as lists.
         key_list = [key for key in ctx.gamestate_dictionaries[name]]
         read_write.write_dictionary(path, key_list)

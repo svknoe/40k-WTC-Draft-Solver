@@ -38,6 +38,7 @@ def write_cache_format_marker(path, friendly_names=None, enemy_names=None):
     if friendly_names is not None:
         marker["friendly_names"] = list(friendly_names)
         marker["enemy_names"] = list(enemy_names)
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('w', encoding='utf-8') as f:
         json.dump(marker, f)
 
@@ -55,6 +56,7 @@ def read_dictionary(path):
 
 
 def write_dictionary(path, dictionary):
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('w', encoding='utf-8') as f:
         print("   Writing file {} ...".format(path))
         json.dump(dictionary, f, ensure_ascii=False, indent=4)

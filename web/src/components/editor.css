@@ -25,7 +25,7 @@
 .matchup label { color: var(--text-4); font-size: 0.8rem; }
 .team-name { font-weight: 600; min-width: 8rem; }
 .team-name.mine { color: var(--blue); }
-.team-name.enemy { color: var(--red); }
+.team-name.enemy { color: var(--enemy); }
 .matchup .vs { color: var(--text-4); }
 
 .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
@@ -44,7 +44,7 @@ table.grid .row-head { width: 6.5rem; position: sticky; left: 0; background: var
 input.name { border: 0; background: transparent; width: 100%; min-width: 0; padding: 0.4rem 0.4rem; font-weight: 600;
   font-size: 0.85rem; text-overflow: ellipsis; }
 input.name.mine { color: var(--blue); }
-input.name.enemy { color: var(--red); text-align: center; }
+input.name.enemy { color: var(--enemy); text-align: center; }
 input.name:focus { outline: 1px solid var(--blue); border-radius: 4px; }
 
 td.cell { text-align: center; }

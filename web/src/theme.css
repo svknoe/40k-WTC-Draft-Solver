@@ -30,6 +30,10 @@
   --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 
+  /* opponent accent. Flips under .cb — red-on-black is a CB problem; the
+   * friendly blue is already CB-safe and stays put. */
+  --enemy: var(--red);
+
   /* matchup value bands (worst → best). Overridden under .cb below. */
   --band-worst: var(--red);
   --band-bad: var(--amber);
@@ -42,6 +46,7 @@
  * cyan) that avoids the red↔green axis and the dark-red-on-black problem, and
  * stays clear of the UI's blue accent. Matches docs/design-mockup.html. */
 .cb {
+  --enemy: #f0923e;
   --band-worst: #e07f1e;
   --band-bad: #e6b054;
   --band-okay: #b9c0c8;
@@ -126,7 +131,7 @@ nav.screens { display: flex; gap: 0.25rem; flex-wrap: wrap; }
 .spacer { flex: 1; }
 .matchup-chip { font-size: 0.85rem; color: var(--text-4); margin-left: 0.5rem; }
 .matchup-chip .mine { color: var(--blue); font-weight: 600; }
-.matchup-chip .enemy { color: var(--red); font-weight: 600; }
+.matchup-chip .enemy { color: var(--enemy); font-weight: 600; }
 
 .pill {
   display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-2);

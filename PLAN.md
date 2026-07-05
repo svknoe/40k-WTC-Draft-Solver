@@ -4,27 +4,29 @@ Roadmap for bringing the WTC draft solver back to life. Four workstreams:
 **A** foundation, **B** performance/RAM, **C** 11th-edition map model,
 **D** distribution. Sequencing at the bottom.
 
-## Where we are (baseline, measured 2026-07-03)
+## Where we are (updated 2026-07-05, post-M3 B1–B3)
 
-The 2024 breakage is fixed (a mass-rename introduced a module-shadowing bug
-that crashed every fresh solve; see
-https://github.com/svknoe/40k-WTC-Draft-Solver/pull/5). Verified working
-again end to end. Baseline numbers on a Ryzen 9800X3D, Scotland 8×8 matrix:
+M1 (foundation), M2 (11th-edition map model + scale correction) and the M3
+speedup core (B1 LP solving, B2 integer states + solver context, B3
+value-only induction) are done; the 2023 discard-stage wiring bug is fixed
+(PR #33). Scotland 8×8 fresh solves on a Ryzen 9800X3D
+(https://github.com/svknoe/40k-WTC-Draft-Solver/issues/16#issuecomment-4885669119,
+k=3 row independently reproduced):
 
-| Metric | k=3 fresh solve | full cache load (k=4-era) |
-|---|---|---|
-| Gamestate enumeration | 16 s, 1.55M states | 13 s |
-| Strategy solving | 275 s (~950k games solved) | 6 s |
-| Total | ~5 min | ~19 s |
-| Peak RAM | ~2 GB | — |
-| Cache size on disk | — | ~630 MB JSON |
+| k | Total | Peak RAM | Note |
+|---|---|---|---|
+| 3 | ~28 s | ~117 MB | fast preview |
+| 4 | ~70 s | ~299 MB | |
+| 7 (= exact) | ~190 s | ~840 MB | k saturates: only 7 non-defenders exist |
 
-Measured 2026-07-04 (interactive run, same machine): **k=4 fresh solve ≈ 15
-min** — the primary number workstream B's acceptance criteria measure against.
-Historical report: k=4 fresh solve ≈ 1 h / 16 GB on older hardware. State
-count fans out ~4× per k increment at each select-attackers stage, so both
-timings are consistent. The 4-player stages dominate everything (705k of the
-1.55M states at k=3).
+The restriction saturates from the bottom of the tree up (k≥3 → 4-player
+stage exact, k≥5 → 6-player, k≥7 → whole draft exact), so **k=7 is the true
+equilibrium** — no heuristic anywhere. No disk caches anymore: solves are
+in-process (B3); strategies are recomputed per node on demand.
+
+For history: the 2026-07-03 pre-rewrite baseline was ~5 min / ~2 GB at k=3,
+~15 min at k=4 (measured), ~1 h / 16 GB historically on older hardware, plus
+~630 MB of JSON caches per opponent.
 
 ## A. Foundation (small, do first)
 
@@ -174,16 +176,24 @@ C for the current-edition rules being in that core.
 ## Sequencing (agreed 2026-07)
 
 ```
-M0 (done)  Restore + benchmarks + docs
-M1         Foundation: merge to main, golden tests, CI, pyproject
-M2         11th edition: best/worst map model + data migration
-           (before the rewrite, so golden tests pin the final rules)
-M3         Speedup: B1 LP → B2 states/context → B3 value-only → B4 parallel
-           → B5 exact-mode decision; small backend fixes ride along
-M4         Web: core-tech spike (TS vs WASM) + short design doc,
-           then vertical slices published to GitHub Pages from the first PR:
-           matrix editor → solve + strategy tables → full trainer
+M0 (done)       Restore + benchmarks + docs
+M1 (done)       Foundation: merge to main, golden tests, CI, pyproject
+M2 (done)       11th edition: best/worst map model + data migration
+                + rating-scale correction (#30/#31)
+M3 (done*)      Speedup: B1 LP, B2 states/context, B3 value-only — landed.
+                Discard-wiring fix #32/#33 landed first. *B4 (parallel)
+                closed as not needed (exact = ~3 min single-threaded);
+                B5 decision recorded below.
+M4 (active)     Web: design doc done (docs/web-design.md + worker contract);
+                next: core-tech spike #17 (benchmark TS at k=4 AND exact),
+                then slices #19 → #20 → #21 to GitHub Pages
 ```
+
+**B5 decision (2026-07-05, per the pre-agreed bar in workstream B):** the
+exact solve lands at ~3 min / <1 GB — far under the ~10-min bar — so the CLI
+defaults to **exact (k=7)**, with **k=3 kept as the fast preview**. No Rust
+core for CLI performance; Rust→WASM re-enters only as a possible outcome of
+the M4 browser spike (#17), as a distribution choice.
 
 Web MVP scope (decided 2026-07): **full train-against-the-bot**, shipped in
 the slices above.

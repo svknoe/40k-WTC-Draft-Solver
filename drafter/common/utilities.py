@@ -114,7 +114,10 @@ def solve_larger_zero_sum_game(a):
 # differ only by a constant, common on the discrete rating scale, share one LP
 # solve. Cache the shifted matrix's solution (strategies + shifted value); each
 # caller adds back its own shift. Complements the per-stage matrix-hash caches in
-# games.py, which catch bit-identical (un-shifted) matrices.
+# games.py, which catch bit-identical (un-shifted) matrices. The key carries the
+# shape as well as the bytes -- .tobytes() alone would let, say, a 2xN and an Nx2
+# matrix with the same element sequence collide -- and is the (shape, bytes) pair
+# itself, not its hash, so distinct matrices can never alias to one entry.
 normalised_game_solution_cache = {}
 
 
@@ -132,12 +135,14 @@ def solve_zero_sum_game_by_linear_program(a):
     shift = a.min()
     positive_a = a - shift + 1.0
 
-    cache_key = hash(positive_a.tobytes())
+    cache_key = (positive_a.shape, positive_a.tobytes())
     solution = normalised_game_solution_cache.get(cache_key)
     if solution is None:
         solution = solve_positivity_shifted_matrix_game(positive_a)
         normalised_game_solution_cache[cache_key] = solution
 
+    # solution's strategy lists are the shared cache entry; callers treat them as
+    # read-only (get_game_strategy rebuilds rounded copies, never mutates them).
     row_strategy, column_strategy, shifted_value = solution
 
     return [row_strategy, column_strategy, shifted_value + shift - 1.0]
@@ -167,7 +172,7 @@ def solve_positivity_shifted_matrix_game(positive_a):
 
 
 def get_game_strategy(game_solution_cache, game_array, friendly_team_options, enemy_team_options):
-    game_array_hash = hash(game_array.tostring())
+    game_array_hash = hash(game_array.tobytes())
 
     if game_array_hash in game_solution_cache:
         row_probabilities, column_probabilities, value = game_solution_cache[game_array_hash]

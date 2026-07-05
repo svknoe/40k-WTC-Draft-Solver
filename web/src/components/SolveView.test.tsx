@@ -6,7 +6,7 @@ import type { SolvedEvent } from '../engine/types';
 import type { SolveState } from '../worker/useSolve';
 import { SolveView } from './SolveView';
 
-const base = { solve: vi.fn(), reset: vi.fn() };
+const base = { solve: vi.fn(), reset: vi.fn(), node: vi.fn(), solvedK: null };
 
 const result: SolvedEvent = {
   type: 'solved',

@@ -7,8 +7,10 @@
 
 .result-card {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 1.25rem 1.5rem; text-align: center; margin-bottom: 1.25rem;
+  padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;
 }
+.result-split { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.result-verdict { text-align: right; }
 .big-score {
   font-family: var(--font-mono); font-variant-numeric: tabular-nums;
   font-size: 3rem; font-weight: 700; margin: 0.35rem 0;
@@ -17,8 +19,10 @@
 .big-score .enemy { color: var(--enemy); }
 .big-score .dash { color: var(--text-4); margin: 0 0.6rem; }
 .verdict { font-size: 1.05rem; color: var(--text); font-weight: 600; }
+.verdict.up { color: var(--green); }
+.verdict.down { color: var(--enemy); }
 
-.mixes { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.mixes { display: flex; flex-direction: column; gap: 1.25rem; }
 .strategy { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .strategy .section-head { margin-bottom: 0.6rem; }
 .strategy-table { width: 100%; border-collapse: collapse; }
@@ -39,5 +43,3 @@
 .progress-label { margin-top: 0.45rem; color: var(--text-3); font-size: 0.85rem; }
 
 .solve-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
-
-@media (max-width: 640px) { .mixes { grid-template-columns: 1fr; } }

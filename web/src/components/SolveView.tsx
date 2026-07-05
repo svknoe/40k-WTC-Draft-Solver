@@ -52,15 +52,21 @@ export function SolveView({ myTeam, enemyTeam, n, canRun, solve, onRun, onTrain 
     return (
       <div className="solve done">
         <div className="result-card">
-          <div className="section-head">Expected draft result</div>
-          <div className="big-score">
-            <span className="mine">{score.my}</span>
-            <span className="dash">–</span>
-            <span className="enemy">{score.enemy}</span>
-          </div>
-          <div className="verdict">{verdict}</div>
-          <div className="muted">
-            sum of {n} games · {20 * n} points total
+          <div className="result-split">
+            <div className="result-score">
+              <div className="section-head">Expected draft result</div>
+              <div className="big-score">
+                <span className="mine">{score.my}</span>
+                <span className="dash">–</span>
+                <span className="enemy">{score.enemy}</span>
+              </div>
+            </div>
+            <div className="result-verdict">
+              <div className={`verdict ${score.favored > 0 ? 'up' : score.favored < 0 ? 'down' : ''}`}>{verdict}</div>
+              <div className="muted">
+                sum of {n} games · {20 * n} points total
+              </div>
+            </div>
           </div>
         </div>
 

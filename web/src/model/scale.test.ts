@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatCell, parseRating, toInputString, toScore } from './scale';
+import { formatCell, parseRating, scoreBand, toInputString, toScore } from './scale';
 
 describe('parseRating', () => {
   test('legacy tokens map to internal deviations from an even game', () => {
@@ -56,5 +56,20 @@ describe('toInputString', () => {
     expect(toInputString(-10)).toBe('0.0'); // internal -10 = score 0 (a 20-0 loss)
     expect(toInputString(0)).toBe('10'); // internal 0 = the even game, score 10
     expect(toInputString(10)).toBe('20');
+  });
+});
+
+describe('scoreBand', () => {
+  test('buckets 0-20 scores per the editor legend', () => {
+    expect(scoreBand(0)).toBe('worst');
+    expect(scoreBand(4)).toBe('worst');
+    expect(scoreBand(5)).toBe('bad');
+    expect(scoreBand(8)).toBe('bad');
+    expect(scoreBand(9)).toBe('okay');
+    expect(scoreBand(11)).toBe('okay');
+    expect(scoreBand(12)).toBe('good');
+    expect(scoreBand(15)).toBe('good');
+    expect(scoreBand(16)).toBe('best');
+    expect(scoreBand(20)).toBe('best');
   });
 });

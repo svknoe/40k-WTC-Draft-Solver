@@ -105,6 +105,20 @@ nav.screens { display: flex; gap: 0.25rem; flex-wrap: wrap; }
 
 .placeholder { color: var(--text-3); padding: 2rem 0; }
 
+.spacer { flex: 1; }
+.matchup-chip { font-size: 0.85rem; color: var(--text-4); margin-left: 0.5rem; }
+.matchup-chip .mine { color: var(--blue); font-weight: 600; }
+.matchup-chip .enemy { color: var(--red); font-weight: 600; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-2);
+  background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 0.3rem 0.7rem;
+}
+.pill .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--green); }
+.pill.off .dot { background: var(--text-4); }
+.pill.button { cursor: pointer; }
+.pill.button:hover { border-color: var(--blue); }
+
 @media (max-width: 640px) {
   .app-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
   .app-main { padding: 0.75rem; }

@@ -42,3 +42,15 @@ export function toInputString(internal: number): string {
  * scale (e.g. "15 / 12"). */
 export const formatCell = (cell: { best: number; worst: number }): string =>
   `${toScore(cell.best)} / ${toScore(cell.worst)}`;
+
+export type ScoreBand = 'worst' | 'bad' | 'okay' | 'good' | 'best';
+
+/** Colour band for a 0-20 score, per the editor legend: worst ≤4, bad 5-8,
+ * okay 9-11, good 12-15, best 16+. */
+export function scoreBand(score: number): ScoreBand {
+  if (score <= 4) return 'worst';
+  if (score <= 8) return 'bad';
+  if (score <= 11) return 'okay';
+  if (score <= 15) return 'good';
+  return 'best';
+}

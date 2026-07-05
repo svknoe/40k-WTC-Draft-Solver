@@ -9,6 +9,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   test: {
+    // globals: true so @testing-library/react auto-registers afterEach(cleanup)
+    // between component tests. The existing suites import from 'vitest'
+    // explicitly and are unaffected.
+    globals: true,
     environment: 'node',
   },
 });

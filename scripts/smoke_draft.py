@@ -9,10 +9,14 @@ Exits non-zero unless at least one draft ran to completion.
 Usage (bash):        printf '\n\n\n\n\n\nn\n' | python scripts/smoke_draft.py
 Usage (PowerShell):  "","","","","","","n" | python scripts/smoke_draft.py
 
-The default Smoke opponent is a 4-player matrix that solves in about a second
-(a 4-player draft needs 6 inputs + 1 for the draft-again prompt, as above).
-Pass another folder name from drafter/resources/matches/ to smoke bigger
-matrices; an 8-player draft needs 18 inputs + 1.
+This builds a bare SolverConfig(), i.e. the shipped default, which is now the
+exact/unrestricted solve (issue #16). The default Smoke opponent is a 4-player
+matrix that solves in about a second regardless (4/6-player drafts are exact at
+any k); a 4-player draft needs 6 inputs + 1 for the draft-again prompt, as
+above. Pass another folder name from drafter/resources/matches/ to smoke bigger
+matrices; an 8-player draft needs 18 inputs + 1 and, being the exact default,
+takes ~3 min (edit the config here to SolverConfig(restrict_attackers=True) for
+the ~30 s k=3 preview).
 """
 import random
 import sys

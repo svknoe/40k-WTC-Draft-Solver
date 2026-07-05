@@ -35,4 +35,12 @@ describe('SAMPLES', () => {
     expect(eight.myNames).toContain('Space Marines');
     expect(eight.enemyNames).toContain('Necrons');
   });
+
+  test('every opponent is named "Opposing team"; examples are labelled NvN', () => {
+    for (const s of SAMPLES) expect(s.matrix.enemyTeam).toBe('Opposing team');
+    const label = (key: string) => SAMPLES.find((s) => s.key === key)?.label;
+    expect(label('eight')).toBe('8v8 example');
+    expect(label('six')).toBe('6v6 example');
+    expect(label('four')).toBe('4v4 example');
+  });
 });

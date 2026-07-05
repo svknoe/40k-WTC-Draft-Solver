@@ -16,13 +16,13 @@ const ENEMY_FACTIONS = [
 /** A sample from a conformance fixture: keep its real (non-trivial, solvable)
  * cell values but label the players with factions rather than the fixture's
  * own names. */
-function fromFixture(fixture: Fixture, enemyTeam: string): EditorMatrix {
+function fromFixture(fixture: Fixture): EditorMatrix {
   const m = fixtureMatrix(fixture);
   const n = m.n;
   return {
     n,
     myTeam: 'Your team',
-    enemyTeam,
+    enemyTeam: 'Opposing team',
     myNames: MY_FACTIONS.slice(0, n),
     enemyNames: ENEMY_FACTIONS.slice(0, n),
     cells: m.cells.map((row) => row.map((c) => ({ b: toInputString(c.best), w: toInputString(c.worst) }))),
@@ -34,7 +34,7 @@ function template(n: MatrixSize): EditorMatrix {
   return {
     n,
     myTeam: 'Your team',
-    enemyTeam: 'Opponent',
+    enemyTeam: 'Opposing team',
     myNames: Array.from({ length: n }, (_, i) => `Player ${i + 1}`),
     enemyNames: Array.from({ length: n }, (_, i) => `Opponent ${i + 1}`),
     cells: Array.from({ length: n }, () => Array.from({ length: n }, () => ({ b: '10', w: '10' }))),
@@ -51,7 +51,7 @@ export interface Sample {
  * first (a blank even 8×8 to build from); then real solvable samples by size. */
 export const SAMPLES: Sample[] = [
   { key: 'template', label: 'Template', matrix: template(8) },
-  { key: 'eight', label: 'Eight', matrix: fromFixture(scotland, 'Eight') },
-  { key: 'six', label: 'Six', matrix: fromFixture(six, 'Six') },
-  { key: 'four', label: 'Four', matrix: fromFixture(smoke, 'Four') },
+  { key: 'eight', label: '8v8 example', matrix: fromFixture(scotland) },
+  { key: 'six', label: '6v6 example', matrix: fromFixture(six) },
+  { key: 'four', label: '4v4 example', matrix: fromFixture(smoke) },
 ];

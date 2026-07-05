@@ -29,6 +29,29 @@
 
   --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+  /* opponent accent. Flips under .cb — red-on-black is a CB problem; the
+   * friendly blue is already CB-safe and stays put. */
+  --enemy: var(--red);
+
+  /* matchup value bands (worst → best). Overridden under .cb below. */
+  --band-worst: var(--red);
+  --band-bad: var(--amber);
+  --band-okay: #b9c0c8;
+  --band-good: var(--green);
+  --band-best: var(--cyan);
+}
+
+/* Colourblind-safe: a warm→cool ramp (orange → amber → grey → cyan → light
+ * cyan) that avoids the red↔green axis and the dark-red-on-black problem, and
+ * stays clear of the UI's blue accent. Matches docs/design-mockup.html. */
+.cb {
+  --enemy: #f0923e;
+  --band-worst: #e07f1e;
+  --band-bad: #e6b054;
+  --band-okay: #b9c0c8;
+  --band-good: #3fb8c9;
+  --band-best: #8ce8f2;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -108,7 +131,7 @@ nav.screens { display: flex; gap: 0.25rem; flex-wrap: wrap; }
 .spacer { flex: 1; }
 .matchup-chip { font-size: 0.85rem; color: var(--text-4); margin-left: 0.5rem; }
 .matchup-chip .mine { color: var(--blue); font-weight: 600; }
-.matchup-chip .enemy { color: var(--red); font-weight: 600; }
+.matchup-chip .enemy { color: var(--enemy); font-weight: 600; }
 
 .pill {
   display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-2);
@@ -132,6 +155,24 @@ nav.screens { display: flex; gap: 0.25rem; flex-wrap: wrap; }
 .segmented { display: inline-flex; background: var(--bg-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
 .segmented button { border: 0; background: transparent; color: var(--text-3); padding: 0.35rem 0.7rem; border-radius: 6px; }
 .segmented button.on { background: var(--blue); color: #06101c; font-weight: 600; }
+
+/* --- modal (shared; screen-specific bodies add their own rules) --- */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.69);
+  display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem;
+}
+.modal { background: var(--card); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 1.25rem; max-width: 36rem; width: 100%; }
+.modal h2 { font-size: 1.15rem; margin-bottom: 0.2rem; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+
+/* about / local-only explainer */
+.about-head { display: flex; align-items: flex-start; gap: 1rem; }
+.about-head .muted { margin-top: 0.15rem; }
+.modal-close { background: transparent; border: 0; color: var(--text-4); font-size: 1rem; padding: 0.2rem 0.4rem; margin-left: auto; }
+.modal-close:hover { color: var(--text-1); border-color: transparent; }
+.about-section { margin-top: 1.1rem; }
+.about-section h3 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+.info-icon { display: inline-flex; align-items: center; justify-content: center; opacity: 0.7; }
 
 @media (max-width: 640px) {
   .app-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }

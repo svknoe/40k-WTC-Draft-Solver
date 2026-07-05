@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AboutModal } from './components/AboutModal';
 import { DraftTrainer } from './components/DraftTrainer';
 import { MatrixEditor } from './components/MatrixEditor';
 import { SolveView } from './components/SolveView';
@@ -19,8 +20,8 @@ const NEUTRAL_WEIGHT = 0.5;
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('editor');
-  const [k, setK] = useState<number | null>(null); // null = exact (§7 default)
   const [botStyle, setBotStyle] = useState<BotStyle>('equilibrium');
+  const [showAbout, setShowAbout] = useState(false);
   const solve = useSolve();
 
   // Persist the whole blob whenever it changes (§4.2 auto-save).
@@ -68,7 +69,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className={settings.cb ? 'app cb' : 'app'}>
       <header className="app-header">
         <div className="brand">
           <span className="brand-mark">WTC</span>
@@ -91,7 +92,7 @@ export function App() {
             title={solvable ? undefined : 'Complete the matrix first'}
             onClick={goSolve}
           >
-            Solve
+            Solver
           </button>
           <button
             className={screen === 'trainer' ? 'tab active' : 'tab'}
@@ -103,9 +104,13 @@ export function App() {
           </button>
         </nav>
         <span className="spacer" />
-        <span className="pill" title="Everything runs in your browser; nothing is uploaded.">
-          <span className="dot" /> Local-only
-        </span>
+        <button
+          className="pill button"
+          onClick={() => setShowAbout(true)}
+          title="What this app is, and how your data is handled"
+        >
+          <span className="dot" /> Local-only <span className="info-icon" aria-hidden="true">ⓘ</span>
+        </button>
         <button
           className={settings.cb ? 'pill button' : 'pill button off'}
           onClick={() => setSettings({ ...settings, cb: !settings.cb })}
@@ -136,9 +141,7 @@ export function App() {
             n={matrix.n}
             canRun={solvable}
             solve={solve}
-            k={k}
-            onKChange={setK}
-            onRun={() => solve.solve(matrix, k)}
+            onRun={() => solve.solve(matrix, null)}
             onTrain={solvable ? startTraining : undefined}
           />
         )}
@@ -157,9 +160,10 @@ export function App() {
       </main>
 
       <footer className="app-footer">
-        Runs entirely in your browser — your matrix never leaves the tab.{' '}
-        <a href={`${import.meta.env.BASE_URL}bench.html`}>Engine benchmark →</a>
+        Runs entirely in your browser — your matrix never leaves the tab.
       </footer>
+
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </div>
   );
 }

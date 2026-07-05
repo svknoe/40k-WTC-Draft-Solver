@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 import { App } from './App';
 
@@ -11,11 +12,14 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Matrix' })).toBeInTheDocument();
   });
 
-  test('the benchmark link is built from the Vite base path (not a hardcoded root href)', () => {
+  test('the Local-only pill opens (and closes) the privacy explainer', async () => {
+    const user = userEvent.setup();
     render(<App />);
-    const link = screen.getByRole('link', { name: /engine benchmark/i });
-    // Must derive from import.meta.env.BASE_URL so it resolves under the
-    // GitHub Pages project-site base, not the account root.
-    expect(link).toHaveAttribute('href', `${import.meta.env.BASE_URL}bench.html`);
+    expect(screen.queryByText(/Everything stays on your computer/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Local-only/i }));
+    expect(screen.getByText(/Everything stays on your computer/i)).toBeInTheDocument();
+    expect(screen.getByText(/Built for practice, not for live events/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    expect(screen.queryByText(/Everything stays on your computer/i)).not.toBeInTheDocument();
   });
 });

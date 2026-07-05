@@ -4,7 +4,6 @@ import { parseRating, scoreBand, toScore } from '../model/scale';
 interface GridProps {
   matrix: EditorMatrix;
   simpleMode: boolean;
-  cb: boolean;
   cellErrors: (string | null)[][];
   onCellChange: (i: number, j: number, cell: EditorCell) => void;
   onMyName: (i: number, name: string) => void;
@@ -21,13 +20,13 @@ function bandClass(raw: string): string {
 }
 
 export function Grid({
-  matrix, simpleMode, cb, cellErrors, onCellChange, onMyName, onEnemyName,
+  matrix, simpleMode, cellErrors, onCellChange, onMyName, onEnemyName,
 }: GridProps) {
   const { myNames, enemyNames, cells } = matrix;
 
   return (
     <div className="grid-scroll">
-      <table className={cb ? 'grid cb' : 'grid'}>
+      <table className="grid">
         <thead>
           <tr>
             <th className="corner">{simpleMode ? 'single rating' : 'best / worst map'}</th>

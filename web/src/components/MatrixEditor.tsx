@@ -164,13 +164,6 @@ export function MatrixEditor({
         </div>
 
         <div className="controls">
-          <button
-            onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}
-            disabled={!validation.ok}
-            title={validation.ok ? 'Swap which side you captain — transposes the matrix and team names' : 'Fix invalid cells before swapping'}
-          >
-            ⇄ Swap sides
-          </button>
           <label>
             Team size{' '}
             <select
@@ -206,12 +199,18 @@ export function MatrixEditor({
               Best / worst map
             </button>
           </div>
+          <button
+            onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}
+            disabled={!validation.ok}
+            title={validation.ok ? 'Swap which side you captain — transposes the matrix and team names' : 'Fix invalid cells before swapping'}
+          >
+            ⇄ Swap sides
+          </button>
         </div>
 
         <Grid
           matrix={matrix}
           simpleMode={settings.simpleMode}
-          cb={settings.cb}
           cellErrors={validation.cellErrors}
           onCellChange={setCell}
           onMyName={setMyName}
@@ -220,11 +219,11 @@ export function MatrixEditor({
 
         <div className="legend">
           <span>Each cell: my expected score, 0–20 · 10 = even game</span>
-          <span className="swatch"><span className="chip" style={{ background: 'var(--red)' }} /> worst ≤ 4</span>
-          <span className="swatch"><span className="chip" style={{ background: 'var(--amber)' }} /> bad 5–8</span>
-          <span className="swatch"><span className="chip" style={{ background: 'var(--text-2)' }} /> okay 9–11</span>
-          <span className="swatch"><span className="chip" style={{ background: 'var(--green)' }} /> good 12–15</span>
-          <span className="swatch"><span className="chip" style={{ background: 'var(--cyan)' }} /> best 16+</span>
+          <span className="swatch"><span className="chip worst" /> worst ≤ 4</span>
+          <span className="swatch"><span className="chip bad" /> bad 5–8</span>
+          <span className="swatch"><span className="chip okay" /> okay 9–11</span>
+          <span className="swatch"><span className="chip good" /> good 12–15</span>
+          <span className="swatch"><span className="chip best" /> best 16+</span>
         </div>
 
         {validation.globalErrors.length > 0 && (

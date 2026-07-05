@@ -12,8 +12,6 @@ interface SolveViewProps {
   /** Whether the current matrix is complete/valid enough to solve. */
   canRun: boolean;
   solve: SolveState;
-  k: number | null;
-  onKChange: (k: number | null) => void;
   onRun: () => void;
   /** Provided once the trainer exists (#21). */
   onTrain?: () => void;
@@ -28,7 +26,7 @@ function nameOf(name: string | [string, string]): string {
   return typeof name === 'string' ? name : `${name[0]} + ${name[1]}`;
 }
 
-export function SolveView({ myTeam, enemyTeam, n, canRun, solve, k, onKChange, onRun, onTrain }: SolveViewProps) {
+export function SolveView({ myTeam, enemyTeam, n, canRun, solve, onRun, onTrain }: SolveViewProps) {
   const my = myTeam || 'Your team';
   const enemy = enemyTeam || 'Opponent';
 
@@ -62,7 +60,7 @@ export function SolveView({ myTeam, enemyTeam, n, canRun, solve, k, onKChange, o
           </div>
           <div className="verdict">{verdict}</div>
           <div className="muted">
-            sum of {n} games · {20 * n} points total{k !== null ? ` · fast preview (k=${k})` : ''}
+            sum of {n} games · {20 * n} points total
           </div>
         </div>
 
@@ -72,10 +70,6 @@ export function SolveView({ myTeam, enemyTeam, n, canRun, solve, k, onKChange, o
         </div>
 
         <div className="solve-actions">
-          <div className="segmented" role="group" aria-label="Solve mode">
-            <button className={k === null ? 'on' : ''} onClick={() => onKChange(null)}>Exact</button>
-            <button className={k === 3 ? 'on' : ''} onClick={() => onKChange(3)}>Fast preview (k=3)</button>
-          </div>
           <button onClick={onRun}>Re-run solver</button>
           <button
             className="primary"
@@ -106,13 +100,6 @@ export function SolveView({ myTeam, enemyTeam, n, canRun, solve, k, onKChange, o
         Computes the full draft equilibrium from the current matchup matrix: your expected team
         result and the optimal mixed strategy for the opening defender put-up, on both sides.
       </p>
-      <div className="solve-mode">
-        <span className="section-head">Mode</span>
-        <div className="segmented" role="group" aria-label="Solve mode">
-          <button className={k === null ? 'on' : ''} onClick={() => onKChange(null)}>Exact</button>
-          <button className={k === 3 ? 'on' : ''} onClick={() => onKChange(3)}>Fast preview (k=3)</button>
-        </div>
-      </div>
       {solve.status === 'error' && <div className="errors">Solve failed: {solve.error}</div>}
       <div>
         <button className="primary run" disabled={!canRun} onClick={onRun} title={canRun ? undefined : 'Complete the matrix first'}>

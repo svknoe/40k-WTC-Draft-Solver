@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AboutModal } from './components/AboutModal';
 import { DraftTrainer } from './components/DraftTrainer';
 import { MatrixEditor } from './components/MatrixEditor';
 import { SolveView } from './components/SolveView';
@@ -21,6 +22,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('editor');
   const [k, setK] = useState<number | null>(null); // null = exact (§7 default)
   const [botStyle, setBotStyle] = useState<BotStyle>('equilibrium');
+  const [showAbout, setShowAbout] = useState(false);
   const solve = useSolve();
 
   // Persist the whole blob whenever it changes (§4.2 auto-save).
@@ -103,9 +105,13 @@ export function App() {
           </button>
         </nav>
         <span className="spacer" />
-        <span className="pill" title="Everything runs in your browser; nothing is uploaded.">
-          <span className="dot" /> Local-only
-        </span>
+        <button
+          className="pill button"
+          onClick={() => setShowAbout(true)}
+          title="What this app is, and how your data is handled"
+        >
+          <span className="dot" /> Local-only <span className="info-icon" aria-hidden="true">ⓘ</span>
+        </button>
         <button
           className={settings.cb ? 'pill button' : 'pill button off'}
           onClick={() => setSettings({ ...settings, cb: !settings.cb })}
@@ -160,6 +166,8 @@ export function App() {
         Runs entirely in your browser — your matrix never leaves the tab.{' '}
         <a href={`${import.meta.env.BASE_URL}bench.html`}>Engine benchmark →</a>
       </footer>
+
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </div>
   );
 }

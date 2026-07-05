@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
@@ -59,6 +59,32 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
     // Reaching 'done' renders the summary.
     expect(await screen.findByRole('button', { name: /Draft again/ })).toBeInTheDocument();
     expect(screen.getByText(/Final pairings/i)).toBeInTheDocument();
+  });
+
+  test('coaching hints lock off during an official WTC window', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] }); // fake only Date; keep microtasks/timers real
+    vi.setSystemTime(new Date(2026, 7, 13)); // Aug 13 2026 — inside WTC 2026
+    try {
+      const { container } = render(
+        <DraftTrainer
+          matrix={fixtureMatrix(smoke)}
+          myTeam="Us"
+          enemyTeam="Them"
+          neutralWeight={smoke.neutralWeight}
+          solve={engineSolveState()}
+          botStyle="greedy"
+          onBotStyleChange={() => {}}
+          onEditMatrix={() => {}}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: /Start practice draft/ }));
+      await waitFor(() => expect(container.querySelector('.choice')).toBeTruthy());
+      expect(screen.getByRole('button', { name: /^Hints:/ })).toBeDisabled();
+      expect(screen.getByText(/is under way/i)).toBeInTheDocument();
+      expect(container.querySelector('.cprob')).toBeNull(); // no per-choice hint numbers
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('undo steps back a decision', async () => {

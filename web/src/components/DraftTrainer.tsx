@@ -5,6 +5,7 @@ import { sampleIndex } from '../draft/sampling';
 import type { DraftModel } from '../draft/draftState';
 import { applyStep, initDraft } from '../draft/draftState';
 import { toScore } from '../model/scale';
+import { activeWtcEvent } from '../model/wtcDates';
 import type { SolveState } from '../worker/useSolve';
 import { DraftSummary } from './DraftSummary';
 import { ProgressBar } from './ProgressBar';
@@ -47,6 +48,11 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   const expected = solve.result?.expected ?? 0;
   const finalRound = (matrix.n - 4) / 2 + 1;
   const enemy = enemyTeam || 'The bot';
+  // Coaching hints (per-choice strategy/EV + the Why panel) auto-disable during
+  // official WTC dates so the app can't be used at the table (the About copy).
+  const wtcLock = activeWtcEvent(new Date());
+  const hintsAllowed = wtcLock === null;
+  const showHints = hints && hintsAllowed;
 
   const start = () => {
     if (!ready) return;
@@ -145,15 +151,31 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
             <option value="wildcard">Wildcard</option>
           </select>
         </label>
-        <button className={hints ? 'tab active' : 'tab'} onClick={() => setHints((h) => !h)}>
-          Hints: {hints ? 'on' : 'off'}
+        <button
+          className={showHints ? 'tab active' : 'tab'}
+          onClick={() => setHints((h) => !h)}
+          disabled={!hintsAllowed}
+          title={hintsAllowed ? undefined : 'Coaching hints are off during official WTC dates'}
+        >
+          Hints: {showHints ? 'on' : 'off'}
         </button>
-        <button className={showWhy ? 'tab active' : 'tab'} onClick={() => setShowWhy((w) => !w)} disabled={!node.why}>
+        <button
+          className={showWhy ? 'tab active' : 'tab'}
+          onClick={() => setShowWhy((w) => !w)}
+          disabled={!node.why || !hintsAllowed}
+        >
           Why
         </button>
         <span className="spacer" />
         <button onClick={undo} disabled={history.length === 0}>↩ Undo</button>
       </div>
+
+      {wtcLock && (
+        <div className="wtc-note">
+          Coaching hints are off — <strong>{wtcLock.name}</strong> is under way. They switch back
+          on automatically after the event.
+        </div>
+      )}
 
       {reveal && (
         <div className="reveal">
@@ -172,7 +194,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
             <span className="cname">
               {stage === 'refusal' ? `Refuse ${joinName(choice.name)}` : joinName(choice.name)}
             </span>
-            {hints && (
+            {showHints && (
               <>
                 <span className="cbar"><span style={{ width: `${Math.min(100, choice.prob * 100)}%` }} /></span>
                 <span className="cprob">{(choice.prob * 100).toFixed(0)}%</span>
@@ -188,7 +210,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         <span className="muted">{enemy} picks simultaneously — revealed after you lock.</span>
       </div>
 
-      {showWhy && <WhyPanel node={node} />}
+      {showWhy && hintsAllowed && <WhyPanel node={node} />}
 
       {model.fixed.length > 0 && (
         <div className="locked">

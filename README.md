@@ -2,9 +2,19 @@
 
 Creates optimal strategies for WTC pairing drafts using game theoretic Nash equilibria.
 
-#### Disclaimer
+#### Solve modes
 
-> By default has long runtime (typically more than an hour). Change the `restricted_attackers_count` default in `SolverConfig` (`drafter/solver/context.py`) from 4 to 3 for more reasonable runtime (typically around 15 minutes).
+At startup (after picking the opponent) you choose a solve mode:
+
+- **Exact** (default) — the true equilibrium, no heuristic. A full 8-player
+  team takes roughly 3 minutes and under 1 GB of RAM; smaller teams finish in
+  seconds.
+- **Fast preview** — a k=3 attacker-restriction heuristic (~30 s at 8 players)
+  for quick iteration. It approximates: it can miss equilibrium attackers, so
+  use exact for the real draft.
+
+(The mode is the `restrict_attackers` / `restricted_attackers_count` pair in
+`SolverConfig`, `drafter/solver/context.py`, if you drive the solver in code.)
 
 ## Input data
 

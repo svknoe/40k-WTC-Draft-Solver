@@ -28,7 +28,9 @@ class NameIndex:
 # All the knobs that used to live as mutable module-level globals in
 # drafter/data/settings.py. Frozen so a solve can't silently mutate its own
 # configuration mid-run; build a new one to change a knob (GitHub issue #13,
-# B2 solver-context refactor). Defaults match the old settings.py values.
+# B2 solver-context refactor). Defaults match the old settings.py values,
+# except the attacker-restriction knobs below, which default to the exact
+# solve per the B5 decision (GitHub issue #16).
 @dataclass(frozen=True)
 class SolverConfig:
     friendly_team_name: str = "Norway"
@@ -43,11 +45,17 @@ class SolverConfig:
     # to the best-map value. 0.5 = midpoint, a 50/50 model of who ends up with
     # map advantage (PLAN.md workstream C).
     neutral_map_weight: float = 0.5
-    # Maximum number of attacker players considered by each team in each select
-    # attackers step. Default 4. Decrease to 3 for shorter runtime, increase to
-    # 5 for better precision.
-    restrict_attackers: bool = True
-    restricted_attackers_count: int = 4
+    # Attacker-restriction heuristic. OFF by default: the CLI runs the exact,
+    # fully unrestricted solve -- the true equilibrium (B5 decision, issue #16;
+    # ~3 min / <1 GB for a full 8-player team, seconds for smaller). Set
+    # restrict_attackers=True to trade precision for speed: each select-attackers
+    # step then considers only the restricted_attackers_count heuristically best
+    # attackers per side. restricted_attackers_count=3 is the documented fast
+    # preview (~30 s at 8 players), so a bare restrict_attackers=True IS that
+    # preview; the CLI exposes exact-vs-preview as a startup prompt
+    # (drafter/data/set_solve_mode.py).
+    restrict_attackers: bool = False
+    restricted_attackers_count: int = 3
 
 
 # Everything one solve run needs, passed around explicitly instead of read from

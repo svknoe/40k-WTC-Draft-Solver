@@ -108,10 +108,17 @@ best when neither does (refused-vs-refused and last-players games).
   arrays (above) cut Scotland k=3 **peak RAM from ~1.8 GB to ~120 MB** (~15×);
   fresh solve ≈ 28 s (enumeration ~8 s, values ~20 s). The old 630 MB JSON disk
   cache is gone — the in-memory solve is fast and cheap enough not to need it.
-- `restricted_attackers_count` (k) in `SolverConfig` (drafter/solver/context.py) is the only current knob:
-  each select-attackers step only considers the k heuristically best
-  attackers per side (heuristic: advantage vs defender minus average vs
-  the rest). k=4 default, k=3 for quick runs.
+- **B5 (decided, issue #16):** the exact (unrestricted) solve lands at ~3 min
+  / <1 GB — under the ~10-min bar — so the CLI **defaults to exact**
+  (`SolverConfig.restrict_attackers=False`), the true equilibrium with no
+  heuristic anywhere. The k-restriction is now an opt-in **fast preview**:
+  `restrict_attackers=True` restricts each select-attackers step to the
+  `restricted_attackers_count` heuristically best attackers per side (heuristic:
+  advantage vs defender minus average vs the rest), and `restricted_attackers_count`
+  defaults to 3 (~30 s at 8 players). `python -m drafter` offers exact-vs-preview
+  as a startup prompt (drafter/data/set_solve_mode.py). The restriction saturates
+  from the bottom up (k≥3 → 4-player stage exact, k≥5 → 6-player, k≥7 → whole
+  draft exact), so k=7 ≡ exact.
 
 ## Input format
 
@@ -154,7 +161,7 @@ changes.
 python -m venv .venv                 # Python 3.12
 ./.venv/Scripts/Activate.ps1         # or ./.venv/Scripts/activate.bat (cmd)
 pip install -e ".[dev]"
-python -m drafter                    # pick opponent folder from the menu
+python -m drafter                    # pick opponent, then exact vs fast-preview solve mode
 ```
 
 `pip install -e ".[dev]"` also installs a `drafter` console script (same
@@ -163,8 +170,9 @@ drafter` work too.
 
 Notes for agents:
 
-- The InquirerPy team menu needs a real TTY. To drive the program
-  non-interactively, build a `SolverConfig` and call
+- The InquirerPy team menu and solve-mode prompt (`set_solve_mode`) need a
+  real TTY. To drive the program non-interactively, build a `SolverConfig`
+  yourself (bypassing the mode prompt) and call
   `ctx = initialise_dictionaries.initialise(enemy_team_name, config)` +
   `draft_loop.play(ctx)`; the in-draft prompts are plain `input()` and accept
   piped lines (empty line = accept suggested move). See `scripts/smoke_draft.py`.

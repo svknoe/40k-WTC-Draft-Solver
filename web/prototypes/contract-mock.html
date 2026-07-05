@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WTC trainer — worker contract mock (§3 validation)</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: #101418; color: #cfd6de; padding: 24px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: #6b7480; margin: 0 0 20px; }
+  #banner { font-weight: 700; padding: 10px 16px; border-radius: 8px; margin: 0 0 20px;
+            display: inline-block; }
+  .pass { background: #16351f; color: #45c48f; border: 1px solid #2c6b41; }
+  .fail { background: #2a1215; color: #ff8a80; border: 1px solid #5c2b2e; }
+  .run  { background: #1a2530; color: #4e9af1; border: 1px solid #24435f; }
+  section { background: #161b20; border: 1px solid #ffffff14; border-radius: 12px;
+            padding: 16px 18px; margin: 0 0 16px; max-width: 720px; }
+  button { background: #4e9af1; color: #101418; border: 0; border-radius: 8px;
+           padding: 8px 14px; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .bar { height: 8px; background: #ffffff14; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+  .bar > i { display: block; height: 100%; width: 0; background: #4e9af1; transition: width .1s; }
+  table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #ffffff10; }
+  th { color: #6b7480; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  .prob { color: #45c48f; }
+  pre#log { background: #0b0e11; border: 1px solid #ffffff10; border-radius: 8px;
+            padding: 12px; max-width: 720px; overflow: auto; font-size: 12px;
+            color: #8b95a1; white-space: pre-wrap; }
+  code { color: #e0b055; }
+</style>
+</head>
+<body>
+  <h1>WTC trainer — worker contract mock</h1>
+  <p class="sub">Throwaway validation of the §3 UI&#8596;engine protocol from
+     <code>docs/web-design.md</code>. The "engine" is a real Web Worker running a
+     <b>stub heuristic</b> (softmax over per-choice values) — <b>not</b> the real solver.
+     Its only job is to prove the message contract round-trips and yields well-formed
+     <code>NodeResult</code>s.</p>
+
+  <div id="banner" class="run">SELF-TEST: running…</div>
+
+  <section>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button id="solveBtn">Run solve</button>
+      <button id="nodeBtn" disabled>Query a draft node</button>
+      <span id="expected" style="margin-left:auto;color:#6b7480;"></span>
+    </div>
+    <div class="bar"><i id="prog"></i></div>
+    <div id="phase" style="color:#6b7480;font-size:12px;min-height:16px;"></div>
+    <div id="table"></div>
+  </section>
+
+  <pre id="log"></pre>
+
+<script>
+/* ------------------------------------------------------------------ *
+ * The mock ENGINE, as a real Web Worker built from a Blob so the file
+ * stays self-contained. Implements the §3 message protocol exactly.
+ * ------------------------------------------------------------------ */
+const WORKER_SRC = `
+'use strict';
+let MATRIX = null, K = null;
+
+const softmax = (xs, t) => {
+  const mx = Math.max(...xs);
+  const ex = xs.map(v => Math.exp((v - mx) / t));
+  const s = ex.reduce((a, b) => a + b, 0);
+  return ex.map(v => v / s);
+};
+// value model (doc §1/§4): friendly defends -> best, enemy defends -> worst,
+// neither -> midpoint. Internal scale.
+const midpoint = c => (c.best + c.worst) / 2;
+
+function rootNode() {
+  const n = MATRIX.n, cells = MATRIX.cells;
+  // per-defender stand-in EV: mean midpoint value across enemy pool (STUB math)
+  const evs = [];
+  for (let i = 0; i < n; i++) {
+    let s = 0; for (let j = 0; j < n; j++) s += cells[i][j].best;
+    evs.push(s / n);
+  }
+  const probs = softmax(evs, 1.5);
+  const choices = MATRIX.myNames.map((name, i) => ({ id: i, name, prob: probs[i], ev: evs[i] }))
+                                .sort((a, b) => b.prob - a.prob);
+  // why panel: opening put-up is one matrix game (my defenders x enemy defenders)
+  const payoff = cells.map(row => row.map(midpoint));
+  const rowMeans = payoff.map(r => r.reduce((a, b) => a + b, 0) / n);
+  const colMeans = payoff[0].map((_, j) => payoff.reduce((a, r) => a + r[j], 0) / n);
+  return {
+    stage: 'defender', side: 'simultaneous', round: 1, choices,
+    why: {
+      rowLabels: MATRIX.myNames, colLabels: MATRIX.enemyNames, payoff,
+      myStrategy: softmax(rowMeans, 1.5),
+      enStrategy: softmax(colMeans.map(v => -v), 1.5)
+    }
+  };
+}
+
+function nodeFor(path) {
+  // Stage cycles with path depth so the round-trip exercises each stage shape.
+  const stages = ['defender', 'attackers', 'refusal'];
+  const stage = stages[(path.length) % 3];
+  const n = MATRIX.n;
+  const names = MATRIX.myNames.slice(0, Math.max(2, n - path.length));
+  let choices;
+  if (stage === 'attackers') {
+    // pair choices
+    const pairs = [];
+    for (let a = 0; a < names.length; a++)
+      for (let b = a + 1; b < names.length; b++) pairs.push([a, b]);
+    const evs = pairs.map(([a, b]) => (a === b ? 0 : (names.length - a - b)));
+    const probs = softmax(evs, 1.5);
+    choices = pairs.map((p, i) => ({
+      id: p, name: [names[p[0]], names[p[1]]], prob: probs[i], ev: evs[i]
+    })).sort((x, y) => y.prob - x.prob);
+  } else {
+    const evs = names.map((_, i) => names.length - i);
+    const probs = softmax(evs, 1.5);
+    choices = names.map((name, i) => ({ id: i, name, prob: probs[i], ev: evs[i] }))
+                   .sort((a, b) => b.prob - a.prob);
+  }
+  return { stage, side: 'my', round: Math.min(1 + path.length, 3), choices, why: null };
+}
+
+self.onmessage = (e) => {
+  const m = e.data;
+  try {
+    if (m.type === 'solve') {
+      if (!m.matrix || !m.matrix.cells) throw { code: 'BAD_MATRIX', message: 'missing cells' };
+      MATRIX = m.matrix; K = m.k;
+      const steps = [
+        [0.25, 'enumerating'], [0.55, 'inducting'], [0.85, 'inducting'], [1.0, 'polishing']
+      ];
+      let i = 0;
+      const tick = () => {
+        const [frac, phase] = steps[i++];
+        self.postMessage({ type: 'progress', reqId: m.reqId, frac, phase });
+        if (i < steps.length) { setTimeout(tick, 60); return; }
+        const root = rootNode();
+        const expected = root.why.payoff
+          .reduce((a, r) => a + r.reduce((x, y) => x + y, 0), 0) / (MATRIX.n * MATRIX.n);
+        self.postMessage({ type: 'solved', reqId: m.reqId, expected, root });
+      };
+      setTimeout(tick, 60);
+    } else if (m.type === 'node') {
+      if (!MATRIX) throw { code: 'NOT_SOLVED', message: 'call solve first' };
+      self.postMessage({ type: 'nodeResult', reqId: m.reqId, node: nodeFor(m.path || []) });
+    } else if (m.type === 'reset') {
+      MATRIX = null; K = null;
+      self.postMessage({ type: 'reset-ok', reqId: m.reqId });
+    } else {
+      throw { code: 'UNKNOWN_TYPE', message: m.type };
+    }
+  } catch (err) {
+    self.postMessage({ type: 'error', reqId: m.reqId,
+      code: err.code || 'ERR', message: err.message || String(err) });
+  }
+};
+`;
+
+/* ------------------------------------------------------------------ *
+ * UI-thread client: correlate reqIds, forward progress, await result.
+ * ------------------------------------------------------------------ */
+const worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'application/javascript' })));
+let nextReq = 1;
+const pending = new Map();
+worker.onmessage = (e) => {
+  const m = e.data;
+  const p = pending.get(m.reqId);
+  if (!p) return;
+  if (m.type === 'progress') { p.onProgress && p.onProgress(m); return; }
+  pending.delete(m.reqId);
+  (m.type === 'error') ? p.reject(new Error(m.code + ': ' + m.message)) : p.resolve(m);
+};
+function request(msg, onProgress) {
+  const reqId = nextReq++;
+  return new Promise((resolve, reject) => {
+    pending.set(reqId, { resolve, reject, onProgress });
+    worker.postMessage({ ...msg, reqId });
+  });
+}
+const solve = (matrix, k, onProgress) => request({ type: 'solve', protocol: 1, matrix, k }, onProgress);
+const node  = (path)               => request({ type: 'node', path });
+const reset = ()                   => request({ type: 'reset' });
+
+/* ------------------------------------------------------------------ *
+ * Helpers: a demo matrix, shape validators, DOM logging.
+ * ------------------------------------------------------------------ */
+const log = (...a) => {
+  const el = document.getElementById('log');
+  el.textContent += a.join(' ') + '\n';
+  console.log(...a);
+};
+function demoMatrix(n = 8) {
+  const myNames = Array.from({ length: n }, (_, i) => 'My' + (i + 1));
+  const enemyNames = Array.from({ length: n }, (_, i) => 'En' + (i + 1));
+  const cells = [];
+  for (let i = 0; i < n; i++) {
+    const row = [];
+    for (let j = 0; j < n; j++) {
+      const base = (i - j) * 0.8;               // deterministic, internal scale (-10..10)
+      row.push({ best: Math.round(base + 2), worst: Math.round(base - 2) });
+    }
+    cells.push(row);
+  }
+  return { n, myNames, enemyNames, cells };
+}
+function assert(cond, msg) { if (!cond) throw new Error('ASSERT FAILED: ' + msg); }
+function validateNodeResult(nr, label) {
+  assert(nr && typeof nr === 'object', label + ': is object');
+  assert(['defender', 'attackers', 'refusal', 'done'].includes(nr.stage), label + ': valid stage');
+  assert(['my', 'enemy', 'simultaneous'].includes(nr.side), label + ': valid side');
+  assert(Array.isArray(nr.choices) && nr.choices.length > 0, label + ': non-empty choices');
+  let psum = 0;
+  for (const c of nr.choices) {
+    assert('id' in c && 'name' in c, label + ': choice has id+name');
+    assert(typeof c.prob === 'number' && c.prob >= 0, label + ': choice prob >= 0');
+    assert(typeof c.ev === 'number', label + ': choice ev numeric');
+    psum += c.prob;
+  }
+  assert(Math.abs(psum - 1) < 1e-6, label + ': probs sum to 1 (got ' + psum.toFixed(6) + ')');
+  assert(nr.why === null || (Array.isArray(nr.why.payoff)), label + ': why is null or has payoff');
+}
+
+/* ------------------------------------------------------------------ *
+ * Interactive demo wiring.
+ * ------------------------------------------------------------------ */
+let solvedOnce = false;
+function renderStrategy(title, choices) {
+  const rows = choices.slice(0, 8).map(c => {
+    const nm = Array.isArray(c.name) ? c.name.join(' + ') : c.name;
+    return '<tr><td>' + nm + '</td><td class="prob">' + (c.prob * 100).toFixed(1) +
+           '%</td><td>' + c.ev.toFixed(2) + '</td></tr>';
+  }).join('');
+  document.getElementById('table').innerHTML =
+    '<table><thead><tr><th>' + title + '</th><th>Prob</th><th>EV</th></tr></thead><tbody>' +
+    rows + '</tbody></table>';
+}
+document.getElementById('solveBtn').onclick = async () => {
+  const bar = document.getElementById('prog'), ph = document.getElementById('phase');
+  const res = await solve(demoMatrix(8), 3, (p) => {
+    bar.style.width = (p.frac * 100) + '%'; ph.textContent = 'phase: ' + p.phase;
+  });
+  document.getElementById('expected').textContent = 'expected team result: ' + res.expected.toFixed(2);
+  renderStrategy('Opening defender', res.root.choices);
+  document.getElementById('nodeBtn').disabled = false;
+  solvedOnce = true;
+};
+document.getElementById('nodeBtn').onclick = async () => {
+  const r = await node([{ side: 'my', stage: 'defender', choice: 0 }]);
+  renderStrategy('Node (' + r.node.stage + ')', r.node.choices);
+};
+
+/* ------------------------------------------------------------------ *
+ * SELF-TEST on load — the actual verification.
+ * ------------------------------------------------------------------ */
+(async function selfTest() {
+  const banner = document.getElementById('banner');
+  try {
+    log('— self-test start —');
+
+    // 1. solve() streams progress then returns a well-formed solved message.
+    const progress = [];
+    const solved = await solve(demoMatrix(8), 3, (p) => progress.push(p));
+    assert(progress.length > 0, 'received >=1 progress event');
+    for (const p of progress) assert(p.frac >= 0 && p.frac <= 1, 'progress.frac in [0,1]');
+    assert(progress[progress.length - 1].frac === 1, 'progress ends at frac=1');
+    assert(solved.type === 'solved', 'terminal message is "solved"');
+    assert(typeof solved.expected === 'number', 'solved.expected is numeric');
+    validateNodeResult(solved.root, 'root');
+    assert(solved.root.why && solved.root.why.payoff.length === 8, 'root.why has 8x8 payoff');
+    log('solve(): ' + progress.length + ' progress events, expected=' +
+        solved.expected.toFixed(2) + ', root choices=' + solved.root.choices.length);
+
+    // 2. node() returns a well-formed NodeResult for each stage shape.
+    for (let depth = 0; depth < 3; depth++) {
+      const path = Array.from({ length: depth }, () => ({ side: 'my', stage: 'x', choice: 0 }));
+      const r = await node(path);
+      assert(r.type === 'nodeResult', 'node() -> nodeResult (depth ' + depth + ')');
+      validateNodeResult(r.node, 'node@' + depth + ' (' + r.node.stage + ')');
+      log('node(depth=' + depth + '): stage=' + r.node.stage + ', choices=' + r.node.choices.length);
+    }
+
+    // 2b. reset() acks through the contract (not fire-and-forget).
+    const rst = await reset();
+    assert(rst.type === 'reset-ok', 'reset() -> reset-ok');
+    log('reset(): ' + rst.type);
+
+    // 3. errors surface through the contract (query before solve on a fresh worker).
+    const w2 = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'application/javascript' })));
+    const errSeen = await new Promise((resolve) => {
+      w2.onmessage = (e) => resolve(e.data);
+      w2.postMessage({ type: 'node', reqId: 1, path: [] });
+    });
+    assert(errSeen.type === 'error' && errSeen.code === 'NOT_SOLVED', 'error surfaces for node-before-solve');
+    w2.terminate();
+    log('error path: got ' + errSeen.code + ' as expected');
+
+    log('— self-test PASS —');
+    banner.textContent = 'SELF-TEST: PASS ✓  (contract round-trips; NodeResults well-formed)';
+    banner.className = 'pass';
+    console.log('SELF-TEST: PASS');
+  } catch (err) {
+    log('— self-test FAIL —\n' + (err && err.stack || err));
+    banner.textContent = 'SELF-TEST: FAIL ✗  ' + (err.message || err);
+    banner.className = 'fail';
+    console.error('SELF-TEST: FAIL', err);
+  }
+})();
+</script>
+</body>
+</html>

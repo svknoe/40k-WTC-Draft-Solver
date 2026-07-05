@@ -10,3 +10,7 @@ todo.txt
 *.egg-info/
 build/
 dist/
+
+# web app (docs/web-design.md §9)
+web/node_modules/
+web/dist/

@@ -1,0 +1,38 @@
+# Web engine CI (docs/web-design.md §7.2): typecheck + the FULL conformance
+# suite — including the multi-minute Scotland k=4/exact solves — on every
+# push/PR that touches web/ or the fixture exporter. This is the anti-drift
+# guard between the Python engine (source of truth) and the TS port.
+name: Web CI
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", "scripts/export_conformance_fixtures.py", ".github/workflows/web-ci.yml"]
+  pull_request:
+    paths: ["web/**", "scripts/export_conformance_fixtures.py", ".github/workflows/web-ci.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Conformance suite (full, incl. Scotland k=4 + exact)
+        run: npm test
+        env:
+          CONFORMANCE_SLOW: "1"

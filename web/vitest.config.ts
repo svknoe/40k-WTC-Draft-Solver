@@ -9,10 +9,11 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   test: {
-    // globals: true so @testing-library/react auto-registers afterEach(cleanup)
-    // between component tests. The existing suites import from 'vitest'
-    // explicitly and are unaffected.
     globals: true,
     environment: 'node',
+    // RTL's auto-cleanup was not registering reliably under `globals`, leaking
+    // component renders into later tests as duplicate elements. Register an
+    // explicit afterEach(cleanup) via the setup file instead.
+    setupFiles: ['./vitest.setup.ts'],
   },
 });

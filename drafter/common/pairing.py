@@ -1,66 +1,56 @@
 from dataclasses import dataclass  # standard libraries
+from enum import Enum
 
-import drafter.common.utilities as utilities  # local source
+import numpy as np  # 3rd party packages
 
 
-# All pairing values for one match, bundled with the neutral-map weight so the
-# defender-picks-the-map rule (11th-edition, PLAN.md workstream C) lives in one
-# place instead of reading module-level globals. Replaces the old
-# match_info.pairing_dictionary_best/worst + settings.neutral_map_weight trio
-# and the free functions utilities.get_pairing_value / get_pairing_string /
-# get_neutral_value (GitHub issue #13, B2 solver-context refactor). The tables
-# stay name-keyed dicts ({friendly: {enemy: value}}) at this step; the packed
-# integer encoding (B2 second PR) turns them into index-keyed arrays.
-@dataclass(frozen=True)
+class Defender(Enum):
+    FRIENDLY = 0
+    ENEMY = 1
+
+
+# All pairing values for one match as index-keyed numpy arrays (GitHub issue #13,
+# B2). Rows are friendly players, columns enemy players, both in NAME-SORTED index
+# order (see context.NameIndex); every value is from the friendly side's
+# perspective. Replaces the name-keyed dicts and the free functions
+# utilities.get_pairing_value / get_neutral_value. The defender-picks-the-map rule
+# (11th-edition, PLAN.md workstream C) lives in `value`.
+@dataclass(eq=False)
 class PairingTables:
-    best: dict
-    worst: dict
+    best: np.ndarray                  # (n_friendly, n_enemy)
+    worst: np.ndarray
     neutral_weight: float
 
-    # The defender picks the map: a friendly defender gets the pairing's best-map
-    # value, an enemy defender forces the worst-map value, and games without a
-    # defender (refused-vs-refused, last players) fall neutral_weight of the way
-    # from worst to best.
-    def value(self, friendly_player, enemy_player, defender=None):
-        best_value = utilities.get_value_from_input_dictionary(self.best, friendly_player, enemy_player)
-        worst_value = utilities.get_value_from_input_dictionary(self.worst, friendly_player, enemy_player)
+    @classmethod
+    def from_dicts(cls, best, worst, friendly, enemy, neutral_weight):
+        """Build the arrays from the name-keyed CSV dicts and the two NameIndex
+        maps ({friendly_name: {enemy_name: value}})."""
+        best_array = np.zeros((len(friendly.names), len(enemy.names)), dtype=float)
+        worst_array = np.zeros_like(best_array)
 
+        for source, target in ((best, best_array), (worst, worst_array)):
+            for friendly_name, row in source.items():
+                i = friendly.index(friendly_name)
+                for enemy_name, value in row.items():
+                    target[i, enemy.index(enemy_name)] = value
+
+        return cls(best_array, worst_array, neutral_weight)
+
+    # A friendly defender gets the pairing's best-map value, an enemy defender
+    # forces the worst-map value, and games without a defender (refused-vs-refused,
+    # last players) fall neutral_weight of the way from worst to best.
+    def value(self, friendly_index, enemy_index, defender=None):
         if defender is None:
-            return worst_value + self.neutral_weight * (best_value - worst_value)
-        elif friendly_player == defender:
-            return best_value
-        elif enemy_player == defender:
-            return worst_value
+            best_value = self.best[friendly_index, enemy_index]
+            worst_value = self.worst[friendly_index, enemy_index]
+            return float(worst_value + self.neutral_weight * (best_value - worst_value))
+        elif defender == Defender.FRIENDLY:
+            return float(self.best[friendly_index, enemy_index])
+        elif defender == Defender.ENEMY:
+            return float(self.worst[friendly_index, enemy_index])
         else:
             raise ValueError("Unknown defender: {}".format(defender))
 
-    def pairing_string(self, friendly_player, enemy_player, defender=None):
-        value = self.value(friendly_player, enemy_player, defender)
-
-        friendly_player_string = friendly_player
-        enemy_player_string = enemy_player
-
-        if defender is not None:
-            if friendly_player == defender:
-                friendly_player_string += " (D)"
-            elif enemy_player == defender:
-                enemy_player_string += " (D)"
-            else:
-                raise ValueError("Unknown defender: {}".format(defender))
-
-        return round(value, 2), "{} vs {}".format(friendly_player_string, enemy_player_string)
-
-    # The full neutral (no-defender) matrix, used by the k-restriction heuristic
-    # to value an attacker's games against the yet-undefended field.
-    def neutral_dictionary(self):
-        neutral_pairing_dictionary = {}
-
-        for friend in self.best:
-            row = {}
-            for enemy in self.best[friend]:
-                best_value = self.best[friend][enemy]
-                worst_value = self.worst[friend][enemy]
-                row[enemy] = worst_value + self.neutral_weight * (best_value - worst_value)
-            neutral_pairing_dictionary[friend] = row
-
-        return neutral_pairing_dictionary
+    # The full neutral (no-defender) matrix, for the k-restriction heuristic.
+    def neutral_matrix(self):
+        return self.worst + self.neutral_weight * (self.best - self.worst)

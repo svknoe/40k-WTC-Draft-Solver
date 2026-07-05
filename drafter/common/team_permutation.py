@@ -2,9 +2,9 @@ import itertools  # standard libraries
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-import re
 
 import drafter.common.utilities as utilities  # local source
+import drafter.common.packing as packing
 from drafter.common.draft_stage import DraftStage
 
 
@@ -16,15 +16,17 @@ class Side(Enum):
 # Precomputed pairing lookups for the k-restriction heuristic (which attackers a
 # team plausibly fields against a given defender). Built once per solve from the
 # match's PairingTables; replaces the module-level globals that used to be set by
-# enable_restricted_attackers() (GitHub issue #13). All values are from the
-# friendly side's perspective.
-@dataclass(frozen=True)
+# enable_restricted_attackers() (GitHub issue #13). All arrays are indexed by
+# name-sorted player index and hold values from the friendly side's perspective:
+# friendly_* arrays are (n_friendly, n_enemy), enemy_* arrays are (n_enemy,
+# n_friendly) so [attacker, opponent] indexing works for either side.
+@dataclass(eq=False)
 class RestrictionData:
     k: int
-    friendly_vs_defender: dict
-    friendly_vs_field: dict
-    enemy_vs_defender: dict
-    enemy_vs_field: dict
+    friendly_vs_defender: object
+    friendly_vs_field: object
+    enemy_vs_defender: object
+    enemy_vs_field: object
 
 
 class TeamPermutation:
@@ -44,23 +46,9 @@ class TeamPermutation:
         self.remaining_players = sorted(remaining_players)
 
     def get_key(self):
-        permutation_key = ""
-
-        if self.defender is not None:
-            permutation_key += "{{Defender: {}}}".format(self.defender) + ", "
-
-        if self.attacker_A is not None:
-            permutation_key += "{{Attacker A: {}}}".format(self.attacker_A) + ", "
-
-        if self.attacker_B is not None:
-            permutation_key += "{{Attacker B: {}}}".format(self.attacker_B) + ", "
-
-        if self.discarded_attacker is not None:
-            permutation_key += "{{Discarded attacker: {}}}".format(self.discarded_attacker) + ", "
-
-        permutation_key += "{{Remaining players: {}}}".format(", ".join(self.remaining_players))
-
-        return permutation_key
+        return packing.encode_team_permutation(
+            packing.mask_from_indices(self.remaining_players),
+            self.defender, self.attacker_A, self.attacker_B, self.discarded_attacker)
 
     def get_draft_stage(self):
         if self.discarded_attacker is not None:
@@ -125,35 +113,12 @@ class TeamPermutation:
             raise ValueError("Unknown discarded attacker: {}".format(discarded_attacker))
 
 
-def get_team_permutation_from_key(key):
-    role_string, remaining_players_string = key.split("{Remaining players: ", 1)
+def get_team_permutation_from_key(code):
+    remaining_mask, defender, attacker_A, attacker_B, discarded_attacker = \
+        packing.decode_team_permutation(code)
+    remaining_players = packing.indices_from_mask(remaining_mask)
 
-    remaining_players_string = remaining_players_string.strip('}')
-    remaining_players = remaining_players_string.split(', ')
-
-    defender = None
-    attacker_A = None
-    attacker_B = None
-    discarded_attacker = None
-
-    groups = re.findall(r'\{.*?\}', role_string)
-    for group in groups:
-        role, player = group.split(': ')
-        role = role.strip('{')
-        player = player.strip('}')
-
-        if role == "Defender":
-            defender = player
-        elif role == "Attacker A":
-            attacker_A = player
-        elif role == "Attacker B":
-            attacker_B = player
-        elif role == "Discarded attacker":
-            discarded_attacker = player
-        else:
-            raise ValueError("Unknown role {}.".format(role))
-
-    return(TeamPermutation(remaining_players, defender, attacker_A, attacker_B, discarded_attacker))
+    return TeamPermutation(remaining_players, defender, attacker_A, attacker_B, discarded_attacker)
 
 
 def get_team_permutation(draft_stage, players):
@@ -272,19 +237,20 @@ def get_attackers_team_permutations(ctx, side, defender_team_permutation, opposi
 
 
 def build_restriction(pairing, k):
-    neutral_pairing_dictionary = pairing.neutral_dictionary()
+    neutral_matrix = pairing.neutral_matrix()
 
     # All values are from the friendly side's perspective. An attacker plays the
     # opposing defender, who picks the map: a friendly attacker gets the pairing's
     # worst-map value, an enemy attacker faces the friendly defender's best-map
     # value. Games against the rest of the field have no defender yet, so they
-    # use the neutral (weighted-midpoint) value.
+    # use the neutral (weighted-midpoint) value. Enemy arrays are transposed so
+    # [attacker, opponent] indexes an (enemy, friendly) pair.
     return RestrictionData(
         k=k,
         friendly_vs_defender=pairing.worst,
-        friendly_vs_field=neutral_pairing_dictionary,
-        enemy_vs_defender=utilities.get_transposed_pairing_dictionary(pairing.best),
-        enemy_vs_field=utilities.get_transposed_pairing_dictionary(neutral_pairing_dictionary))
+        friendly_vs_field=neutral_matrix,
+        enemy_vs_defender=pairing.best.T,
+        enemy_vs_field=neutral_matrix.T)
 
 
 def get_heuristically_best_attackers(restriction, side, eligable_attackers, opposing_defender_team_permutation):
@@ -293,20 +259,23 @@ def get_heuristically_best_attackers(restriction, side, eligable_attackers, oppo
     # directions. The explicit `side` replaces the old trick of sniffing which
     # pairing dictionary an attacker name appeared in (GitHub issue #13).
     if side == Side.FRIENDLY:
-        vs_defender_dictionary = restriction.friendly_vs_defender
-        vs_field_dictionary = restriction.friendly_vs_field
+        vs_defender_array = restriction.friendly_vs_defender
+        vs_field_array = restriction.friendly_vs_field
         ranking_sign = -1
     else:
-        vs_defender_dictionary = restriction.enemy_vs_defender
-        vs_field_dictionary = restriction.enemy_vs_field
+        vs_defender_array = restriction.enemy_vs_defender
+        vs_field_array = restriction.enemy_vs_field
         ranking_sign = 1
+
+    opposing_defender = opposing_defender_team_permutation.defender
+    opposing_remaining = opposing_defender_team_permutation.remaining_players
 
     attackers_with_relative_advantages_against_defender = []
 
     for attacker in eligable_attackers:
-        vs_defender = vs_defender_dictionary[attacker][opposing_defender_team_permutation.defender]
-        vs_field = sum([vs_field_dictionary[attacker][opponent] for opponent in opposing_defender_team_permutation.remaining_players]) \
-            / len(opposing_defender_team_permutation.remaining_players)
+        vs_defender = vs_defender_array[attacker][opposing_defender]
+        vs_field = sum([vs_field_array[attacker][opponent] for opponent in opposing_remaining]) \
+            / len(opposing_remaining)
 
         relative_advantage = vs_defender - vs_field
         attackers_with_relative_advantages_against_defender.append([attacker, relative_advantage])

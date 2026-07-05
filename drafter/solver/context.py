@@ -2,6 +2,29 @@ from dataclasses import dataclass  # standard libraries
 from typing import Any
 
 
+# Index <-> name bridge for one team (GitHub issue #13, B2). Player indices are
+# assigned in NAME-SORTED order, deliberately matching the ordering the string-key
+# engine used everywhere (TeamPermutation sorted names), so switching to packed
+# integer keys is a pure relabelling: enumeration order, payoff-matrix row/column
+# order and equilibrium selection are all unchanged. Names live only here, at the
+# presentation layer.
+@dataclass(frozen=True)
+class NameIndex:
+    names: tuple            # index -> name, name-sorted
+    index_of: dict          # name -> index
+
+    def name(self, index):
+        return self.names[index]
+
+    def index(self, name):
+        return self.index_of[name]
+
+    @classmethod
+    def from_names(cls, names):
+        ordered = tuple(sorted(names))
+        return cls(ordered, {name: i for i, name in enumerate(ordered)})
+
+
 # All the knobs that used to live as mutable module-level globals in
 # drafter/data/settings.py. Frozen so a solve can't silently mutate its own
 # configuration mid-run; build a new one to change a knob (GitHub issue #13,
@@ -43,6 +66,8 @@ class SolverConfig:
 class SolverContext:
     config: SolverConfig
     enemy_team_name: Any
+    friendly: NameIndex               # index <-> name for the friendly team
+    enemy: NameIndex                  # index <-> name for the enemy team
     pairing: Any                      # drafter.common.pairing.PairingTables
     restriction: Any                  # team_permutation.RestrictionData | None
     gamestate_dictionaries: dict

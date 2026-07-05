@@ -46,7 +46,10 @@ def read_dictionaries(ctx):
         key_list = read_write.read_dictionary(path)
 
         if (key_list is not None and len(key_list) > 0):
-            ctx.gamestate_dictionaries[name] = {key: game_state.get_gamestate_from_key(key) for key in key_list}
+            # JSON turns the (friendly, enemy) tuple keys into 2-element lists;
+            # tuple them back so they are hashable dict keys again.
+            ctx.gamestate_dictionaries[name] = {
+                tuple(key): game_state.get_gamestate_from_key(key) for key in key_list}
         else:
             return False
 
@@ -61,8 +64,8 @@ def write_dictionaries(ctx):
 
 
 def get_initial_game_state(ctx):
-    friends = [friend for friend in ctx.pairing.best]
-    enemies = [enemy for enemy in ctx.pairing.best[friends[0]]]
+    friends = list(range(len(ctx.friendly.names)))
+    enemies = list(range(len(ctx.enemy.names)))
     initial_game_state = GameState(DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
 
     return initial_game_state

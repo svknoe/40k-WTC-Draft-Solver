@@ -59,8 +59,8 @@ initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dic
 
 result = {
     "n": initial_n,
-    "friendly": [[entry[0], entry[1]] for entry in initial_strategy[0]],
-    "enemy": [[entry[0], entry[1]] for entry in initial_strategy[1]],
+    "friendly": [[ctx.friendly.name(entry[0]), entry[1]] for entry in initial_strategy[0]],
+    "enemy": [[ctx.enemy.name(entry[0]), entry[1]] for entry in initial_strategy[1]],
     "value": initial_strategy[2],
 }
 

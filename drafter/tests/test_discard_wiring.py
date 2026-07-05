@@ -5,10 +5,11 @@ attackers to the child pools, not the attackers who just played. The golden
 tests would catch a regression only as an unexplained value shift; this test
 pins the wiring itself, cell by cell, with sentinel child values.
 
-In-process like test_map_model.py: a SolverContext is built with the test
-pairing tables and get_game_strategy is stubbed to capture the payoff matrix,
-so no solver or global state is involved.
+In-process (post-B2, GitHub issue #13): players are integer indices, pairing
+values are index-keyed numpy arrays on a SolverContext, and get_game_strategy
+is stubbed to capture the payoff matrix -- no solver or global state involved.
 """
+import numpy as np
 import pytest
 
 import drafter.common.utilities as utilities
@@ -21,9 +22,13 @@ from drafter.common.team_permutation import TeamPermutation
 
 
 def make_ctx(best, worst):
+    friendly = context.NameIndex.from_names(["f{}".format(i) for i in range(best.shape[0])])
+    enemy = context.NameIndex.from_names(["e{}".format(i) for i in range(best.shape[1])])
     return context.SolverContext(
         config=context.SolverConfig(),
         enemy_team_name="Test",
+        friendly=friendly,
+        enemy=enemy,
         pairing=PairingTables(best, worst, 0.5),
         restriction=None,
         gamestate_dictionaries={},
@@ -40,25 +45,23 @@ def child_key(remaining_friends, extra_friend, remaining_enemies, extra_enemy):
 
 
 def test_discard_attacker_returns_refused_attackers_to_child_pools(monkeypatch):
-    # 6-player state, mid-draft: defenders picked, attackers presented.
-    # Names chosen already-sorted so TeamPermutation's attacker sorting is a
-    # no-op and fA/eA keep their roles.
-    f_defender, f_attacker_A, f_attacker_B = "Fdef", "FattA", "FattB"
-    remaining_friends = ["Frem1", "Frem2", "Frem3"]
-    e_defender, e_attacker_A, e_attacker_B = "Edef", "EattA", "EattB"
-    remaining_enemies = ["Erem1", "Erem2", "Erem3"]
+    # 6-player state, mid-draft: defenders picked, attackers presented. Indices
+    # per side: defender 0, attacker_A 1, attacker_B 2, remaining 3/4/5.
+    f_defender, f_attacker_A, f_attacker_B = 0, 1, 2
+    remaining_friends = [3, 4, 5]
+    e_defender, e_attacker_A, e_attacker_B = 0, 1, 2
+    remaining_enemies = [3, 4, 5]
 
-    # Distinct pairing values so each fixed-pairing term is identifiable:
-    # the friendly defender defends (best map), the enemy defender forces the
-    # worst map. PairingTables.value reads both dictionaries for every pairing,
-    # so the side not selected is filled with a sentinel that would blow up
-    # the expected matrix if it ever leaked in.
-    best = {
-        f_defender: {e_attacker_A: 1.0, e_attacker_B: 2.0},
-        f_attacker_A: {e_defender: -99.0}, f_attacker_B: {e_defender: -99.0}}
-    worst = {
-        f_defender: {e_attacker_A: -99.0, e_attacker_B: -99.0},
-        f_attacker_A: {e_defender: 10.0}, f_attacker_B: {e_defender: 20.0}}
+    # Distinct pairing values so each fixed-pairing term is identifiable: the
+    # friendly defender defends (best map), the enemy defender forces the worst
+    # map. Every other cell is a sentinel that would blow up the expected matrix
+    # if the wrong map or pairing ever leaked in.
+    best = np.full((6, 6), -99.0)
+    worst = np.full((6, 6), -99.0)
+    best[f_defender, e_attacker_A] = 1.0
+    best[f_defender, e_attacker_B] = 2.0
+    worst[f_attacker_A, e_defender] = 10.0
+    worst[f_attacker_B, e_defender] = 20.0
     ctx = make_ctx(best, worst)
 
     # Sentinel child-game values, one per (returned friend, returned enemy).
@@ -86,9 +89,9 @@ def test_discard_attacker_returns_refused_attackers_to_child_pools(monkeypatch):
 
     assert games.discard_attacker(ctx, 6, gamestate, select_defender_strategies) == "stub"
 
-    # Row = enemy attacker the friendly side refuses, column = friendly
-    # attacker the enemy side refuses. In each cell the KEPT attackers play
-    # the defenders and the REFUSED pair is returned to the child pools.
+    # Row = enemy attacker the friendly side refuses, column = friendly attacker
+    # the enemy side refuses. In each cell the KEPT attackers play the defenders
+    # and the REFUSED pair is returned to the child pools.
     fD_eA, fD_eB = 1.0, 2.0
     fA_eD, fB_eD = 10.0, 20.0
     expected = [

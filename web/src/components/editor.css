@@ -57,22 +57,21 @@ td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }
 .bw .cell-input { width: 44%; padding: 0.45rem 0.05rem; }
 .cell-input.worst { font-weight: 500; opacity: 0.85; }
 
-/* value bands */
-.band-worst { color: var(--red); }
-.band-bad { color: var(--amber); }
-.band-okay { color: var(--text-1); }
-.band-good { color: var(--green); }
-.band-best { color: var(--cyan); }
-/* colourblind-safe (blue↔orange, varied lightness) */
-.grid.cb .band-worst { color: #e66100; }
-.grid.cb .band-bad { color: #f6a94a; }
-.grid.cb .band-okay { color: var(--text-1); }
-.grid.cb .band-good { color: #6cb6ff; }
-.grid.cb .band-best { color: #2a7fff; }
+/* value bands (colours defined as vars in theme.css; flip under .cb) */
+.band-worst { color: var(--band-worst); }
+.band-bad { color: var(--band-bad); }
+.band-okay { color: var(--band-okay); }
+.band-good { color: var(--band-good); }
+.band-best { color: var(--band-best); }
 
 .legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-3); }
 .legend .swatch { display: inline-flex; align-items: center; gap: 0.35rem; }
 .legend .chip { width: 0.7rem; height: 0.7rem; border-radius: 3px; }
+.legend .chip.worst { background: var(--band-worst); }
+.legend .chip.bad { background: var(--band-bad); }
+.legend .chip.okay { background: var(--band-okay); }
+.legend .chip.good { background: var(--band-good); }
+.legend .chip.best { background: var(--band-best); }
 
 .solve-bar { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
 

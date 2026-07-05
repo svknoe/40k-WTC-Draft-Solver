@@ -69,7 +69,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className={settings.cb ? 'app cb' : 'app'}>
       <header className="app-header">
         <div className="brand">
           <span className="brand-mark">WTC</span>

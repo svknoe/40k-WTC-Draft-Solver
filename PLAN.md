@@ -187,7 +187,7 @@ M3 (done*)      Speedup: B1 LP, B2 states/context, B3 value-only — landed.
 M4 (active)     Web: design doc done (docs/web-design.md + worker contract);
                 core-tech spike #17 done — **TypeScript engine decided**, no
                 Rust→WASM: TS-in-browser solves Scotland at ~0.4 s (k=3) /
-                ~0.8 s (k=4) / ~1.8 s (exact) vs native Python 28/61/190 s,
+                ~0.8 s (k=4) / ~2.0 s (exact) vs native Python 28.6/71/195 s,
                 conformant to 1e-9 (docs/web-design.md §7.1); next: slices
                 #19 → #20 → #21 to GitHub Pages
 ```

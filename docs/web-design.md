@@ -275,7 +275,7 @@ real engine dropped in behind the same contract at Slice 2.
 
 | Decision | Status | Trigger / owner |
 |---|---|---|
-| **Compute-engine language** (TS vs Rust→WASM) | **Decided (2026-07-05): TypeScript** | Spike #17 measured the TS engine in a real browser worker at **~0.4 s (k=3) / ~0.8 s (k=4) / ~1.8 s (exact)** vs native Python's 28 / 61 / 190 s, values agreeing to <1e-9 — see §7.1. Rust→WASM is not needed at any rung of the ladder; it stays only as the theoretical escape hatch behind the same worker contract. Pyodide is moot. |
+| **Compute-engine language** (TS vs Rust→WASM) | **Decided (2026-07-05): TypeScript** | Spike #17 measured the TS engine in a real browser worker at **~0.4 s (k=3) / ~0.8 s (k=4) / ~2.0 s (exact)** vs native Python's 28.6 / 71 / 195 s, values agreeing to <1e-9 — see §7.1. Rust→WASM is not needed at any rung of the ladder; it stays only as the theoretical escape hatch behind the same worker contract. Pyodide is moot. |
 | **Frontend framework** (React vs Svelte) | **Open, low-stakes** | Decide at Slice 1. Artifact is React (continuity); Claude Design can re-emit in Svelte if chosen. Does not affect this contract. |
 | **Hosting** | **Settled** | GitHub Pages; Cloudflare Pages as upgrade. |
 | **Repo layout** | **Settled (2026-07-05): `web/` subdir of this repo** | Monorepo — see §9. Deploy = Action builds `web/`, base path `/40k-WTC-Draft-Solver/`, `.nojekyll`. |

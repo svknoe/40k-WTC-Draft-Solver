@@ -79,6 +79,18 @@
 .wcell { color: var(--text-3); }
 .wcell.support { color: var(--text); background: #4e9af114; font-weight: 600; }
 
+/* remaining-matchups collapsible */
+.remaining { margin-top: 1.25rem; }
+.remaining > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 0.9rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.remaining > summary::-webkit-details-marker { display: none; }
+.remaining > summary .section-head { margin-bottom: 0; }
+.remaining > summary::after { content: '▾'; margin-left: auto; color: var(--text-4); }
+.remaining[open] > summary::after { content: '▴'; }
+.remaining[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.remaining .remaining-size { color: var(--text-3); font-family: var(--font-mono); font-size: 0.85rem; }
+.remaining .why-scroll { border-top-left-radius: 0; border-top-right-radius: 0; }
+
 .locked { margin-top: 1.5rem; }
 .locked-list { display: flex; flex-direction: column; gap: 0.3rem; }
 .pairing {

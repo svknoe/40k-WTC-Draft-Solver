@@ -164,7 +164,27 @@ type NodeResult = {
 pure client-side transforms of the returned strategy — the engine only ever returns
 the true equilibrium. (In the mockup these live in `sample()`; they stay there.)
 
-### 3.4 Solve view payload
+### 3.4 Draft-summary computations (regret / variance decomposition)
+
+The summary screen splits the total delta vs the pre-draft plan into **my picks**
+(skill) and **variance** (reveal luck). All inputs come from `NodeResult`s the UI
+has already received while walking the draft — no extra engine calls:
+
+- The UI records, for each of *my* decisions, the visited node's `choices[]` and
+  the id I locked. Per decision: `regret = max(choices[].ev) − ev(chosen)`
+  (`ev` is against the opponent's equilibrium mix at that node, so bot decisions
+  contribute nothing). `0` = perfect pick.
+- `totalDelta = achievedExpectedTotal − expected` (the `solved.expected` value).
+- `variance = totalDelta + Σ regrets` — what remains after my leaks, attributable
+  to which branch of its mixed strategy the bot sampled.
+- Invariants (assert in tests): every `regret ≥ 0` up to LP tolerance; the
+  decomposition sums exactly.
+- Copy rule: when `Σ regrets ≈ 0`, the verdict credits/blames variance ("clean
+  draft, unlucky reveals") — never "the bot out-drafted you".
+- UI: worst-first list of my non-zero-regret decisions
+  ("R2 attackers — sent Orks + T'au · best Tyranids + Orks · −2.3").
+
+### 3.5 Solve view payload
 
 The Solve view shows the expected team result + opening-defender mixed strategy for
 both sides — i.e. `expected` + `root.choices` (my side) plus the enemy's root strategy.
@@ -262,26 +282,34 @@ real engine dropped in behind the same contract at Slice 2.
 | **CSV interop** | **Settled (2026-07-05): deferred** | MVP is JSON-only (§4.3). CSV round-trip revisited post-MVP if asked. |
 | **k (attacker restriction)** | **MVP: k=3 · target: k=4 · stretch: k=5** | k = number of best attackers considered per side (**not** team size). See §7.1 — the main pressure on the engine choice. |
 
-### 7.1 The k / engine performance ladder
+### 7.1 The k / engine performance ladder (updated 2026-07-05, post-B5)
 
-`k` (the attacker-restriction, `restricted_attackers_count`) is the dominant cost lever:
-each select-attackers step considers only the `k` heuristically-best attackers per side —
-ranked by *advantage vs the specific opposing defender minus average vs the rest*
-(`team_permutation.py`), **not** simply the k globally-best. The gamestate count fans out
-**~4× per k-increment** at each select-attackers stage, and the 4-player stages already
-dominate the tree. So:
+`k` (the attacker-restriction, `restricted_attackers_count`) is the dominant cost
+lever, and it **saturates**: only `min(k, #eligible)` attackers are kept, and
+#eligible shrinks as the draft progresses, so k≥3 makes the 4-player stage exact,
+k≥5 the 6-player stage, and **k=7 the whole draft — the true equilibrium**.
+Measured native-Python numbers post-M3 (Scotland 8×8, issue #16, independently
+reproduced):
 
-- **k=3 — MVP.** Smallest tree; the interactive target that must "feel like seconds."
-  Ship the trainer here first.
-- **k=4 — the real goal.** Today ~15 min / ~2 GB in *native* Python (pre-M3). Only
-  realistic in a browser tab **after** M3's B2/B3 cut RAM to tens of MB and B1 drops
-  solve time to seconds.
-- **k=5 — stretch.** Several × heavier again; likely needs both the full M3 wins **and**
-  the fast (Rust→WASM) engine. Treat as "if we get it fast enough," not a commitment.
+| k | native total | native peak RAM |
+|---|---|---|
+| 3 (fast preview) | ~28 s | ~117 MB |
+| 4 | ~70 s | ~300 MB |
+| 7 (= exact) | ~190 s | ~840 MB |
 
-Implication for issue #17: the spike must benchmark the **TS engine at k=4 (and probe
-k=5)**, not just k=3 — passing at k=3 says nothing about whether TS clears the real goal.
-This is the concrete trigger that would flip the engine choice from TS to Rust→WASM.
+B5 decision (PLAN.md): the *CLI* defaults to exact; k=3 stays as fast preview.
+For the browser:
+
+- **k=3 — MVP floor.** Must feel interactive (tens of seconds with progress).
+- **k=4 — the benchmark that decides TS vs Rust→WASM** (issue #17).
+- **Exact (k=7) — the stretch goal, and worth probing in the spike:** it is only
+  ~2.7× the k=4 work, and an exact-in-browser solve would make the web app
+  strictly stronger than any previous version of this tool. RAM (~840 MB native)
+  may be the binding constraint in a browser tab, not time — measure both.
+
+Implication for issue #17: benchmark the TS engine at **k=4 and exact**, not just
+k=3. A TS engine on typed arrays may well beat numpy-Python here; measure, don't
+assume. Rust→WASM is the escape hatch behind the same worker contract.
 
 ---
 

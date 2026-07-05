@@ -1,14 +1,22 @@
 # Web trainer — architecture addendum (issue #18)
 
-**Status:** draft for review (issue #18) · **Date:** 2026-07-05
+**Status:** accepted — issue #18 merged 2026-07-05 · **Rev:** 2026-07-05
+
+> **Note (post-merge):** written as an M4-planning doc *before* the engine/framework
+> calls. Since then **#16** (exact-default, k=3 fast preview) and **#17** (the core-tech
+> spike — **TypeScript engine decided**) have landed, with a real TS engine + worker now
+> under `web/src/`. Treat the "deferred-decision" material in §7 as historical: the
+> engine is decided (TypeScript); the frontend framework (React vs Svelte) remains the
+> one open call.
 
 > **Companion prototype:** a runnable, dependency-free mock of the §3 worker contract
 > lives at [`web/prototypes/contract-mock.html`](../web/prototypes/contract-mock.html).
 > It is throwaway validation that the protocol round-trips — **not** the shipped app.
 
 > This document is the *engineering* half of issue #18. The *UX* half is already
-> answered — completely — by the Claude Design artifact
-> (`WTC Draft Trainer(1).html`). This addendum deliberately does **not** re-describe
+> answered — completely — by the Claude Design mockup, committed here as
+> [`design-mockup.html`](design-mockup.html) (a raw Claude Design export — a throwaway
+> React prototype kept as the UX reference). This addendum deliberately does **not** re-describe
 > the screens; it adopts the artifact as the visual/interaction source of truth and
 > specifies only what a visual mockup cannot: the UI↔engine seam, the data formats,
 > the validation rules, and the decisions we are deliberately deferring.

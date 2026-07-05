@@ -1,19 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
+import { DraftTrainer } from './components/DraftTrainer';
 import { MatrixEditor } from './components/MatrixEditor';
 import { SolveView } from './components/SolveView';
-import { blank } from './model/matrix';
+import type { BotStyle } from './draft/sampling';
+import { blank, toEngineMatrix } from './model/matrix';
 import type { EditorMatrix } from './model/matrix';
 import { loadState, saveState } from './model/storage';
 import type { AppState, Settings } from './model/storage';
 import { validateMatrix } from './model/validation';
 import { useSolve } from './worker/useSolve';
 
-type Screen = 'editor' | 'solve' | 'trainer' | 'summary';
+type Screen = 'editor' | 'solve' | 'trainer';
+
+// The worker defaults the neutral-game weight to 0.5 (§4/§7); the trainer's
+// pairing values must use the same to match the engine's totals.
+const NEUTRAL_WEIGHT = 0.5;
 
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('editor');
   const [k, setK] = useState<number | null>(null); // null = exact (§7 default)
+  const [botStyle, setBotStyle] = useState<BotStyle>('equilibrium');
   const solve = useSolve();
 
   // Persist the whole blob whenever it changes (§4.2 auto-save).
@@ -22,6 +29,13 @@ export function App() {
   const matrix = useMemo(() => state.current ?? blank(8), [state.current]);
   const { settings, saves } = state;
   const solvable = useMemo(() => validateMatrix(matrix).ok, [matrix]);
+  const engineMatrix = useMemo(() => {
+    try {
+      return solvable ? toEngineMatrix(matrix) : null;
+    } catch {
+      return null;
+    }
+  }, [matrix, solvable]);
 
   // A matrix edit invalidates any solved result (§3: reset on matrix change).
   useEffect(() => {
@@ -45,6 +59,13 @@ export function App() {
     });
 
   const goSolve = () => setScreen('solve');
+  const startTraining = () => {
+    if (!solvable) return;
+    // The trainer runs on the exact equilibrium; re-solve if the current
+    // result is a k-preview (or missing).
+    if (!(solve.status === 'done' && solve.solvedK === null)) solve.solve(matrix, null);
+    setScreen('trainer');
+  };
 
   return (
     <div className="app">
@@ -72,7 +93,14 @@ export function App() {
           >
             Solve
           </button>
-          <button className="tab" disabled title="Arrives with issue #21">Trainer</button>
+          <button
+            className={screen === 'trainer' ? 'tab active' : 'tab'}
+            disabled={!solvable}
+            title={solvable ? undefined : 'Complete the matrix first'}
+            onClick={startTraining}
+          >
+            Trainer
+          </button>
         </nav>
         <span className="spacer" />
         <span className="pill" title="Everything runs in your browser; nothing is uploaded.">
@@ -105,11 +133,25 @@ export function App() {
           <SolveView
             myTeam={matrix.myTeam}
             enemyTeam={matrix.enemyTeam}
+            n={matrix.n}
             canRun={solvable}
             solve={solve}
             k={k}
             onKChange={setK}
             onRun={() => solve.solve(matrix, k)}
+            onTrain={solvable ? startTraining : undefined}
+          />
+        )}
+        {screen === 'trainer' && engineMatrix && (
+          <DraftTrainer
+            matrix={engineMatrix}
+            myTeam={matrix.myTeam}
+            enemyTeam={matrix.enemyTeam}
+            neutralWeight={NEUTRAL_WEIGHT}
+            solve={solve}
+            botStyle={botStyle}
+            onBotStyleChange={setBotStyle}
+            onEditMatrix={() => setScreen('editor')}
           />
         )}
       </main>

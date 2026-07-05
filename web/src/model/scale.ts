@@ -44,20 +44,22 @@ export const formatCell = (cell: { best: number; worst: number }): string =>
   `${toScore(cell.best)} / ${toScore(cell.worst)}`;
 
 export interface TeamResult {
-  /** My team's total out of 160. */
+  /** My team's total out of 20n. */
   my: number;
-  /** Opponent's total out of 160. */
+  /** Opponent's total out of 20n. */
   enemy: number;
   /** My margin over even (= expected internal margin, rounded). */
   favored: number;
 }
 
-/** Convert the engine's internal team margin (sum of 8 games' deviations) to a
- * displayed 0-160 team result: my = 80 + margin, enemy = 160 - my. The two
- * always sum to 160 (§C, PLAN.md). */
-export function teamResult(expected: number): TeamResult {
-  const my = Math.round(80 + expected);
-  return { my, enemy: 160 - my, favored: my - 80 };
+/** Convert the engine's internal team margin (sum of n games' deviations) to a
+ * displayed team result on the community scale: n games out of 20 → 20n total,
+ * even split 10n each, so my = 10n + margin and enemy = 20n − my (§C, PLAN.md).
+ * The two always sum to 20n. */
+export function teamResult(expected: number, n: number): TeamResult {
+  const even = 10 * n;
+  const my = Math.round(even + expected);
+  return { my, enemy: 2 * even - my, favored: my - even };
 }
 
 export type ScoreBand = 'worst' | 'bad' | 'okay' | 'good' | 'best';

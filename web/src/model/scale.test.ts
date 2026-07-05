@@ -60,14 +60,20 @@ describe('toInputString', () => {
 });
 
 describe('teamResult', () => {
-  test('maps the internal margin to a 0-160 team score (80 + margin)', () => {
-    expect(teamResult(5)).toEqual({ my: 85, enemy: 75, favored: 5 });
-    expect(teamResult(0)).toEqual({ my: 80, enemy: 80, favored: 0 });
-    expect(teamResult(-3)).toEqual({ my: 77, enemy: 83, favored: -3 });
+  test('maps the internal margin to a team score at the 10n-per-side baseline', () => {
+    expect(teamResult(5, 8)).toEqual({ my: 85, enemy: 75, favored: 5 });
+    expect(teamResult(0, 8)).toEqual({ my: 80, enemy: 80, favored: 0 });
+    expect(teamResult(-3, 8)).toEqual({ my: 77, enemy: 83, favored: -3 });
   });
 
-  test('rounds and keeps the two scores summing to 160', () => {
-    const r = teamResult(6.189614);
+  test('scales the baseline with team size (6 → /120, 4 → /80)', () => {
+    expect(teamResult(3, 6)).toEqual({ my: 63, enemy: 57, favored: 3 });
+    expect(teamResult(0, 6)).toEqual({ my: 60, enemy: 60, favored: 0 });
+    expect(teamResult(0, 4)).toEqual({ my: 40, enemy: 40, favored: 0 });
+  });
+
+  test('rounds and keeps the two scores summing to 20n', () => {
+    const r = teamResult(6.189614, 8);
     expect(r.my).toBe(86);
     expect(r.enemy).toBe(74);
     expect(r.my + r.enemy).toBe(160);

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { SolvedEvent } from '../engine/types';
+import type { Move, NodeResult, SolvedEvent } from '../engine/types';
 import type { EditorMatrix } from '../model/matrix';
 import { toEngineMatrix } from '../model/matrix';
 import { WorkerClient } from './client';
@@ -12,8 +12,13 @@ export interface SolveState {
   phase: 'enumerating' | 'inducting' | null;
   result: SolvedEvent | null;
   error: string | null;
+  /** The k of the completed solve (null = exact); undefined before any solve. */
+  solvedK: number | null | undefined;
   /** k = null → exact; k = 3 → fast preview (§7). */
   solve: (matrix: EditorMatrix, k: number | null) => void;
+  /** Query one draft node from the solved values (instant). The trainer uses
+   * this; it rejects if nothing is solved. */
+  node: (path: Move[]) => Promise<NodeResult>;
   reset: () => void;
 }
 
@@ -31,6 +36,7 @@ export function useSolve(makeClient: () => WorkerClient = () => new WorkerClient
   const [phase, setPhase] = useState<'enumerating' | 'inducting' | null>(null);
   const [result, setResult] = useState<SolvedEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [solvedK, setSolvedK] = useState<number | null | undefined>(undefined);
 
   const client = () => {
     if (!clientRef.current) clientRef.current = makeClient();
@@ -61,6 +67,7 @@ export function useSolve(makeClient: () => WorkerClient = () => new WorkerClient
       .then((solved) => {
         if (gen !== genRef.current) return;
         setResult(solved);
+        setSolvedK(k);
         setProgress(1);
         setStatus('done');
       })
@@ -71,6 +78,11 @@ export function useSolve(makeClient: () => WorkerClient = () => new WorkerClient
       });
   };
 
+  const node = (path: Move[]): Promise<NodeResult> =>
+    clientRef.current
+      ? clientRef.current.node(path)
+      : Promise.reject(new Error('No solved matrix; solve first.'));
+
   const reset = () => {
     genRef.current++;
     setStatus('idle');
@@ -78,8 +90,9 @@ export function useSolve(makeClient: () => WorkerClient = () => new WorkerClient
     setPhase(null);
     setResult(null);
     setError(null);
+    setSolvedK(undefined);
     clientRef.current?.reset().catch(() => {});
   };
 
-  return { status, progress, phase, result, error, solve, reset };
+  return { status, progress, phase, result, error, solvedK, solve, node, reset };
 }

@@ -11,9 +11,9 @@ Isolation: every test solves its fixture in a fresh subprocess -- see
 drafter/tests/conftest.py and drafter/tests/_solve_fixture.py for why.
 
 k is pinned explicitly in every call below. Golden values depend on
-settings.restricted_attackers_count / settings.restrict_attackers; relying on
-the settings.py defaults would let a future default change silently shift
-these numbers.
+SolverConfig.restricted_attackers_count / restrict_attackers; relying on the
+SolverConfig defaults would let a future default change silently shift these
+numbers.
 
 Runtime budget: every test in this file except test_scotland_8_player_k3 is
 part of the fast suite (each a few seconds, dominated by Python subprocess
@@ -89,7 +89,7 @@ def test_smoke_4_player_top_level_strategies():
 # --- Six: 6-player fixture (drafter/resources/matches/Six), created for the
 # golden-test issue. Values not all symmetric/zero, and its best/worst
 # matrices differ per cell so the defender-picks-the-map code path
-# (get_pairing_value) is exercised. Measured fresh-solve time (k=4, this
+# (PairingTables.value) is exercised. Measured fresh-solve time (k=4, this
 # repo's Ryzen 9800X3D-class dev box, cold Python start included): ~12s.
 # Comfortably under the ~30s CI-friendly target from the issue.
 #

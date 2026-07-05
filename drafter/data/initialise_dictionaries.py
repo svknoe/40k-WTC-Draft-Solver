@@ -3,27 +3,46 @@ import csv
 
 import drafter.common.utilities as utilities  # local source
 import drafter.common.team_permutation as team_permutation
-import drafter.data.settings as settings
-import drafter.data.match_info as match_info
+from drafter.common.pairing import PairingTables
 import drafter.data.read_write as read_write
+import drafter.solver.context as context
+import drafter.solver.games as games
 import drafter.solver.strategy_dictionaries as strategy_dictionaries
 import drafter.solver.game_state_dictionaries as game_state_dictionaries
 
 
-def initialise():
-    initialise_input_dictionary(match_info.pairing_dictionary_best, "pairing_matrix_best.csv")
-    initialise_input_dictionary(match_info.pairing_dictionary_worst, "pairing_matrix_worst.csv")
-    validate_best_not_below_worst()
+def initialise(enemy_team_name, config):
+    """Load a match's input matrices, build the SolverContext, and solve the
+    whole draft tree into it. Returns the populated SolverContext (GitHub issue
+    #13, B2 solver-context refactor: no module-level globals)."""
+    best = read_pairing_matrix(
+        utilities.get_path(enemy_team_name, "pairing_matrix_best.csv"), config.require_unique_names)
+    worst = read_pairing_matrix(
+        utilities.get_path(enemy_team_name, "pairing_matrix_worst.csv"), config.require_unique_names)
+    validate_best_not_below_worst(best, worst)
 
-    if (settings.restrict_attackers):
-        team_permutation.enable_restricted_attackers(settings.restricted_attackers_count)
+    pairing = PairingTables(best, worst, config.neutral_map_weight)
+
+    restriction = None
+    if config.restrict_attackers:
+        restriction = team_permutation.build_restriction(pairing, config.restricted_attackers_count)
+
+    ctx = context.SolverContext(
+        config=config,
+        enemy_team_name=enemy_team_name,
+        pairing=pairing,
+        restriction=restriction,
+        gamestate_dictionaries=game_state_dictionaries.make_gamestate_dictionaries(),
+        strategy_dictionaries=strategy_dictionaries.make_strategy_dictionaries(),
+        game_solution_caches=games.make_game_solution_caches())
 
     # Cached JSONs carry solved game values, so caches written under an older
     # value model would load fine but be silently wrong. Only read them if the
     # match folder's format marker matches the current engine; the marker is
     # written after a successful solve+write below.
-    caches_are_current = read_write.cache_format_is_current(utilities.get_path(read_write.CACHE_FORMAT_FILENAME))
-    if (settings.read_gamestates or settings.read_strategies) and not caches_are_current:
+    caches_are_current = read_write.cache_format_is_current(
+        utilities.get_path(enemy_team_name, read_write.CACHE_FORMAT_FILENAME))
+    if (config.read_gamestates or config.read_strategies) and not caches_are_current:
         print("Ignoring cached JSONs in this match folder (missing or outdated {}): "
             "they were computed under an older value model. Solving fresh."
             .format(read_write.CACHE_FORMAT_FILENAME))
@@ -31,27 +50,30 @@ def initialise():
     t0 = time.time()
     print("Initialising gamestate dictionaries (This might take a few minutes):")
     game_state_dictionaries.initialise_dictionaries(
-        settings.read_gamestates and caches_are_current, settings.write_gamestates)
+        ctx, config.read_gamestates and caches_are_current, config.write_gamestates)
     print("time: {}s".format(round(time.time() - t0, 2)))
 
     t0 = time.time()
-    if settings.read_strategies:
+    if config.read_strategies:
         print("Initialising strategy dictionaries (This might take a few minutes):")
     else:
-        if settings.restrict_attackers and settings.restricted_attackers_count < 4:
+        if config.restrict_attackers and config.restricted_attackers_count < 4:
             print("Initialising strategy dictionaries (This might take a few minutes):")
-        elif settings.restrict_attackers and settings.restricted_attackers_count < 5:
+        elif config.restrict_attackers and config.restricted_attackers_count < 5:
             print("Initialising strategy dictionaries (This might take an hour.):")
         else:
             long_runtime_warning = ("Initialising strategy dictionaries (This might take many hours."
                 + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):")
             print(long_runtime_warning)
     strategy_dictionaries.initialise_dictionaries(
-        settings.read_strategies and caches_are_current, settings.write_strategies)
+        ctx, config.read_strategies and caches_are_current, config.write_strategies)
     print("time: {}s".format(round(time.time() - t0, 2)))
 
-    if settings.write_gamestates and settings.write_strategies:
-        read_write.write_cache_format_marker(utilities.get_path(read_write.CACHE_FORMAT_FILENAME))
+    if config.write_gamestates and config.write_strategies:
+        read_write.write_cache_format_marker(
+            utilities.get_path(enemy_team_name, read_write.CACHE_FORMAT_FILENAME))
+
+    return ctx
 
 
 class InputError(ValueError):
@@ -93,11 +115,11 @@ def parse_rating(value):
     return score - 10
 
 
-def validate_best_not_below_worst():
-    for friend in match_info.pairing_dictionary_best:
-        for enemy in match_info.pairing_dictionary_best[friend]:
-            best_value = match_info.pairing_dictionary_best[friend][enemy]
-            worst_value = match_info.pairing_dictionary_worst.get(friend, {}).get(enemy)
+def validate_best_not_below_worst(best, worst):
+    for friend in best:
+        for enemy in best[friend]:
+            best_value = best[friend][enemy]
+            worst_value = worst.get(friend, {}).get(enemy)
 
             if worst_value is None:
                 raise InputError("pairing_matrix_worst.csv is missing the {} vs {} entry "
@@ -109,10 +131,10 @@ def validate_best_not_below_worst():
                     "check for swapped files or rows.".format(best_value, worst_value, friend, enemy))
 
 
-# TODO: don't mutate passed parameters! empty_input_dictionary should be a stored value
-def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, float]], filename):
-    path = utilities.get_path(filename)
-
+def read_pairing_matrix(path, require_unique_names):
+    """Read one pairing matrix CSV into a {friendly: {enemy: value}} dict.
+    `path` is the resolved file, `require_unique_names` the config flag; both
+    are passed explicitly rather than read from module globals (issue #13)."""
     if not path.is_file():
         raise InputError("Missing input file: {}. A match folder needs both "
             "pairing_matrix_best.csv and pairing_matrix_worst.csv.".format(path))
@@ -147,11 +169,11 @@ def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, floa
             raise InputError("{}: duplicate {} player name(s): {}. "
                 "Names within a team must be unique.".format(path, team_name, ", ".join(duplicates)))
 
-    if settings.require_unique_names:
+    if require_unique_names:
         overlap = sorted(set(allies) & set(enemies))
         if overlap:
             raise InputError("{}: name(s) present on both teams: {}. Friendly and enemy "
-                "names must not overlap (settings.require_unique_names).".format(path, ", ".join(overlap)))
+                "names must not overlap (require_unique_names).".format(path, ", ".join(overlap)))
 
     if len(enemies) != len(allies):
         raise InputError("{}: {} friendly names (line 1) but {} enemy names (line 2) "
@@ -163,6 +185,8 @@ def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, floa
 
     if len(allies) not in (4, 6, 8):
         raise InputError("{}: {} players per team; the draft needs 4, 6 or 8.".format(path, len(allies)))
+
+    input_dictionary = {}
 
     for ally, (line_number, row) in zip(allies, data_rows):
         if len(row) != len(enemies):
@@ -178,6 +202,8 @@ def initialise_input_dictionary(empty_input_dictionary: dict[str, dict[str, floa
                         path, line_number, column_index + 1, ally, enemy,
                         value, "/".join(legacy_token_encoding))) from None
 
-            if ally not in empty_input_dictionary:
-                empty_input_dictionary[ally] = {}
-            empty_input_dictionary[ally][enemy] = rating
+            if ally not in input_dictionary:
+                input_dictionary[ally] = {}
+            input_dictionary[ally][enemy] = rating
+
+    return input_dictionary

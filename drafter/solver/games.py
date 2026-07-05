@@ -6,37 +6,29 @@ from drafter.common.game_state import GameState
 from drafter.common.team_permutation import TeamPermutation
 from drafter.common.draft_stage import DraftStage
 
-select_defender_cache = {}
-select_defender_cache_4 = {}
-select_defender_cache_6 = {}
-select_defender_cache_8 = {}
-select_defender_cache[4] = select_defender_cache_4
-select_defender_cache[6] = select_defender_cache_6
-select_defender_cache[8] = select_defender_cache_8
+STAGES = ("select_defender", "select_attackers", "discard_attacker")
 
 
-def select_defender(n, none_gamestate, select_attackers_strategies):
-    gamestate_matrix = game_state.get_next_gamestate_matrix(none_gamestate)
+def make_game_solution_caches():
+    # One matrix-hash cache per (draft stage, n). Content-keyed memoisation of
+    # solved zero-sum games; lives on the SolverContext instead of module-level
+    # globals (GitHub issue #13).
+    return {stage: {4: {}, 6: {}, 8: {}} for stage in STAGES}
+
+
+def select_defender(ctx, n, none_gamestate, select_attackers_strategies):
+    gamestate_matrix = game_state.get_next_gamestate_matrix(ctx, none_gamestate)
     friendly_team_options = [row[0].friendly_team_permutation.defender for row in gamestate_matrix]
     enemy_team_options = [_gamestate.enemy_team_permutation.defender for _gamestate in gamestate_matrix[0]]
     game_array = get_game_array(gamestate_matrix, select_attackers_strategies)
-    select_defender_strategy = utilities.get_game_strategy(select_defender_cache[n],
+    select_defender_strategy = utilities.get_game_strategy(ctx.game_solution_caches["select_defender"][n],
         game_array, friendly_team_options, enemy_team_options)
 
     return select_defender_strategy
 
 
-select_attackers_cache = {}
-select_attackers_cache_4 = {}
-select_attackers_cache_6 = {}
-select_attackers_cache_8 = {}
-select_attackers_cache[4] = select_attackers_cache_4
-select_attackers_cache[6] = select_attackers_cache_6
-select_attackers_cache[8] = select_attackers_cache_8
-
-
-def select_attackers(n, selected_defender_gamestate, discard_attacker_strategies):
-    gamestate_matrix = game_state.get_next_gamestate_matrix(selected_defender_gamestate)
+def select_attackers(ctx, n, selected_defender_gamestate, discard_attacker_strategies):
+    gamestate_matrix = game_state.get_next_gamestate_matrix(ctx, selected_defender_gamestate)
 
     friendly_team_options = [[row[0].friendly_team_permutation.attacker_A,
         row[0].friendly_team_permutation.attacker_B] for row in gamestate_matrix]
@@ -46,7 +38,7 @@ def select_attackers(n, selected_defender_gamestate, discard_attacker_strategies
 
     game_array = get_game_array(gamestate_matrix, discard_attacker_strategies)
 
-    select_attackers_strategy = utilities.get_game_strategy(select_attackers_cache[n],
+    select_attackers_strategy = utilities.get_game_strategy(ctx.game_solution_caches["select_attackers"][n],
         game_array, friendly_team_options, enemy_team_options)
 
     return select_attackers_strategy
@@ -71,16 +63,7 @@ def get_game_array(gamestate_matrix, lower_level_strategies):
     return game_array
 
 
-discard_attacker_cache = {}
-discard_attacker_cache_4 = {}
-discard_attacker_cache_6 = {}
-discard_attacker_cache_8 = {}
-discard_attacker_cache[4] = discard_attacker_cache_4
-discard_attacker_cache[6] = discard_attacker_cache_6
-discard_attacker_cache[8] = discard_attacker_cache_8
-
-
-def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies):
+def discard_attacker(ctx, n, selected_attackers_gamestate, select_defender_strategies):
     def get_game_key(extra_friend, extra_enemy):
         friendly_team_permutation = TeamPermutation(
             selected_attackers_gamestate.friendly_team_permutation.remaining_players + [extra_friend])
@@ -104,13 +87,13 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
     remaining_enemies = selected_attackers_gamestate.enemy_team_permutation.remaining_players
 
     if n == 4:
-        return discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, remaining_friends[0],
+        return discard_attacker_4(ctx, f_defender, f_attacker_A, f_attacker_B, remaining_friends[0],
             e_defender, e_attacker_A, e_attacker_B, remaining_enemies[0])
 
-    fD_eA = utilities.get_pairing_value(f_defender, e_attacker_A, f_defender)
-    fD_eB = utilities.get_pairing_value(f_defender, e_attacker_B, f_defender)
-    fA_eD = utilities.get_pairing_value(f_attacker_A, e_defender, e_defender)
-    fB_eD = utilities.get_pairing_value(f_attacker_B, e_defender, e_defender)
+    fD_eA = ctx.pairing.value(f_defender, e_attacker_A, f_defender)
+    fD_eB = ctx.pairing.value(f_defender, e_attacker_B, f_defender)
+    fA_eD = ctx.pairing.value(f_attacker_A, e_defender, e_defender)
+    fB_eD = ctx.pairing.value(f_attacker_B, e_defender, e_defender)
 
     # The child gamestate receives the REFUSED attackers back into the pools
     # (issue #32): in AB, e_B plays the friendly defender and f_A plays the
@@ -122,26 +105,26 @@ def discard_attacker(n, selected_attackers_gamestate, select_defender_strategies
     BB = fD_eA + fA_eD + select_defender_strategies[get_game_key(f_attacker_B, e_attacker_B)][2]
 
     game_array = np.array([[AA, AB], [BA, BB]])
-    discard_attacker_strategy = utilities.get_game_strategy(discard_attacker_cache[n], game_array,
+    discard_attacker_strategy = utilities.get_game_strategy(ctx.game_solution_caches["discard_attacker"][n], game_array,
         [e_attacker_A, e_attacker_B], [f_attacker_A, f_attacker_B])
 
     return discard_attacker_strategy
 
 
-def discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, f_not_selected, e_defender,
+def discard_attacker_4(ctx, f_defender, f_attacker_A, f_attacker_B, f_not_selected, e_defender,
         e_attacker_A, e_attacker_B, e_not_selected):
 
-    fD_eA = utilities.get_pairing_value(f_defender, e_attacker_A, f_defender)
-    fD_eB = utilities.get_pairing_value(f_defender, e_attacker_B, f_defender)
-    fA_eD = utilities.get_pairing_value(f_attacker_A, e_defender, e_defender)
-    fB_eD = utilities.get_pairing_value(f_attacker_B, e_defender, e_defender)
+    fD_eA = ctx.pairing.value(f_defender, e_attacker_A, f_defender)
+    fD_eB = ctx.pairing.value(f_defender, e_attacker_B, f_defender)
+    fA_eD = ctx.pairing.value(f_attacker_A, e_defender, e_defender)
+    fB_eD = ctx.pairing.value(f_attacker_B, e_defender, e_defender)
 
-    fA_eA = utilities.get_pairing_value(f_attacker_A, e_attacker_A)
-    fA_eB = utilities.get_pairing_value(f_attacker_A, e_attacker_B)
-    fB_eA = utilities.get_pairing_value(f_attacker_B, e_attacker_A)
-    fB_eB = utilities.get_pairing_value(f_attacker_B, e_attacker_B)
+    fA_eA = ctx.pairing.value(f_attacker_A, e_attacker_A)
+    fA_eB = ctx.pairing.value(f_attacker_A, e_attacker_B)
+    fB_eA = ctx.pairing.value(f_attacker_B, e_attacker_A)
+    fB_eB = ctx.pairing.value(f_attacker_B, e_attacker_B)
 
-    fN_eN = utilities.get_pairing_value(f_not_selected, e_not_selected)
+    fN_eN = ctx.pairing.value(f_not_selected, e_not_selected)
 
     AA = fD_eB + fB_eD + fA_eA + fN_eN
     AB = fD_eB + fA_eD + fB_eA + fN_eN
@@ -150,7 +133,7 @@ def discard_attacker_4(f_defender, f_attacker_A, f_attacker_B, f_not_selected, e
 
     game_array = np.array([[AA, AB], [BA, BB]])
 
-    discard_attacker_strategy = utilities.get_game_strategy(discard_attacker_cache[4],
+    discard_attacker_strategy = utilities.get_game_strategy(ctx.game_solution_caches["discard_attacker"][4],
         game_array, [e_attacker_A, e_attacker_B], [f_attacker_A, f_attacker_B])
 
     return discard_attacker_strategy

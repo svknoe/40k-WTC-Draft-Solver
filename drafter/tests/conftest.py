@@ -1,16 +1,14 @@
 """Shared test infrastructure for golden-value tests.
 
-Isolation mechanism (see also drafter/tests/_solve_fixture.py): drafter keeps
-solver state in module-level globals (drafter.data.settings,
-drafter.data.match_info, the gamestate/strategy dictionaries, and cached
-restrict-attackers state in drafter.common.team_permutation). None of that is
-designed to be reset between fixtures within one process. Rather than
-monkeypatch-and-restore every one of those globals (fragile, and easy to miss
-one as the solver evolves), each golden test solves its fixture in a fresh
-`python -m ...`-style subprocess, exactly like scripts/smoke_draft.py already
-does for the interactive draft. That guarantees zero state leakage between
-tests/fixtures at the cost of a fresh Python startup per test (cheap relative
-to solve time here).
+Isolation mechanism (see also drafter/tests/_solve_fixture.py): the B2
+solver-context refactor (GitHub issue #13) moved per-run solver state onto an
+explicit SolverContext, but a few correctness-neutral memoisation caches remain
+module-level (the LP normalised cache in drafter.common.utilities). Rather than
+reason about which module state does or doesn't reset cleanly between fixtures,
+each golden test solves its fixture in a fresh `python -m ...`-style subprocess,
+exactly like scripts/smoke_draft.py already does for the interactive draft. That
+guarantees zero state leakage between tests/fixtures at the cost of a fresh
+Python startup per test (cheap relative to solve time here).
 """
 import json
 import subprocess

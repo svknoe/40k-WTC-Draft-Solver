@@ -32,14 +32,14 @@ drafter/
     team_permutation.py    one team's partial draft state; enumeration of successor states;
                            the k-restriction heuristic (restrict to k best attackers)
     game_state.py          GameState = (draft_stage, friendly TeamPermutation, enemy TeamPermutation)
-    utilities.py           direct zero-sum game solving (2x2 closed form + LP), pairing-value lookup, key/dictionary naming
+    utilities.py           direct zero-sum game solving (2x2 closed form + LP), path/key/dictionary naming
+    pairing.py             PairingTables: defender-picks-the-map value lookups for one match
   data/
-    settings.py            all knobs (team name, k-restriction, read/write caches)
-    match_info.py          module-level globals: enemy team name + input matrices
-    initialise_dictionaries.py  reads CSVs, orchestrates preprocessing
-    set_enemy_team.py      InquirerPy menu over drafter/resources/matches/<team>/
+    initialise_dictionaries.py  reads CSVs (read_pairing_matrix), builds the SolverContext, solves
+    set_enemy_team.py      InquirerPy menu over drafter/resources/matches/<team>/ (returns the name)
     read_write.py          JSON cache IO
   solver/
+    context.py             SolverConfig (the knobs) + SolverContext (all per-run state, passed explicitly)
     game_state_dictionaries.py  enumerate all reachable gamestates per (n, stage)
     strategy_dictionaries.py    backward induction: solve every gamestate's game, deepest first
     games.py               build the payoff matrix for one gamestate from child values
@@ -74,11 +74,11 @@ drafter/
    user makes a move outside the enumerated tree (possible with k-restriction),
    the tree is extended and re-solved on the fly.
 
-Values are read through `utilities.get_pairing_value(friend, enemy,
-defender)`: the best-map value when the friendly player defends, the worst-map
-value when the enemy defends, and `settings.neutral_map_weight` (default 0.5 =
-midpoint) of the way from worst to best when neither does (refused-vs-refused
-and last-players games).
+Values are read through `ctx.pairing.value(friend, enemy, defender)`
+(a `PairingTables`, drafter/common/pairing.py): the best-map value when the
+friendly player defends, the worst-map value when the enemy defends, and
+`config.neutral_map_weight` (default 0.5 = midpoint) of the way from worst to
+best when neither does (refused-vs-refused and last-players games).
 
 **Known scale/pain points** (measured 2026-07, Ryzen 9800X3D, k as noted):
 
@@ -94,7 +94,7 @@ and last-players games).
   gamestate iteration — the latter is what B2 (integer state encoding) targets.
 - Cached JSON for one 8-player opponent ≈ 630 MB (strategy dicts dominate);
   loading that cache takes ~19 s. String keys are a large share of the RAM.
-- `restricted_attackers_count` (k) in settings.py is the only current knob:
+- `restricted_attackers_count` (k) in `SolverConfig` (drafter/solver/context.py) is the only current knob:
   each select-attackers step only considers the k heuristically best
   attackers per side (heuristic: advantage vs defender minus average vs
   the rest). k=4 default, k=3 for quick runs.
@@ -122,7 +122,7 @@ the legacy token (an even matchup, 10-10), not the score 0 — write `0.0` if
 you really mean a 20-0 blowout loss. Numbers outside 0–20 are rejected.
 
 Every cell must satisfy best ≥ worst (validated on load). Friendly and enemy
-names must not overlap (settings.require_unique_names). The matrix is square
+names must not overlap (config.require_unique_names). The matrix is square
 (8×8; 4×4 and 6×6 also work — n must be 4, 6 or 8).
 
 Old-format folders (`pairing_matrix.csv` + optional
@@ -150,10 +150,10 @@ drafter` work too.
 Notes for agents:
 
 - The InquirerPy team menu needs a real TTY. To drive the program
-  non-interactively, set `drafter.data.match_info.enemy_team_name` directly
-  and call `initialise_dictionaries.initialise()` + `draft_loop.play()`;
-  the in-draft prompts are plain `input()` and accept piped lines (empty
-  line = accept suggested move). See `scripts/smoke_draft.py`.
+  non-interactively, build a `SolverConfig` and call
+  `ctx = initialise_dictionaries.initialise(enemy_team_name, config)` +
+  `draft_loop.play(ctx)`; the in-draft prompts are plain `input()` and accept
+  piped lines (empty line = accept suggested move). See `scripts/smoke_draft.py`.
 - `drafter/resources/matches/Smoke/` is a 4×4 fixture that solves in ~1 s —
   use it to verify changes end to end. `Test/` holds a near-trivial 8-player
   matrix (best = worst) useful for timing full-size solves.
@@ -162,8 +162,11 @@ Notes for agents:
   under the `if __name__ == '__main__':` guard, so `python -m drafter` and
   the `drafter` console script (`drafter.__main__:main`) both go through the
   same explicit call.
-- Settings are plain module globals in `drafter/data/settings.py`; there are
-  no CLI flags. Monkeypatch settings before `initialise()` in scripts.
+- All knobs live in the frozen `SolverConfig` dataclass
+  (`drafter/solver/context.py`); there are no CLI flags. Build a `SolverConfig`
+  (overriding fields as needed) and pass it to `initialise()`; it and all
+  per-run state travel on the explicit `SolverContext` (GitHub issue #13, B2)
+  — there are no more mutable module-level globals to monkeypatch.
 - The zero-sum solver is deterministic and silent: no RuntimeWarnings during
   solving (nashpy's "degenerate game" warnings are gone with nashpy, issue
   #12). scipy's `linprog` is a required dependency; nashpy and networkx are

@@ -34,8 +34,8 @@ class GameState:
         return strategy_dictionary_name
 
 
-def get_next_gamestates(game_permutation):
-    next_game_permutations_matrix = get_next_gamestate_matrix(game_permutation)
+def get_next_gamestates(ctx, game_permutation):
+    next_game_permutations_matrix = get_next_gamestate_matrix(ctx, game_permutation)
     next_game_permutations = []
 
     for row in next_game_permutations_matrix:
@@ -45,13 +45,15 @@ def get_next_gamestates(game_permutation):
     return next_game_permutations
 
 
-def get_next_gamestate_matrix(gamestate):
+def get_next_gamestate_matrix(ctx, gamestate):
     next_draft_stage = draft_stage.get_next_draft_stage(gamestate.draft_stage)
     next_friendly_team_permutations = team_permutation.get_team_permutations_for_stage(
-        next_draft_stage, gamestate.friendly_team_permutation, gamestate.enemy_team_permutation)
+        ctx, team_permutation.Side.FRIENDLY, next_draft_stage,
+        gamestate.friendly_team_permutation, gamestate.enemy_team_permutation)
 
     next_enemy_team_permutations = team_permutation.get_team_permutations_for_stage(
-        next_draft_stage, gamestate.enemy_team_permutation, gamestate.friendly_team_permutation)
+        ctx, team_permutation.Side.ENEMY, next_draft_stage,
+        gamestate.enemy_team_permutation, gamestate.friendly_team_permutation)
 
     team_permutations_product = utilities.get_cartesian_product(
         next_friendly_team_permutations, next_enemy_team_permutations)

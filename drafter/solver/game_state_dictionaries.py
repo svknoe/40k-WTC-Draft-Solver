@@ -4,7 +4,6 @@ from drafter.common.game_state import GameState
 from drafter.common.team_permutation import TeamPermutation
 from drafter.common.draft_stage import DraftStage
 import drafter.common.draft_stage as draft_stage
-import drafter.data.match_info as match_info
 import drafter.data.read_write as read_write
 
 global_gamestate_dictionary_names = [
@@ -20,59 +19,61 @@ global_gamestate_dictionary_names = [
     utilities.get_gamestate_dictionary_name(4, DraftStage.select_defender),
     utilities.get_gamestate_dictionary_name(4, DraftStage.select_attackers)]
 
-dictionaries = {}
-for name in global_gamestate_dictionary_names:
-    dictionaries[name] = {}
+
+def make_gamestate_dictionaries():
+    # A fresh, empty gamestate store for one SolverContext (GitHub issue #13);
+    # replaces the module-level `dictionaries` global.
+    return {name: {} for name in global_gamestate_dictionary_names}
 
 
-def initialise_dictionaries(read, write):
+def initialise_dictionaries(ctx, read, write):
     dictionaries_loaded_from_files = False
     if read:
-        dictionaries_loaded_from_files = read_dictionaries()
+        dictionaries_loaded_from_files = read_dictionaries(ctx)
 
     if not dictionaries_loaded_from_files:
-        initial_game_state = get_initial_game_state()
+        initial_game_state = get_initial_game_state(ctx)
         seed_dictionary = {'seed': initial_game_state}
-        perform_gamestate_tree_extension(seed_dictionary)
+        perform_gamestate_tree_extension(ctx, seed_dictionary)
 
         if write:
-            write_dictionaries()
+            write_dictionaries(ctx)
 
 
-def read_dictionaries():
+def read_dictionaries(ctx):
     for name in global_gamestate_dictionary_names:
-        path = utilities.get_path(name + ".json")
+        path = utilities.get_path(ctx.enemy_team_name, name + ".json")
         key_list = read_write.read_dictionary(path)
 
         if (key_list is not None and len(key_list) > 0):
-            dictionaries[name] = {key: game_state.get_gamestate_from_key(key) for key in key_list}
+            ctx.gamestate_dictionaries[name] = {key: game_state.get_gamestate_from_key(key) for key in key_list}
         else:
             return False
 
     return True
 
 
-def write_dictionaries():
+def write_dictionaries(ctx):
     for name in global_gamestate_dictionary_names:
-        path = utilities.get_path(name + ".json")
-        string_representation = [key for key in dictionaries[name]]
+        path = utilities.get_path(ctx.enemy_team_name, name + ".json")
+        string_representation = [key for key in ctx.gamestate_dictionaries[name]]
         read_write.write_dictionary(path, string_representation)
 
 
-def get_initial_game_state():
-    friends = [friend for friend in match_info.pairing_dictionary_best]
-    enemies = [enemy for enemy in match_info.pairing_dictionary_best[friends[0]]]
+def get_initial_game_state(ctx):
+    friends = [friend for friend in ctx.pairing.best]
+    enemies = [enemy for enemy in ctx.pairing.best[friends[0]]]
     initial_game_state = GameState(DraftStage.none, TeamPermutation(friends), TeamPermutation(enemies))
 
     return initial_game_state
 
 
-def perform_gamestate_tree_extension(parent_dictionary, new_gamestates_dictionaries=None):
+def perform_gamestate_tree_extension(ctx, parent_dictionary, new_gamestates_dictionaries=None):
     current_arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(parent_dictionary)
     current_global_gamestate_dictionary_name = current_arbitrary_gamestate.get_gamestate_dictionary_name()
     print_extend_dictionaries(current_global_gamestate_dictionary_name, new_gamestates_dictionaries)
 
-    produced_gamestate_dictionaries = extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestates_dictionaries)
+    produced_gamestate_dictionaries = extend_gamestate_tree_from_seed_dictionary(ctx, parent_dictionary, new_gamestates_dictionaries)
 
     if produced_gamestate_dictionaries is not None:
         produced_gamestate_dictionaries = [new_gamestates_dictionary for new_gamestates_dictionary
@@ -81,7 +82,7 @@ def perform_gamestate_tree_extension(parent_dictionary, new_gamestates_dictionar
     return produced_gamestate_dictionaries
 
 
-def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_dictionaries=None):
+def extend_gamestate_tree_from_seed_dictionary(ctx, parent_dictionary, new_gamestate_dictionaries=None):
     if len(parent_dictionary) == 0:
         return new_gamestate_dictionaries
 
@@ -91,7 +92,7 @@ def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_
     current_n = current_arbitrary_gamestate.get_n()
 
     current_global_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(current_n, current_draft_stage)
-    current_global_dictionary = dictionaries[current_global_gamestate_dictionary_name]
+    current_global_dictionary = ctx.gamestate_dictionaries[current_global_gamestate_dictionary_name]
 
     if (current_global_dictionary is None):
         return new_gamestate_dictionaries
@@ -120,10 +121,10 @@ def extend_gamestate_tree_from_seed_dictionary(parent_dictionary, new_gamestate_
     generated_gamestate_dictionary = {}
     for parent_key in parent_dictionary:
         parent_gamestate = parent_dictionary[parent_key]
-        child_gamestates = game_state.get_next_gamestates(parent_gamestate)
+        child_gamestates = game_state.get_next_gamestates(ctx, parent_gamestate)
         add_gamestates_to_dictionary(generated_gamestate_dictionary, child_gamestates)
 
-    extend_gamestate_tree_from_seed_dictionary(generated_gamestate_dictionary, new_gamestate_dictionaries)
+    extend_gamestate_tree_from_seed_dictionary(ctx, generated_gamestate_dictionary, new_gamestate_dictionaries)
 
     return new_gamestate_dictionaries
 
@@ -150,7 +151,7 @@ def add_gamestates_to_dictionary(dictionary, gamestates):
     return added_subdictionary
 
 
-def get_previous_gamestate_dictionary(gamestate_dictionary):
+def get_previous_gamestate_dictionary(ctx, gamestate_dictionary):
     arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary)
     n = arbitrary_gamestate.get_n()
     current_draft_stage = arbitrary_gamestate.draft_stage
@@ -167,6 +168,6 @@ def get_previous_gamestate_dictionary(gamestate_dictionary):
             return None
 
     next_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(n, previous_draft_stage)
-    next_gamestate_dictionary = dictionaries[next_gamestate_dictionary_name]
+    next_gamestate_dictionary = ctx.gamestate_dictionaries[next_gamestate_dictionary_name]
 
     return next_gamestate_dictionary

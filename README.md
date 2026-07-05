@@ -4,7 +4,7 @@ Creates optimal strategies for WTC pairing drafts using game theoretic Nash equi
 
 #### Disclaimer
 
-> By default has long runtime (typically more than an hour). Change drafter.data.settings.restricted_attackers_count from 4 to 3 for more reasonable runtime (typically around 15 minutes).
+> By default has long runtime (typically more than an hour). Change the `restricted_attackers_count` default in `SolverConfig` (`drafter/solver/context.py`) from 4 to 3 for more reasonable runtime (typically around 15 minutes).
 
 ## Input data
 

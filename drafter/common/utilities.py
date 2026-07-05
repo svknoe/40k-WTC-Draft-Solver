@@ -4,9 +4,6 @@ from enum import Enum
 import numpy as np  # 3rd party packages
 from scipy.optimize import linprog
 
-import drafter.data.match_info as match_info  # local source
-import drafter.data.settings as settings
-
 
 def get_transposed_pairing_dictionary(pairing_dictionary):
     friends = [friend for friend in pairing_dictionary]
@@ -208,13 +205,13 @@ def print_overview(game_overview, roundTo=3):
     print("Value: ", round_value)
 
 
-def get_path(filename):
+def get_path(enemy_team_name, filename):
     drafter_path = Path(__file__).parent.parent
 
-    if match_info.enemy_team_name is None:
+    if enemy_team_name is None:
         path = drafter_path / (filename)
     else:
-        subfolder = "resources/matches/" + match_info.enemy_team_name
+        subfolder = "resources/matches/" + enemy_team_name
         path = drafter_path / (subfolder + "/" + filename)
 
     return path
@@ -288,42 +285,3 @@ def get_value_from_input_dictionary(input_dictionary, friendly_player, enemy_pla
         raise ValueError("Unknown player: {}".format(enemy_player))
 
     return value
-
-
-# The defender picks the map (11th-edition rule, PLAN.md workstream C): a
-# friendly defender gets the pairing's best-map value, an enemy defender
-# forces the worst-map value, and games without a defender (refused-vs-refused,
-# last players) fall settings.neutral_map_weight of the way from worst to best.
-def get_pairing_value(friendly_player, enemy_player, defender=None):
-    best_value = get_value_from_input_dictionary(match_info.pairing_dictionary_best, friendly_player, enemy_player)
-    worst_value = get_value_from_input_dictionary(match_info.pairing_dictionary_worst, friendly_player, enemy_player)
-
-    if defender is None:
-        return get_neutral_value(best_value, worst_value)
-    elif friendly_player == defender:
-        return best_value
-    elif enemy_player == defender:
-        return worst_value
-    else:
-        raise ValueError("Unknown defender: {}".format(defender))
-
-
-def get_neutral_value(best_value, worst_value):
-    return worst_value + settings.neutral_map_weight * (best_value - worst_value)
-
-
-def get_pairing_string(friendly_player, enemy_player, defender=None):
-    value = get_pairing_value(friendly_player, enemy_player, defender)
-
-    friendly_player_string = friendly_player
-    enemy_player_string = enemy_player
-
-    if defender is not None:
-        if friendly_player == defender:
-            friendly_player_string += " (D)"
-        elif enemy_player == defender:
-            enemy_player_string += " (D)"
-        else:
-            raise ValueError("Unknown defender: {}".format(defender))
-
-    return round(value, 2), "{} vs {}".format(friendly_player_string, enemy_player_string)

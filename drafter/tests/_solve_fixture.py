@@ -3,19 +3,19 @@ tests. Solves one fixture fresh (cache read/write disabled) and prints a
 single JSON line to stdout with the top-level game value and top-level
 friendly/enemy strategies.
 
-Isolation rationale: drafter's settings/match_info/dictionaries modules are
-mutated module-level globals (see CLAUDE.md), and drafter.common.team_permutation
-additionally caches a restrict_attackers_k plus regular/transposed pairing
-dictionaries at import time via enable_restricted_attackers(). None of this
-resets cleanly between fixtures in one process. Running each solve in a fresh
-subprocess (like scripts/smoke_draft.py does for the interactive draft) sidesteps
-all of that: every test gets a brand-new interpreter and brand-new module state.
+Isolation rationale: even after the B2 solver-context refactor (GitHub issue
+#13) removed drafter's settings/match_info/dictionaries module globals, a few
+correctness-neutral memoisation caches remain module-level (the LP normalised
+cache in drafter.common.utilities). Running each solve in a fresh subprocess
+(like scripts/smoke_draft.py does for the interactive draft) gives every test a
+brand-new interpreter and brand-new module state, so nothing can leak between
+fixtures.
 
 Usage:
     python _solve_fixture.py <fixture_name> <k>
 
 Prints one line of JSON to stdout:
-    {"n": 8, "value": 6.189614..., "friendly": [[name, prob], ...], "enemy": [...]}
+    {"n": 8, "value": 5.875946..., "friendly": [[name, prob], ...], "enemy": [...]}
 """
 import json
 import sys
@@ -23,32 +23,29 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-import drafter.data.match_info as match_info
-import drafter.data.settings as settings
+import drafter.solver.context as context
 
 fixture_name = sys.argv[1]
 k = int(sys.argv[2])
 
-match_info.enemy_team_name = fixture_name
-settings.read_gamestates = False
-settings.write_gamestates = False
-settings.read_strategies = False
-settings.write_strategies = False
-settings.restrict_attackers = True
-settings.restricted_attackers_count = k
+config = context.SolverConfig(
+    read_gamestates=False,
+    write_gamestates=False,
+    read_strategies=False,
+    write_strategies=False,
+    restrict_attackers=True,
+    restricted_attackers_count=k)
 
 import drafter.data.initialise_dictionaries as initialise_dictionaries
 import drafter.common.utilities as utilities
 import drafter.common.draft_stage as draft_stage_module
-import drafter.solver.game_state_dictionaries as game_state_dictionaries
-import drafter.solver.strategy_dictionaries as strategy_dictionaries
 
-initialise_dictionaries.initialise()
+ctx = initialise_dictionaries.initialise(fixture_name, config)
 
 initial_n = None
 for candidate_n in (8, 6, 4):
     name = utilities.get_gamestate_dictionary_name(candidate_n, draft_stage_module.DraftStage.none)
-    if len(game_state_dictionaries.dictionaries[name]) > 0:
+    if len(ctx.gamestate_dictionaries[name]) > 0:
         initial_n = candidate_n
         break
 
@@ -57,7 +54,7 @@ if initial_n is None:
 
 initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(
     initial_n, draft_stage_module.DraftStage.select_defender)
-initial_strategy_dictionary = strategy_dictionaries.dictionaries[initial_strategy_dictionary_name]
+initial_strategy_dictionary = ctx.strategy_dictionaries[initial_strategy_dictionary_name]
 initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dictionary)
 
 result = {

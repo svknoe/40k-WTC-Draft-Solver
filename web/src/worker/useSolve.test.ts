@@ -58,6 +58,40 @@ describe('useSolve', () => {
     expect(result.current.error).toMatch(/boom/);
   });
 
+  test('a reset during an in-flight solve discards the stale result (generation guard)', async () => {
+    // A worker that defers its solve response but answers reset immediately —
+    // mirrors the real worker, whose synchronous solve lands before reset-ok.
+    class RacyWorker implements WorkerLike {
+      onmessage: ((event: MessageEvent<WorkerResponse>) => void) | null = null;
+      onerror: ((event: unknown) => void) | null = null;
+      pendingSolve: (() => void) | null = null;
+      postMessage(message: WorkerRequest): void {
+        if (message.type === 'solve') {
+          this.pendingSolve = () =>
+            this.onmessage?.({ data: { type: 'solved', reqId: message.reqId, expected: 9, root: rootNode } } as MessageEvent<WorkerResponse>);
+        } else if (message.type === 'reset') {
+          this.onmessage?.({ data: { type: 'reset-ok', reqId: message.reqId } } as MessageEvent<WorkerResponse>);
+        }
+      }
+      terminate(): void {}
+    }
+
+    const worker = new RacyWorker();
+    const { result } = renderHook(() => useSolve(() => new WorkerClient(worker)));
+
+    act(() => result.current.solve(editor4(), null));
+    expect(result.current.status).toBe('solving');
+    act(() => result.current.reset()); // simulate a matrix edit invalidating the solve
+    expect(result.current.status).toBe('idle');
+    // Fire the now-stale solve and flush its microtask .then handler.
+    await act(async () => {
+      worker.pendingSolve!();
+      await Promise.resolve();
+    });
+    expect(result.current.status).toBe('idle'); // must NOT flip back to 'done'
+    expect(result.current.result).toBeNull();
+  });
+
   test('reset clears the result', async () => {
     const { result } = renderHook(() =>
       useSolve(factory((msg, post) => post({ type: 'solved', reqId: msg.reqId, expected: 1, root: rootNode }))));

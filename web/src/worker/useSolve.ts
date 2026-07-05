@@ -21,6 +21,11 @@ export interface SolveState {
  * request, surfacing real progress. `makeClient` is injectable for tests. */
 export function useSolve(makeClient: () => WorkerClient = () => new WorkerClient()): SolveState {
   const clientRef = useRef<WorkerClient | null>(null);
+  // Generation token: bumped on every solve() and reset(). A worker request
+  // can't be cancelled once posted (the engine runs synchronously), so a solve
+  // that resolves after a reset/newer solve is stale and must be ignored —
+  // otherwise editing the matrix mid-solve would land an out-of-date result.
+  const genRef = useRef(0);
   const [status, setStatus] = useState<SolveStatus>('idle');
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<'enumerating' | 'inducting' | null>(null);
@@ -41,6 +46,7 @@ export function useSolve(makeClient: () => WorkerClient = () => new WorkerClient
       setError((e as Error).message);
       return;
     }
+    const gen = ++genRef.current;
     setStatus('solving');
     setProgress(0);
     setPhase(null);
@@ -48,21 +54,25 @@ export function useSolve(makeClient: () => WorkerClient = () => new WorkerClient
     setResult(null);
     client()
       .solve(engineMatrix, k, (event) => {
+        if (gen !== genRef.current) return;
         setProgress(event.frac);
         setPhase(event.phase);
       })
       .then((solved) => {
+        if (gen !== genRef.current) return;
         setResult(solved);
         setProgress(1);
         setStatus('done');
       })
       .catch((e: Error) => {
+        if (gen !== genRef.current) return;
         setError(e.message);
         setStatus('error');
       });
   };
 
   const reset = () => {
+    genRef.current++;
     setStatus('idle');
     setProgress(0);
     setPhase(null);

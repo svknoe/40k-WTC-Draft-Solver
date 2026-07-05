@@ -50,5 +50,7 @@ initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dic
 
 print("\nFixture: {}, k={}, n={}".format(fixture_name, k, initial_n))
 print("Top-level value (repr): {!r}".format(initial_strategy[2]))
-print("Friendly top-level strategy: {}".format(initial_strategy[0]))
-print("Enemy top-level strategy: {}".format(initial_strategy[1]))
+print("Friendly top-level strategy: {}".format(
+    [[ctx.friendly.name(entry[0]), entry[1]] for entry in initial_strategy[0]]))
+print("Enemy top-level strategy: {}".format(
+    [[ctx.enemy.name(entry[0]), entry[1]] for entry in initial_strategy[1]]))

@@ -21,7 +21,11 @@ def initialise(enemy_team_name, config):
         utilities.get_path(enemy_team_name, "pairing_matrix_worst.csv"), config.require_unique_names)
     validate_best_not_below_worst(best, worst)
 
-    pairing = PairingTables(best, worst, config.neutral_map_weight)
+    # Assign player indices in name-sorted order (see context.NameIndex): enemy
+    # names are the columns of any friendly row.
+    friendly = context.NameIndex.from_names(best.keys())
+    enemy = context.NameIndex.from_names(next(iter(best.values())).keys())
+    pairing = PairingTables.from_dicts(best, worst, friendly, enemy, config.neutral_map_weight)
 
     restriction = None
     if config.restrict_attackers:
@@ -30,18 +34,24 @@ def initialise(enemy_team_name, config):
     ctx = context.SolverContext(
         config=config,
         enemy_team_name=enemy_team_name,
+        friendly=friendly,
+        enemy=enemy,
         pairing=pairing,
         restriction=restriction,
         gamestate_dictionaries=game_state_dictionaries.make_gamestate_dictionaries(),
         strategy_dictionaries=strategy_dictionaries.make_strategy_dictionaries(),
         game_solution_caches=games.make_game_solution_caches())
 
-    # Cached JSONs carry solved game values, so caches written under an older
-    # value model would load fine but be silently wrong. Only read them if the
-    # match folder's format marker matches the current engine; the marker is
-    # written after a successful solve+write below.
+    friendly_names = list(friendly.names)
+    enemy_names = list(enemy.names)
+
+    # Cached JSONs carry solved game values keyed by positional integer codes, so
+    # a cache written under an older value model or a different player set/order
+    # would load fine but be silently wrong. Only read caches whose marker matches
+    # the current engine and the current name ordering; the marker is written
+    # after a successful solve+write below.
     caches_are_current = read_write.cache_format_is_current(
-        utilities.get_path(enemy_team_name, read_write.CACHE_FORMAT_FILENAME))
+        utilities.get_path(enemy_team_name, read_write.CACHE_FORMAT_FILENAME), friendly_names, enemy_names)
     if (config.read_gamestates or config.read_strategies) and not caches_are_current:
         print("Ignoring cached JSONs in this match folder (missing or outdated {}): "
             "they were computed under an older value model. Solving fresh."
@@ -71,7 +81,7 @@ def initialise(enemy_team_name, config):
 
     if config.write_gamestates and config.write_strategies:
         read_write.write_cache_format_marker(
-            utilities.get_path(enemy_team_name, read_write.CACHE_FORMAT_FILENAME))
+            utilities.get_path(enemy_team_name, read_write.CACHE_FORMAT_FILENAME), friendly_names, enemy_names)
 
     return ctx
 

@@ -8,9 +8,11 @@ class GameState:
         self.friendly_team_permutation = friendly_team_permutation
         self.enemy_team_permutation = enemy_team_permutation
 
-    def get_key(self, leading_whitespace = ""):
-        return "{}Friends: {}\n{}Enemies: {}".format(leading_whitespace, self.friendly_team_permutation.get_key(), 
-            leading_whitespace, self.enemy_team_permutation.get_key())
+    def get_key(self):
+        # A gamestate key is the pair of packed-integer team-permutation codes
+        # (GitHub issue #13, B2). Hashable and compact; names are resolved only
+        # at the presentation layer.
+        return (self.friendly_team_permutation.get_key(), self.enemy_team_permutation.get_key())
 
     def get_n(self):
         friendly_n = self.friendly_team_permutation.get_n()
@@ -67,9 +69,9 @@ def get_next_gamestate_matrix(ctx, gamestate):
 
 
 def get_gamestate_from_key(key):
-    friendly_team_representation, enemy_team_representation = key.split('\n', 1)
-    friendly_team_permutation = team_permutation.get_team_permutation_from_key(friendly_team_representation)
-    enemy_team_permutation = team_permutation.get_team_permutation_from_key(enemy_team_representation)
+    friendly_code, enemy_code = key
+    friendly_team_permutation = team_permutation.get_team_permutation_from_key(friendly_code)
+    enemy_team_permutation = team_permutation.get_team_permutation_from_key(enemy_code)
     draft_stage = friendly_team_permutation.get_draft_stage()
 
     return GameState(draft_stage, friendly_team_permutation, enemy_team_permutation)

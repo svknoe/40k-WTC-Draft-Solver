@@ -65,13 +65,19 @@ def process_gamestate_dictionary(ctx, read, write, gamestate_dictionary_to_solve
     draft_stage_strategies = None
 
     if read:
-        draft_stage_strategies = read_write.read_dictionary(path)
+        # The strategy dict is keyed by (friendly, enemy) integer-code tuples,
+        # which JSON can't use as object keys, so it is persisted as a list of
+        # [key, strategy] pairs (GitHub issue #13, B2). Tuple the keys on read.
+        serialised = read_write.read_dictionary(path)
+        if serialised is not None:
+            draft_stage_strategies = {tuple(key): strategy for key, strategy in serialised}
 
     if draft_stage_strategies is None:
         draft_stage_strategies = get_strategy_dictionary(ctx, gamestate_dictionary_to_solve, lower_level_strategies)
 
         if write:
-            read_write.write_dictionary(path, draft_stage_strategies)
+            read_write.write_dictionary(
+                path, [[list(key), strategy] for key, strategy in draft_stage_strategies.items()])
 
     ctx.strategy_dictionaries[strategy_dictionary_name].update(draft_stage_strategies)
 

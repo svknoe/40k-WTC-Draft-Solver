@@ -8,11 +8,12 @@ is either a pure function or restored via monkeypatch, and the golden tests
 solve in fresh subprocesses anyway (see conftest.py), so no state can leak
 into them.
 """
+import numpy as np
 import pytest
 
 import drafter.data.initialise_dictionaries as initialise_dictionaries
 import drafter.data.read_write as read_write
-from drafter.common.pairing import PairingTables
+from drafter.common.pairing import PairingTables, Defender
 
 
 # --- parse_rating: legacy tokens ---
@@ -66,26 +67,43 @@ def test_parse_rating_strips_whitespace_before_token_lookup(value, deviation):
 
 @pytest.fixture
 def small_pairing():
-    return PairingTables({"Alice": {"Ork": 6.0}}, {"Alice": {"Ork": 2.0}}, 0.5)
+    return PairingTables(np.array([[6.0]]), np.array([[2.0]]), 0.5)
 
 
 def test_pairing_value_friendly_defender_gets_best_map(small_pairing):
-    assert small_pairing.value("Alice", "Ork", defender="Alice") == 6.0
+    assert small_pairing.value(0, 0, Defender.FRIENDLY) == 6.0
 
 
 def test_pairing_value_enemy_defender_forces_worst_map(small_pairing):
-    assert small_pairing.value("Alice", "Ork", defender="Ork") == 2.0
+    assert small_pairing.value(0, 0, Defender.ENEMY) == 2.0
 
 
 def test_pairing_value_no_defender_uses_neutral_weight():
-    best, worst = {"Alice": {"Ork": 6.0}}, {"Alice": {"Ork": 2.0}}
-    assert PairingTables(best, worst, 0.5).value("Alice", "Ork") == 4.0
-    assert PairingTables(best, worst, 0.25).value("Alice", "Ork") == 3.0
+    best, worst = np.array([[6.0]]), np.array([[2.0]])
+    assert PairingTables(best, worst, 0.5).value(0, 0) == 4.0
+    assert PairingTables(best, worst, 0.25).value(0, 0) == 3.0
 
 
 def test_pairing_value_unknown_defender_raises(small_pairing):
     with pytest.raises(ValueError):
-        small_pairing.value("Alice", "Ork", defender="Bob")
+        small_pairing.value(0, 0, defender="Bob")
+
+
+def test_pairing_tables_from_dicts_maps_names_to_name_sorted_indices():
+    # Enemy CSV order (Ork, Chaos) differs from name-sorted (Chaos, Ork); the
+    # arrays must be laid out in name-sorted index order.
+    from drafter.solver.context import NameIndex
+    friendly = NameIndex.from_names(["Alice", "Bob"])
+    enemy = NameIndex.from_names(["Ork", "Chaos"])
+    best = {"Alice": {"Ork": 6.0, "Chaos": 5.0}, "Bob": {"Ork": 1.0, "Chaos": 2.0}}
+    worst = {"Alice": {"Ork": 3.0, "Chaos": 1.0}, "Bob": {"Ork": 0.0, "Chaos": 1.0}}
+
+    pairing = PairingTables.from_dicts(best, worst, friendly, enemy, 0.5)
+
+    # Chaos is enemy index 0, Ork index 1 (name-sorted); Alice 0, Bob 1.
+    assert pairing.value(0, 1, Defender.FRIENDLY) == 6.0   # Alice vs Ork, best
+    assert pairing.value(0, 0, Defender.FRIENDLY) == 5.0   # Alice vs Chaos, best
+    assert pairing.value(1, 0, Defender.ENEMY) == 1.0      # Bob vs Chaos, worst
 
 
 # --- validate_best_not_below_worst ---

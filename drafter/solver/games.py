@@ -5,6 +5,7 @@ import drafter.common.game_state as game_state
 from drafter.common.game_state import GameState
 from drafter.common.team_permutation import TeamPermutation
 from drafter.common.draft_stage import DraftStage
+from drafter.common.pairing import Defender
 
 STAGES = ("select_defender", "select_attackers", "discard_attacker")
 
@@ -90,10 +91,10 @@ def discard_attacker(ctx, n, selected_attackers_gamestate, select_defender_strat
         return discard_attacker_4(ctx, f_defender, f_attacker_A, f_attacker_B, remaining_friends[0],
             e_defender, e_attacker_A, e_attacker_B, remaining_enemies[0])
 
-    fD_eA = ctx.pairing.value(f_defender, e_attacker_A, f_defender)
-    fD_eB = ctx.pairing.value(f_defender, e_attacker_B, f_defender)
-    fA_eD = ctx.pairing.value(f_attacker_A, e_defender, e_defender)
-    fB_eD = ctx.pairing.value(f_attacker_B, e_defender, e_defender)
+    fD_eA = ctx.pairing.value(f_defender, e_attacker_A, Defender.FRIENDLY)
+    fD_eB = ctx.pairing.value(f_defender, e_attacker_B, Defender.FRIENDLY)
+    fA_eD = ctx.pairing.value(f_attacker_A, e_defender, Defender.ENEMY)
+    fB_eD = ctx.pairing.value(f_attacker_B, e_defender, Defender.ENEMY)
 
     # The child gamestate receives the REFUSED attackers back into the pools
     # (issue #32): in AB, e_B plays the friendly defender and f_A plays the
@@ -114,10 +115,10 @@ def discard_attacker(ctx, n, selected_attackers_gamestate, select_defender_strat
 def discard_attacker_4(ctx, f_defender, f_attacker_A, f_attacker_B, f_not_selected, e_defender,
         e_attacker_A, e_attacker_B, e_not_selected):
 
-    fD_eA = ctx.pairing.value(f_defender, e_attacker_A, f_defender)
-    fD_eB = ctx.pairing.value(f_defender, e_attacker_B, f_defender)
-    fA_eD = ctx.pairing.value(f_attacker_A, e_defender, e_defender)
-    fB_eD = ctx.pairing.value(f_attacker_B, e_defender, e_defender)
+    fD_eA = ctx.pairing.value(f_defender, e_attacker_A, Defender.FRIENDLY)
+    fD_eB = ctx.pairing.value(f_defender, e_attacker_B, Defender.FRIENDLY)
+    fA_eD = ctx.pairing.value(f_attacker_A, e_defender, Defender.ENEMY)
+    fB_eD = ctx.pairing.value(f_attacker_B, e_defender, Defender.ENEMY)
 
     fA_eA = ctx.pairing.value(f_attacker_A, e_attacker_A)
     fA_eB = ctx.pairing.value(f_attacker_A, e_attacker_B)

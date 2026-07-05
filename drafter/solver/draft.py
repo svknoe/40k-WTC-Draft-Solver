@@ -7,11 +7,51 @@ import drafter.common.team_permutation as team_permutation
 from drafter.common.game_state import GameState
 import drafter.common.draft_stage as draft_stage
 from drafter.common.draft_stage import DraftStage
+from drafter.common.pairing import Defender
 import drafter.solver.strategy_dictionaries as strategy_dictionaries
 import drafter.solver.game_state_dictionaries as game_state_dictionaries
 
 keyword_quit = "quit()"
 keyword_back = "back()"
+
+
+# --- presentation helpers: the engine works in integer indices, names live only
+# here (GitHub issue #13, B2) ---
+
+def format_team_permutation(name_index, tp):
+    parts = []
+    if tp.defender is not None:
+        parts.append("{{Defender: {}}}".format(name_index.name(tp.defender)))
+    if tp.attacker_A is not None:
+        parts.append("{{Attacker A: {}}}".format(name_index.name(tp.attacker_A)))
+    if tp.attacker_B is not None:
+        parts.append("{{Attacker B: {}}}".format(name_index.name(tp.attacker_B)))
+    if tp.discarded_attacker is not None:
+        parts.append("{{Discarded attacker: {}}}".format(name_index.name(tp.discarded_attacker)))
+    parts.append("{{Remaining players: {}}}".format(
+        ", ".join(name_index.name(i) for i in tp.remaining_players)))
+    return ", ".join(parts)
+
+
+def format_gamestate(ctx, gamestate, leading_whitespace=""):
+    return "{}Friends: {}\n{}Enemies: {}".format(
+        leading_whitespace, format_team_permutation(ctx.friendly, gamestate.friendly_team_permutation),
+        leading_whitespace, format_team_permutation(ctx.enemy, gamestate.enemy_team_permutation))
+
+
+# A (rounded value, "Friend vs Enemy" label) pairing, with " (D)" on whichever
+# side defended. friendly_index/enemy_index are per-side player indices.
+def pairing_string(ctx, friendly_index, enemy_index, defender=None):
+    value = ctx.pairing.value(friendly_index, enemy_index, defender)
+    friendly_player_string = ctx.friendly.name(friendly_index)
+    enemy_player_string = ctx.enemy.name(enemy_index)
+
+    if defender == Defender.FRIENDLY:
+        friendly_player_string += " (D)"
+    elif defender == Defender.ENEMY:
+        enemy_player_string += " (D)"
+
+    return round(value, 2), "{} vs {}".format(friendly_player_string, enemy_player_string)
 
 
 def play_draft(ctx):
@@ -38,7 +78,7 @@ def play_draft(ctx):
             counter = 1
             for pairing in pairings:
                 print("         " + "[{}] ".format(pairing[0]) + pairing[1])
-        print('\n' + current_gamestate.get_key("      ") + '\n')
+        print('\n' + format_gamestate(ctx, current_gamestate, "      ") + '\n')
         team_strategies = get_team_strategies(ctx, current_gamestate)
         current_gamestate, new_pairings = prompt_next_gamestate(ctx, current_gamestate, team_strategies, next_draft_stage)
 
@@ -142,16 +182,32 @@ def update_dictionaries(ctx, seed_gamestate):
 
 
 def prompt_next_gamestate(ctx, _gamestate, gamestate_team_strategies, next_draft_stage):
-    def print_team_options(team_name, team_permutation, team_strategy, opponent_team_permutation, show_suggestions):
+    def print_team_options(team_name, team_permutation, team_strategy, opponent_team_permutation,
+            show_suggestions, name_index, opponent_name_index):
         print("")
+        # During the discard stage a team chooses among the OPPONENT's attackers,
+        # so its options and strategy entries live in the opponent's index space.
+        choice_name_index = opponent_name_index if next_draft_stage == DraftStage.discard_attacker else name_index
+
         if next_draft_stage == DraftStage.select_defender:
-            options = team_permutation.remaining_players
+            option_indices = team_permutation.remaining_players
         elif next_draft_stage == DraftStage.select_attackers:
-            options = team_permutation.remaining_players
+            option_indices = team_permutation.remaining_players
         elif next_draft_stage == DraftStage.discard_attacker:
-            options = [opponent_team_permutation.attacker_A, opponent_team_permutation.attacker_B]
+            option_indices = [opponent_team_permutation.attacker_A, opponent_team_permutation.attacker_B]
         else:
             raise ValueError("Cannot solve draft stage {}".format(next_draft_stage))
+
+        options = [choice_name_index.name(index) for index in option_indices]
+
+        # Resolve the strategy's integer selections to names so the rest of this
+        # display/sampling logic can stay name-based, as it was before B2.
+        def to_name(selection):
+            if isinstance(selection, list):
+                return [choice_name_index.name(selection[0]), choice_name_index.name(selection[1])]
+            return choice_name_index.name(selection)
+
+        team_strategy = [[to_name(entry[0]), entry[1]] for entry in team_strategy]
 
         options_string = utilities.list_to_string(options)
 
@@ -161,7 +217,8 @@ def prompt_next_gamestate(ctx, _gamestate, gamestate_team_strategies, next_draft
             options = ["{} & {}".format(option[0], option[1]) for option in option_combinations]
 
         if ctx.config.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
-            print("   {} options: {} vs\n    - {}\n".format(team_name, team_permutation.defender, options_string))
+            print("   {} options: {} vs\n    - {}\n".format(
+                team_name, name_index.name(team_permutation.defender), options_string))
         else:
             print("   {} options:\n    - {}\n".format(team_name, options_string))
 
@@ -206,10 +263,12 @@ def prompt_next_gamestate(ctx, _gamestate, gamestate_team_strategies, next_draft
 
         if ctx.config.invert_discard_attackers:
             if next_draft_stage == DraftStage.discard_attacker:
-                if suggested_selection == opponent_team_permutation.attacker_A:
-                    suggested_selection = opponent_team_permutation.attacker_B
-                elif suggested_selection == opponent_team_permutation.attacker_B:
-                    suggested_selection = opponent_team_permutation.attacker_A
+                attacker_A_name = choice_name_index.name(opponent_team_permutation.attacker_A)
+                attacker_B_name = choice_name_index.name(opponent_team_permutation.attacker_B)
+                if suggested_selection == attacker_A_name:
+                    suggested_selection = attacker_B_name
+                elif suggested_selection == attacker_B_name:
+                    suggested_selection = attacker_A_name
 
         if (show_suggestions):
             print("\n    --- Suggested {} selection: {} ---\n".format(team_name, suggested_selection))
@@ -263,39 +322,45 @@ def prompt_next_gamestate(ctx, _gamestate, gamestate_team_strategies, next_draft
         pairings = []
 
         if next_gamestate_draft_stage == DraftStage.select_defender:
-            next_friendly_team_permutation.select_defender(friendly_team_selection)
-            next_enemy_team_permutation.select_defender(enemy_team_selection)
+            next_friendly_team_permutation.select_defender(ctx.friendly.index(friendly_team_selection))
+            next_enemy_team_permutation.select_defender(ctx.enemy.index(enemy_team_selection))
 
         elif next_gamestate_draft_stage == DraftStage.select_attackers:
             f_attacker_A, f_attacker_B = friendly_team_selection.split(" & ")
-            next_friendly_team_permutation.select_attackers(f_attacker_A, f_attacker_B)
+            next_friendly_team_permutation.select_attackers(
+                ctx.friendly.index(f_attacker_A), ctx.friendly.index(f_attacker_B))
 
             e_attacker_A, e_attacker_B = enemy_team_selection.split(" & ")
-            next_enemy_team_permutation.select_attackers(e_attacker_A, e_attacker_B)
+            next_enemy_team_permutation.select_attackers(
+                ctx.enemy.index(e_attacker_A), ctx.enemy.index(e_attacker_B))
 
         elif next_gamestate_draft_stage == DraftStage.discard_attacker:
-            next_friendly_team_permutation.select_discarded_attacker(enemy_team_selection)
+            # Each team refuses one of the OPPONENT's attackers, so the friendly
+            # selection is an enemy-space name and vice versa. The attacker a team
+            # discards from its own pool is the one the opponent refused.
+            f_discarded_attacker = ctx.friendly.index(enemy_team_selection)
+            e_discarded_attacker = ctx.enemy.index(friendly_team_selection)
+
+            next_friendly_team_permutation.select_discarded_attacker(f_discarded_attacker)
             next_friendly_team_permutation = team_permutation.get_none_team_permutation(next_friendly_team_permutation)
 
-            next_enemy_team_permutation.select_discarded_attacker(friendly_team_selection)
+            next_enemy_team_permutation.select_discarded_attacker(e_discarded_attacker)
             next_enemy_team_permutation = team_permutation.get_none_team_permutation(next_enemy_team_permutation)
 
             f_defender = friendly_team_permutation.defender
-            f_discarded_attacker = enemy_team_selection
             f_nondiscarded_attacker = friendly_team_permutation.get_nondiscarded_attacker(f_discarded_attacker)
             f_remaining_players = friendly_team_permutation.remaining_players
 
             e_defender = enemy_team_permutation.defender
-            e_discarded_attacker = friendly_team_selection
             e_nondiscarded_attacker = enemy_team_permutation.get_nondiscarded_attacker(e_discarded_attacker)
             e_remaining_players = enemy_team_permutation.remaining_players
 
-            pairings.append(ctx.pairing.pairing_string(f_defender, e_nondiscarded_attacker, f_defender))
-            pairings.append(ctx.pairing.pairing_string(f_nondiscarded_attacker, e_defender, e_defender))
+            pairings.append(pairing_string(ctx, f_defender, e_nondiscarded_attacker, Defender.FRIENDLY))
+            pairings.append(pairing_string(ctx, f_nondiscarded_attacker, e_defender, Defender.ENEMY))
 
             if len(f_remaining_players) == 1:
-                pairings.append(ctx.pairing.pairing_string(f_discarded_attacker, e_discarded_attacker))
-                pairings.append(ctx.pairing.pairing_string(f_remaining_players[0], e_remaining_players[0]))
+                pairings.append(pairing_string(ctx, f_discarded_attacker, e_discarded_attacker))
+                pairings.append(pairing_string(ctx, f_remaining_players[0], e_remaining_players[0]))
 
             next_gamestate_draft_stage = draft_stage.get_next_draft_stage(next_gamestate_draft_stage)
 
@@ -313,10 +378,12 @@ def prompt_next_gamestate(ctx, _gamestate, gamestate_team_strategies, next_draft
     enemy_team_strategy = gamestate_team_strategies[1]
 
     friendly_team_options, suggested_friendly_selection = print_team_options(ctx.config.friendly_team_name,
-        friendly_team_permutation, friendly_team_strategy, enemy_team_permutation, ctx.config.show_friendly_strategy_suggestions)
+        friendly_team_permutation, friendly_team_strategy, enemy_team_permutation,
+        ctx.config.show_friendly_strategy_suggestions, ctx.friendly, ctx.enemy)
 
     enemy_team_options, suggested_enemy_selection = print_team_options(ctx.enemy_team_name,
-        enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, ctx.config.show_enemy_strategy_suggestions)
+        enemy_team_permutation, enemy_team_strategy, friendly_team_permutation,
+        ctx.config.show_enemy_strategy_suggestions, ctx.enemy, ctx.friendly)
 
     friendly_team_selection = None
     enemy_team_selection = None

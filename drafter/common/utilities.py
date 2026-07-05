@@ -4,21 +4,6 @@ import numpy as np  # 3rd party packages
 from scipy.optimize import linprog
 
 
-def get_transposed_pairing_dictionary(pairing_dictionary):
-    friends = [friend for friend in pairing_dictionary]
-    enemies = [enemy for enemy in pairing_dictionary[friends[0]]]
-
-    transposed_pairing_dictionary = {}
-
-    for enemy in enemies:
-        row = {}
-        for friend in friends:
-            row[friend] = pairing_dictionary[friend][enemy]
-        transposed_pairing_dictionary[enemy] = row
-
-    return transposed_pairing_dictionary
-
-
 # Every game in the draft tree is zero-sum: the row (friendly) player maximises
 # `game_array`, the column (enemy) player minimises it. Solve it directly rather
 # than by nashpy's general-bimatrix support enumeration (issue #12 / PLAN.md B1):
@@ -270,17 +255,3 @@ def get_arbitrary_dictionary_entry(dictionary):
         return arbitrary_dictionary_entry
     else:
         return None
-
-
-def get_value_from_input_dictionary(input_dictionary, friendly_player, enemy_player):
-    if friendly_player in input_dictionary:
-        row = input_dictionary[friendly_player]
-    else:
-        raise ValueError("Unknown player: {}".format(friendly_player))
-
-    if enemy_player in row:
-        value = row[enemy_player]
-    else:
-        raise ValueError("Unknown player: {}".format(enemy_player))
-
-    return value

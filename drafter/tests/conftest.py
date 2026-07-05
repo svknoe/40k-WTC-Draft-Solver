@@ -61,8 +61,9 @@ def strategy_probabilities(strategy_entries):
 
 def support_set(strategy_entries, threshold=1e-3):
     """Names/pairs with non-negligible probability, order-independent (as a
-    frozenset of tuples) -- stable even if nashpy returns strategy vectors
-    with a different tie-break order across platforms/runs."""
+    frozenset of tuples) -- stable even if the solver returns strategy vectors
+    with a different tie-break order or picks a different (equally valid)
+    equilibrium across platforms/runs."""
     names = []
     for entry in strategy_entries:
         name = entry[0]

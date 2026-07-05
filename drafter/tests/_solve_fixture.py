@@ -68,8 +68,7 @@ result = {
 }
 
 # Isolate the JSON payload with sentinels so any incidental prints from the
-# solver (progress percentages, nashpy warnings routed to stdout, etc.) can't
-# be mistaken for it.
+# solver (progress percentages, etc.) can't be mistaken for it.
 print("GOLDEN_RESULT_JSON_BEGIN")
 print(json.dumps(result))
 print("GOLDEN_RESULT_JSON_END")

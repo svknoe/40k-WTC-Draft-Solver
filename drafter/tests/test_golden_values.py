@@ -23,9 +23,9 @@ be run explicitly:
 
     .venv\\Scripts\\python.exe -m pytest -m slow
 
-nashpy prints "degenerate game" RuntimeWarnings to stderr during solving on
-these fixtures -- expected given the discrete rating scale (see CLAUDE.md),
-and harmless. They are not asserted on either way.
+The direct zero-sum solver (issue #12: saddle / 2x2 closed form / one HiGHS LP)
+is deterministic and silent -- unlike nashpy, it emits no "degenerate game"
+RuntimeWarnings -- so a clean stderr is one of that issue's acceptance criteria.
 """
 import pytest
 
@@ -39,11 +39,13 @@ from drafter.tests.conftest import solve_fixture, strategy_probabilities, suppor
 # (scripts/compute_golden_value.py Smoke 4) and confirming bit-identical
 # results each time, and additionally cross-checked against an independent
 # brute-force implementation (explicit 4-player draft enumeration, zero-sum
-# games solved by scipy linprog instead of nashpy) which reproduced the value
-# to 1e-15 and the same friendly strategy; see the issue #9 PR for the run
-# outputs.
-# The value is a plain float; strategy probabilities are nashpy's own
-# `round(..., 3)` output (see drafter/common/utilities.py get_game_strategy),
+# games solved by scipy linprog) which reproduced the value to 1e-15 and the
+# same friendly strategy; see the issue #9 PR for the run outputs. The engine
+# now also solves via LP/closed form (issue #12), and this test still passes
+# bit-for-bit -- an equilibrium value is unique, so replacing the solver leaves
+# it unchanged.
+# The value is a plain float; strategy probabilities are the solver's output
+# rounded to 3 decimals (see drafter/common/utilities.py get_game_strategy),
 # so 1e-9 tolerance is appropriate there too.
 #
 # Deviation-scale correction (issue #30): value deliberately UNCHANGED. The
@@ -125,12 +127,12 @@ def test_six_player_top_level_value():
 #
 # Only the value is pinned exactly. The top-level strategy *support sets*
 # (which players get non-negligible probability) are pinned as sets, but the
-# exact probabilities are not -- support enumeration over an 8-player
-# top-level game can return different (but equally valid) equilibria/orderings
-# depending on nashpy's internal enumeration order, while the *value* of a
-# zero-sum game's equilibria is unique and stable. The support sets below have
-# been identical across independent fresh solves (2026-07, post-#32 re-pin:
-# both top-level strategies are pure).
+# exact probabilities are not -- a zero-sum game can have several equally-valid
+# equilibria, and which one a solver returns (nashpy's enumeration order, or the
+# vertex an LP lands on) is not part of the contract, while the *value* of those
+# equilibria is unique and stable. The support sets below have been identical
+# across independent fresh solves (2026-07, post-#32 re-pin: both top-level
+# strategies are pure).
 
 SCOTLAND_K = 3
 SCOTLAND_EXPECTED_VALUE = 5.875946490218083

@@ -32,7 +32,7 @@ drafter/
     team_permutation.py    one team's partial draft state; enumeration of successor states;
                            the k-restriction heuristic (restrict to k best attackers)
     game_state.py          GameState = (draft_stage, friendly TeamPermutation, enemy TeamPermutation)
-    utilities.py           nashpy game solving, pairing-value lookup, key/dictionary naming
+    utilities.py           direct zero-sum game solving (2x2 closed form + LP), pairing-value lookup, key/dictionary naming
   data/
     settings.py            all knobs (team name, k-restriction, read/write caches)
     match_info.py          module-level globals: enemy team name + input matrices
@@ -61,9 +61,15 @@ drafter/
 2. **Strategy solving** (`strategy_dictionaries`): iterate stages deepest
    first (4-player select_attackers up to 8-player none). For each gamestate
    build the payoff matrix whose entries are the already-solved values of
-   child states (`games.py`), then solve that matrix game with **nashpy**
-   (support enumeration → vertex enumeration → Lemke-Howson fallbacks, cached
-   by matrix hash). The 4-player discard endgame is closed-form.
+   child states (`games.py`), then solve that matrix game **directly as the
+   zero-sum game it is** (`utilities.get_game_solution`, PLAN.md B1): a pure
+   saddle point when one exists, otherwise a 2x2 closed form, otherwise one
+   `scipy.optimize.linprog` (HiGHS) call whose dual yields the opposing
+   strategy. Deterministic, no degenerate-game warnings. Solutions are cached
+   by matrix hash — both bit-identical (per-stage caches in `games.py`) and
+   translation-normalised (`utilities.normalised_game_solution_cache`, since
+   zero-sum strategies/value are invariant under adding a constant). The
+   4-player discard endgame is closed-form.
 3. **Draft loop** (`draft.py`): walks the solved tree interactively. If the
    user makes a move outside the enumerated tree (possible with k-restriction),
    the tree is extended and re-solved on the fly.
@@ -76,12 +82,16 @@ and last-players games).
 
 **Known scale/pain points** (measured 2026-07, Ryzen 9800X3D, k as noted):
 
-- Fresh 8-player solve is the "one hour, 16 GB RAM" problem the user reports
-  (historical, k=4). The cost is dominated by the ~10^5–10^6 4-player-stage
-  gamestates, each solved by nashpy support enumeration; the discrete rating
-  scale makes most games degenerate, triggering slow fallbacks.
-- All games here are **zero-sum**, so each could be solved by one small LP
-  instead of enumeration — the main known speed lever (see PLAN.md).
+- Fresh 8-player solve was historically the "one hour, 16 GB RAM" problem
+  (k=4). The cost is dominated by the ~10^5–10^6 4-player-stage gamestates.
+- **B1 (done, issue #12):** every game is zero-sum, now solved directly
+  (saddle / 2x2 closed form / one HiGHS LP) instead of by nashpy's
+  general-bimatrix support enumeration and its degenerate-game fallback chain.
+  This cut the Scotland k=3 strategy phase from ~275 s to ~29 s (≈9×) with
+  bit-stable golden values and no warnings. The remaining strategy-phase cost
+  is now split between the ~35k genuinely-mixed LP solves (scipy's per-call
+  wrapper overhead dominates for these tiny games) and the string-keyed
+  gamestate iteration — the latter is what B2 (integer state encoding) targets.
 - Cached JSON for one 8-player opponent ≈ 630 MB (strategy dicts dominate);
   loading that cache takes ~19 s. String keys are a large share of the RAM.
 - `restricted_attackers_count` (k) in settings.py is the only current knob:
@@ -154,8 +164,10 @@ Notes for agents:
   same explicit call.
 - Settings are plain module globals in `drafter/data/settings.py`; there are
   no CLI flags. Monkeypatch settings before `initialise()` in scripts.
-- nashpy prints "degenerate game" RuntimeWarnings during solving — harmless,
-  the code falls back to other algorithms.
+- The zero-sum solver is deterministic and silent: no RuntimeWarnings during
+  solving (nashpy's "degenerate game" warnings are gone with nashpy, issue
+  #12). scipy's `linprog` is a required dependency; nashpy and networkx are
+  no longer dependencies.
 
 ## Conventions & state
 

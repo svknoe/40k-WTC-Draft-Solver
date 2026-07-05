@@ -1,0 +1,111 @@
+/* Dark theme tokens + base styles, palette lifted from docs/design-mockup.html
+ * (the adopted UX source of truth). Human-facing surfaces only; the engine
+ * speaks the internal scale. */
+:root {
+  color-scheme: dark;
+
+  --bg: #101418;
+  --bg-2: #14181d;
+  --card: #161b20;
+  --card-2: #1a2028;
+  --border: #ffffff14;
+  --border-strong: #3a424c;
+
+  --text: #ffffff;
+  --text-1: #dde2e8;
+  --text-2: #aeb6c0;
+  --text-3: #8b94a0;
+  --text-4: #6b7480;
+
+  --blue: #4e9af1;
+  --cyan: #3fb8c9;
+  --green: #45c48f;
+  --amber: #e0914b;
+  --red: #e0573e;
+  --red-soft: #ff8a80;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1, h2, h3 { color: var(--text); font-weight: 600; line-height: 1.25; }
+
+button {
+  font: inherit;
+  cursor: pointer;
+  color: var(--text-1);
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+  transition: border-color 0.12s, background 0.12s;
+}
+button:hover:not(:disabled) { border-color: var(--blue); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.primary { background: var(--blue); color: #06101c; border-color: transparent; font-weight: 600; }
+button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+input, select, textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+
+.num, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* --- app shell --- */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+.app-header {
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+  position: sticky; top: 0; z-index: 10;
+}
+.brand { display: flex; align-items: baseline; gap: 0.5rem; }
+.brand-mark { color: var(--blue); font-weight: 700; letter-spacing: 0.04em; }
+.brand-name { color: var(--text); font-weight: 600; }
+
+nav.screens { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.tab { background: transparent; border-color: transparent; color: var(--text-3); padding: 0.35rem 0.7rem; }
+.tab:hover:not(:disabled) { color: var(--text-1); border-color: transparent; background: var(--card); }
+.tab.active { color: var(--text); background: var(--card); border-color: var(--border-strong); }
+
+.app-main { flex: 1; width: 100%; max-width: 72rem; margin: 0 auto; padding: 1.25rem; }
+
+.app-footer {
+  border-top: 1px solid var(--border);
+  padding: 0.75rem 1.25rem;
+  color: var(--text-4);
+  font-size: 0.85rem;
+}
+
+.placeholder { color: var(--text-3); padding: 2rem 0; }
+
+@media (max-width: 640px) {
+  .app-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .app-main { padding: 0.75rem; }
+}

@@ -3,11 +3,11 @@ import time  # standard libraries
 import drafter.solver.draft as draft  # local source
 
 
-def play():
+def play(ctx):
     completed_drafts = 0
 
     while True:
-        if draft.play_draft():
+        if draft.play_draft(ctx):
             completed_drafts += 1
         time.sleep(1)
         draft_again = prompt_draft_again()

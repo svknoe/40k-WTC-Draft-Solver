@@ -7,8 +7,6 @@ import drafter.common.team_permutation as team_permutation
 from drafter.common.game_state import GameState
 import drafter.common.draft_stage as draft_stage
 from drafter.common.draft_stage import DraftStage
-import drafter.data.settings as settings
-import drafter.data.match_info as match_info
 import drafter.solver.strategy_dictionaries as strategy_dictionaries
 import drafter.solver.game_state_dictionaries as game_state_dictionaries
 
@@ -16,10 +14,10 @@ keyword_quit = "quit()"
 keyword_back = "back()"
 
 
-def play_draft():
-    print("\nPlaying draft against {}!\n".format(match_info.enemy_team_name))
+def play_draft(ctx):
+    print("\nPlaying draft against {}!\n".format(ctx.enemy_team_name))
     pairings = []
-    current_gamestate = game_state_dictionaries.get_initial_game_state()
+    current_gamestate = game_state_dictionaries.get_initial_game_state(ctx)
     gamestate_tree = [current_gamestate]
     step_pairing_counts = []
     draft_finished = False
@@ -28,7 +26,7 @@ def play_draft():
         next_draft_stage = draft_stage.get_next_draft_stage(current_gamestate.draft_stage)
         
         display_draft_stage = next_draft_stage
-        if (settings.invert_discard_attackers and display_draft_stage == DraftStage.discard_attacker):
+        if (ctx.config.invert_discard_attackers and display_draft_stage == DraftStage.discard_attacker):
             display_draft_stage = "select enemy attacker"
 
         n = current_gamestate.get_n()
@@ -41,8 +39,8 @@ def play_draft():
             for pairing in pairings:
                 print("         " + "[{}] ".format(pairing[0]) + pairing[1])
         print('\n' + current_gamestate.get_key("      ") + '\n')
-        team_strategies = get_team_strategies(current_gamestate)
-        current_gamestate, new_pairings = prompt_next_gamestate(current_gamestate, team_strategies, next_draft_stage)
+        team_strategies = get_team_strategies(ctx, current_gamestate)
+        current_gamestate, new_pairings = prompt_next_gamestate(ctx, current_gamestate, team_strategies, next_draft_stage)
 
         if current_gamestate == keyword_quit:
             break
@@ -64,18 +62,18 @@ def play_draft():
             draft_finished = True
             break
 
-        update_dictionaries(current_gamestate)
+        update_dictionaries(ctx, current_gamestate)
 
     if draft_finished:
         initial_n = gamestate_tree[0].get_n()
-        print("\nDraft vs. {} finished!\n".format(match_info.enemy_team_name))
+        print("\nDraft vs. {} finished!\n".format(ctx.enemy_team_name))
         print("Pairings:")
         for new_pairings in pairings:
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))
         result_sum = sum([pairing[0] for pairing in pairings])
         print("\nTotal: {}".format(round(result_sum, 2)))
         initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(initial_n, DraftStage.select_defender)
-        initial_strategy_dictionary = strategy_dictionaries.dictionaries[initial_strategy_dictionary_name]
+        initial_strategy_dictionary = ctx.strategy_dictionaries[initial_strategy_dictionary_name]
         initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dictionary)
         expected_result = initial_strategy[2]
         print("Expected result: {}".format(round(expected_result, 2)))
@@ -83,9 +81,9 @@ def play_draft():
         print("Difference: {}".format(round(difference, 2)))
 
         if difference > 0:
-            winner = settings.friendly_team_name
+            winner = ctx.config.friendly_team_name
         else:
-            winner = match_info.enemy_team_name
+            winner = ctx.enemy_team_name
 
         if abs(difference) <= 1:
             winner_message = "Draw"
@@ -103,24 +101,24 @@ def play_draft():
     return draft_finished
 
 
-def get_team_strategies(_gamestate):
+def get_team_strategies(ctx, _gamestate):
     strategy_dictionary_name = _gamestate.get_strategy_dictionary_name()
-    strategy_dictionary = strategy_dictionaries.dictionaries[strategy_dictionary_name]
+    strategy_dictionary = ctx.strategy_dictionaries[strategy_dictionary_name]
     key = _gamestate.get_key()
     team_strategies = strategy_dictionary[key]
     return team_strategies
 
 
-def update_dictionaries(seed_gamestate):
+def update_dictionaries(ctx, seed_gamestate):
     seed_gamestate_dictionary_name = seed_gamestate.get_gamestate_dictionary_name()
-    gamestate_dictionary = game_state_dictionaries.dictionaries[seed_gamestate_dictionary_name]
+    gamestate_dictionary = ctx.gamestate_dictionaries[seed_gamestate_dictionary_name]
     seed_gamestate_key = seed_gamestate.get_key()
 
     if seed_gamestate_key not in gamestate_dictionary:
         print("\nUnexpected selection made. Extending game dictionaries...")
 
         added_gamestate_dictionaries = game_state_dictionaries.perform_gamestate_tree_extension(
-            {seed_gamestate_key: seed_gamestate}, [])
+            ctx, {seed_gamestate_key: seed_gamestate}, [])
 
         gamestate_dictionaries_to_process = []
         for i in range(0, len(added_gamestate_dictionaries)):
@@ -136,14 +134,14 @@ def update_dictionaries(seed_gamestate):
         if len(gamestate_dictionaries_to_process) > 0:
             first_gamestate_dictionary = gamestate_dictionaries_to_process[0]
             first_arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(first_gamestate_dictionary)
-            lower_level_strategies = strategy_dictionaries.get_dictionary_for_gamestate(first_arbitrary_gamestate)
+            lower_level_strategies = strategy_dictionaries.get_dictionary_for_gamestate(ctx, first_arbitrary_gamestate)
 
             for gamestate_dictionary in gamestate_dictionaries_to_process:
                 lower_level_strategies = strategy_dictionaries.process_gamestate_dictionary(
-                    False, False, gamestate_dictionary, lower_level_strategies)
+                    ctx, False, False, gamestate_dictionary, lower_level_strategies)
 
 
-def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stage):
+def prompt_next_gamestate(ctx, _gamestate, gamestate_team_strategies, next_draft_stage):
     def print_team_options(team_name, team_permutation, team_strategy, opponent_team_permutation, show_suggestions):
         print("")
         if next_draft_stage == DraftStage.select_defender:
@@ -162,7 +160,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
             option_combinations = itertools.combinations(options, 2)
             options = ["{} & {}".format(option[0], option[1]) for option in option_combinations]
 
-        if settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
+        if ctx.config.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
             print("   {} options: {} vs\n    - {}\n".format(team_name, team_permutation.defender, options_string))
         else:
             print("   {} options:\n    - {}\n".format(team_name, options_string))
@@ -181,7 +179,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                 selection_player = selection_player[0] + " & " + selection_player[1]
 
             if (show_suggestions):
-                if settings.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
+                if ctx.config.invert_discard_attackers and next_draft_stage == DraftStage.discard_attacker:
                     if selection_player == team_strategy[0][0]:
                         inverted_selection_player = team_strategy[1][0]
                     else:
@@ -206,7 +204,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
                 else:
                     roll -= selection[1]
 
-        if settings.invert_discard_attackers:
+        if ctx.config.invert_discard_attackers:
             if next_draft_stage == DraftStage.discard_attacker:
                 if suggested_selection == opponent_team_permutation.attacker_A:
                     suggested_selection = opponent_team_permutation.attacker_B
@@ -249,7 +247,7 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
 
         print(" - Selection made: {}".format(user_selection))
 
-        if settings.invert_discard_attackers:
+        if ctx.config.invert_discard_attackers:
             if next_draft_stage == DraftStage.discard_attacker:
                 if user_selection == team_options[0]:
                     user_selection = team_options[1]
@@ -292,12 +290,12 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
             e_nondiscarded_attacker = enemy_team_permutation.get_nondiscarded_attacker(e_discarded_attacker)
             e_remaining_players = enemy_team_permutation.remaining_players
 
-            pairings.append(utilities.get_pairing_string(f_defender, e_nondiscarded_attacker, f_defender))
-            pairings.append(utilities.get_pairing_string(f_nondiscarded_attacker, e_defender, e_defender))
+            pairings.append(ctx.pairing.pairing_string(f_defender, e_nondiscarded_attacker, f_defender))
+            pairings.append(ctx.pairing.pairing_string(f_nondiscarded_attacker, e_defender, e_defender))
 
             if len(f_remaining_players) == 1:
-                pairings.append(utilities.get_pairing_string(f_discarded_attacker, e_discarded_attacker))
-                pairings.append(utilities.get_pairing_string(f_remaining_players[0], e_remaining_players[0]))
+                pairings.append(ctx.pairing.pairing_string(f_discarded_attacker, e_discarded_attacker))
+                pairings.append(ctx.pairing.pairing_string(f_remaining_players[0], e_remaining_players[0]))
 
             next_gamestate_draft_stage = draft_stage.get_next_draft_stage(next_gamestate_draft_stage)
 
@@ -314,22 +312,22 @@ def prompt_next_gamestate(_gamestate, gamestate_team_strategies, next_draft_stag
     friendly_team_strategy = gamestate_team_strategies[0]
     enemy_team_strategy = gamestate_team_strategies[1]
 
-    friendly_team_options, suggested_friendly_selection = print_team_options(settings.friendly_team_name,
-        friendly_team_permutation, friendly_team_strategy, enemy_team_permutation, settings.show_friendly_strategy_suggestions)
+    friendly_team_options, suggested_friendly_selection = print_team_options(ctx.config.friendly_team_name,
+        friendly_team_permutation, friendly_team_strategy, enemy_team_permutation, ctx.config.show_friendly_strategy_suggestions)
 
-    enemy_team_options, suggested_enemy_selection = print_team_options(match_info.enemy_team_name,
-        enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, settings.show_enemy_strategy_suggestions)
+    enemy_team_options, suggested_enemy_selection = print_team_options(ctx.enemy_team_name,
+        enemy_team_permutation, enemy_team_strategy, friendly_team_permutation, ctx.config.show_enemy_strategy_suggestions)
 
     friendly_team_selection = None
     enemy_team_selection = None
 
     while friendly_team_selection is None or enemy_team_selection is None:
-        friendly_team_selection = prompt_team_selection(settings.friendly_team_name, friendly_team_options, suggested_friendly_selection)
+        friendly_team_selection = prompt_team_selection(ctx.config.friendly_team_name, friendly_team_options, suggested_friendly_selection)
 
         if friendly_team_selection is None or friendly_team_selection == keyword_quit or friendly_team_selection == keyword_back:
             return friendly_team_selection, []
 
-        enemy_team_selection = prompt_team_selection(match_info.enemy_team_name, enemy_team_options, suggested_enemy_selection)
+        enemy_team_selection = prompt_team_selection(ctx.enemy_team_name, enemy_team_options, suggested_enemy_selection)
 
         if enemy_team_selection is None or enemy_team_selection == keyword_quit:
             return enemy_team_selection, []

@@ -20,21 +20,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import drafter.data.match_info as match_info
-import drafter.data.settings as settings
+import drafter.solver.context as context
 
-match_info.enemy_team_name = sys.argv[1] if len(sys.argv) > 1 else "Smoke"
-settings.read_gamestates = False
-settings.write_gamestates = False
-settings.read_strategies = False
-settings.write_strategies = False
+enemy_team_name = sys.argv[1] if len(sys.argv) > 1 else "Smoke"
+config = context.SolverConfig(
+    read_gamestates=False,
+    write_gamestates=False,
+    read_strategies=False,
+    write_strategies=False)
 random.seed(0)
 
 import drafter.data.initialise_dictionaries as initialise_dictionaries
 import drafter.solver.draft_loop as draft_loop
 
-initialise_dictionaries.initialise()
-completed_drafts = draft_loop.play()
+ctx = initialise_dictionaries.initialise(enemy_team_name, config)
+completed_drafts = draft_loop.play(ctx)
 
 if not completed_drafts:
     print("SMOKE TEST FAILED: no draft ran to completion")

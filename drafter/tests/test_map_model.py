@@ -10,11 +10,9 @@ into them.
 """
 import pytest
 
-import drafter.common.utilities as utilities
 import drafter.data.initialise_dictionaries as initialise_dictionaries
-import drafter.data.match_info as match_info
 import drafter.data.read_write as read_write
-import drafter.data.settings as settings
+from drafter.common.pairing import PairingTables
 
 
 # --- parse_rating: legacy tokens ---
@@ -64,54 +62,49 @@ def test_parse_rating_strips_whitespace_before_token_lookup(value, deviation):
     assert initialise_dictionaries.parse_rating(value) == deviation
 
 
-# --- get_pairing_value: defender picks the map ---
+# --- PairingTables.value: defender picks the map ---
 
 @pytest.fixture
-def small_match(monkeypatch):
-    monkeypatch.setattr(match_info, "pairing_dictionary_best", {"Alice": {"Ork": 6.0}})
-    monkeypatch.setattr(match_info, "pairing_dictionary_worst", {"Alice": {"Ork": 2.0}})
+def small_pairing():
+    return PairingTables({"Alice": {"Ork": 6.0}}, {"Alice": {"Ork": 2.0}}, 0.5)
 
 
-def test_pairing_value_friendly_defender_gets_best_map(small_match):
-    assert utilities.get_pairing_value("Alice", "Ork", defender="Alice") == 6.0
+def test_pairing_value_friendly_defender_gets_best_map(small_pairing):
+    assert small_pairing.value("Alice", "Ork", defender="Alice") == 6.0
 
 
-def test_pairing_value_enemy_defender_forces_worst_map(small_match):
-    assert utilities.get_pairing_value("Alice", "Ork", defender="Ork") == 2.0
+def test_pairing_value_enemy_defender_forces_worst_map(small_pairing):
+    assert small_pairing.value("Alice", "Ork", defender="Ork") == 2.0
 
 
-def test_pairing_value_no_defender_uses_neutral_weight(small_match, monkeypatch):
-    monkeypatch.setattr(settings, "neutral_map_weight", 0.5)
-    assert utilities.get_pairing_value("Alice", "Ork") == 4.0
-
-    monkeypatch.setattr(settings, "neutral_map_weight", 0.25)
-    assert utilities.get_pairing_value("Alice", "Ork") == 3.0
+def test_pairing_value_no_defender_uses_neutral_weight():
+    best, worst = {"Alice": {"Ork": 6.0}}, {"Alice": {"Ork": 2.0}}
+    assert PairingTables(best, worst, 0.5).value("Alice", "Ork") == 4.0
+    assert PairingTables(best, worst, 0.25).value("Alice", "Ork") == 3.0
 
 
-def test_pairing_value_unknown_defender_raises(small_match):
+def test_pairing_value_unknown_defender_raises(small_pairing):
     with pytest.raises(ValueError):
-        utilities.get_pairing_value("Alice", "Ork", defender="Bob")
+        small_pairing.value("Alice", "Ork", defender="Bob")
 
 
 # --- validate_best_not_below_worst ---
 
-def test_best_below_worst_raises(monkeypatch):
-    monkeypatch.setattr(match_info, "pairing_dictionary_best", {"Alice": {"Ork": 2.0}})
-    monkeypatch.setattr(match_info, "pairing_dictionary_worst", {"Alice": {"Ork": 6.0}})
+def test_best_below_worst_raises():
     with pytest.raises(ValueError, match="Best-map value"):
-        initialise_dictionaries.validate_best_not_below_worst()
+        initialise_dictionaries.validate_best_not_below_worst(
+            {"Alice": {"Ork": 2.0}}, {"Alice": {"Ork": 6.0}})
 
 
-def test_missing_worst_entry_raises(monkeypatch):
-    monkeypatch.setattr(match_info, "pairing_dictionary_best", {"Alice": {"Ork": 2.0}})
-    monkeypatch.setattr(match_info, "pairing_dictionary_worst", {"Alice": {}})
+def test_missing_worst_entry_raises():
     with pytest.raises(ValueError, match="missing"):
-        initialise_dictionaries.validate_best_not_below_worst()
+        initialise_dictionaries.validate_best_not_below_worst(
+            {"Alice": {"Ork": 2.0}}, {"Alice": {}})
 
 
 # --- reading a CSV that mixes tokens and 0-20 scores ---
 
-def test_input_dictionary_accepts_mixed_tokens_and_scores(monkeypatch, tmp_path):
+def test_input_dictionary_accepts_mixed_tokens_and_scores(tmp_path):
     csv_path = tmp_path / "pairing_matrix_best.csv"
     csv_path.write_text(
         "Alice,Bob,Carol,Dave\n"
@@ -120,10 +113,8 @@ def test_input_dictionary_accepts_mixed_tokens_and_scores(monkeypatch, tmp_path)
         "-,10,+,12\n"
         "0,--,20,4\n"
         "+,0.0,17,-\n", encoding="utf-8")
-    monkeypatch.setattr(utilities, "get_path", lambda filename: csv_path)
 
-    result = {}
-    initialise_dictionaries.initialise_input_dictionary(result, "pairing_matrix_best.csv")
+    result = initialise_dictionaries.read_pairing_matrix(csv_path, require_unique_names=True)
 
     assert result == {
         "Alice": {"Ork": 8, "Eldar": 5.0, "Chaos": 0, "Tau": -1.5},

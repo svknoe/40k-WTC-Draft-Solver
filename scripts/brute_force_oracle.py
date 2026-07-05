@@ -11,7 +11,7 @@ golden values whenever the value model or the solver changes (issues #9, #30,
 Model (11th edition, PLAN.md workstream C):
   - defender picks the map: friendly defender -> best-map value, enemy
     defender -> worst-map value, no defender -> midpoint of best and worst
-    (settings.neutral_map_weight default 0.5 is hard-coded here)
+    (the neutral-map weight, default 0.5, is hard-coded here)
   - ratings normalised as internal = score - 10 (deviation scale), tokens
     --/-/0/+/++ = -8/-4/0/+4/+8
   - draft: both teams simultaneously pick a defender, then two attackers
@@ -22,7 +22,7 @@ Model (11th edition, PLAN.md workstream C):
     closed: refused vs refused and last vs last play each other.
 
 The oracle is exhaustive (no k-restriction), so compare it against the
-engine with settings.restrict_attackers = False. 8-player folders are
+engine run with SolverConfig(restrict_attackers=False). 8-player folders are
 rejected: the unrestricted 8-player tree costs hours here; the 6-player
 oracle already exercises every code path the 4-player one cannot (in
 particular the recursive discard-stage child wiring).

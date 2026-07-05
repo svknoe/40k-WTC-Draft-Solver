@@ -119,6 +119,20 @@ nav.screens { display: flex; gap: 0.25rem; flex-wrap: wrap; }
 .pill.button { cursor: pointer; }
 .pill.button:hover { border-color: var(--blue); }
 
+/* --- shared utilities (used across screens) --- */
+.section-head {
+  font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-4); margin-bottom: 0.25rem;
+}
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem; }
+.muted { color: var(--text-3); font-size: 0.85rem; }
+.errors { margin-top: 0.75rem; color: var(--red-soft); font-size: 0.85rem; }
+.errors ul { margin: 0.25rem 0 0 1.1rem; }
+
+.segmented { display: inline-flex; background: var(--bg-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
+.segmented button { border: 0; background: transparent; color: var(--text-3); padding: 0.35rem 0.7rem; border-radius: 6px; }
+.segmented button.on { background: var(--blue); color: #06101c; font-weight: 600; }
+
 @media (max-width: 640px) {
   .app-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
   .app-main { padding: 0.75rem; }

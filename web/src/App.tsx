@@ -1,21 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MatrixEditor } from './components/MatrixEditor';
+import { SolveView } from './components/SolveView';
 import { blank } from './model/matrix';
 import type { EditorMatrix } from './model/matrix';
 import { loadState, saveState } from './model/storage';
 import type { AppState, Settings } from './model/storage';
+import { validateMatrix } from './model/validation';
+import { useSolve } from './worker/useSolve';
 
 type Screen = 'editor' | 'solve' | 'trainer' | 'summary';
 
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('editor');
+  const [k, setK] = useState<number | null>(null); // null = exact (§7 default)
+  const solve = useSolve();
 
   // Persist the whole blob whenever it changes (§4.2 auto-save).
   useEffect(() => saveState(state), [state]);
 
   const matrix = useMemo(() => state.current ?? blank(8), [state.current]);
   const { settings, saves } = state;
+  const solvable = useMemo(() => validateMatrix(matrix).ok, [matrix]);
+
+  // A matrix edit invalidates any solved result (§3: reset on matrix change).
+  useEffect(() => {
+    if (solve.status !== 'idle') solve.reset();
+    // Only react to matrix identity; solve is stable enough for this guard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matrix]);
 
   const setMatrix = (m: EditorMatrix) => setState((s) => ({ ...s, current: m }));
   const setSettings = (next: Settings) => setState((s) => ({ ...s, settings: next }));
@@ -30,6 +43,8 @@ export function App() {
       delete rest[name];
       return { ...s, saves: rest };
     });
+
+  const goSolve = () => setScreen('solve');
 
   return (
     <div className="app">
@@ -49,7 +64,14 @@ export function App() {
           <button className={screen === 'editor' ? 'tab active' : 'tab'} onClick={() => setScreen('editor')}>
             Matrix
           </button>
-          <button className="tab" disabled title="Arrives with issue #20">Solve</button>
+          <button
+            className={screen === 'solve' ? 'tab active' : 'tab'}
+            disabled={!solvable}
+            title={solvable ? undefined : 'Complete the matrix first'}
+            onClick={goSolve}
+          >
+            Solve
+          </button>
           <button className="tab" disabled title="Arrives with issue #21">Trainer</button>
         </nav>
         <span className="spacer" />
@@ -76,6 +98,18 @@ export function App() {
             onSaveAs={saveAs}
             onLoadSave={loadSave}
             onDeleteSave={deleteSave}
+            onSolve={solvable ? goSolve : undefined}
+          />
+        )}
+        {screen === 'solve' && (
+          <SolveView
+            myTeam={matrix.myTeam}
+            enemyTeam={matrix.enemyTeam}
+            canRun={solvable}
+            solve={solve}
+            k={k}
+            onKChange={setK}
+            onRun={() => solve.solve(matrix, k)}
           />
         )}
       </main>

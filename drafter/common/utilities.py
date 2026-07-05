@@ -1,5 +1,4 @@
 from pathlib import Path  # standard libraries
-from enum import Enum
 
 import numpy as np  # 3rd party packages
 from scipy.optimize import linprog

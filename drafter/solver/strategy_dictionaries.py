@@ -26,12 +26,21 @@ class StageValues:
         self.keys = keys
         self.values = values
 
-    def contains(self, gamestate_key):
+    def get(self, gamestate_key):
+        # Value for the key, or None if this stage doesn't hold it (one search).
         index = np.searchsorted(self.keys, gamestate_key)
-        return index < len(self.keys) and self.keys[index] == gamestate_key
+        if index < len(self.keys) and self.keys[index] == gamestate_key:
+            return float(self.values[index])
+        return None
 
     def value(self, gamestate_key):
-        return float(self.values[np.searchsorted(self.keys, gamestate_key)])
+        # Hot-path lookup for keys known to be present (backward induction reads
+        # only already-solved children). Guarded so a future mis-wire fails loudly
+        # instead of silently returning a neighbouring value.
+        result = self.get(gamestate_key)
+        if result is None:
+            raise KeyError("Gamestate key {} not in this stage's solved values.".format(gamestate_key))
+        return result
 
 
 # Deepest first: a gamestate's game reads the values of its children, so children
@@ -76,7 +85,9 @@ def initialise_values(ctx):
 
 
 def _missing_child(gamestate_key):
-    raise KeyError("No child value store (should only happen for the 4-player endgame).")
+    # Only wired for the 4-player select_attackers stage, whose discard game is
+    # closed-form and never looks up a child value; reaching here is a bug.
+    raise KeyError("No child value store for the requested gamestate: {}.".format(gamestate_key))
 
 
 # --- draft-time lookups: recompute strategies / values on demand ---
@@ -87,8 +98,10 @@ def known_value(ctx, gamestate_key):
     stage = packing.draft_stage_of_code(friendly_code)
 
     store = ctx.value_arrays.get((n, stage))
-    if store is not None and store.contains(gamestate_key):
-        return store.value(gamestate_key)
+    if store is not None:
+        precomputed = store.get(gamestate_key)
+        if precomputed is not None:
+            return precomputed
 
     return ctx.extension_values.get(gamestate_key)
 

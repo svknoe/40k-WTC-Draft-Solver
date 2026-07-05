@@ -28,8 +28,8 @@ function joinName(name: string | [string, string]): string {
 
 export function DraftSummary({ myTeam, enemyTeam, myNames, enemyNames, expected, model, onReplay, onEditMatrix }: DraftSummaryProps) {
   const achieved = achievedTotal(model);
-  const score = teamResult(achieved);
-  const plan = teamResult(expected);
+  const score = teamResult(achieved, model.n);
+  const plan = teamResult(expected, model.n);
   const d = decompose(model.decisions, expected, achieved);
   const v = verdict(score.my, score.enemy, d);
 

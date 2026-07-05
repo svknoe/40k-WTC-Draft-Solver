@@ -133,6 +133,7 @@ export function App() {
           <SolveView
             myTeam={matrix.myTeam}
             enemyTeam={matrix.enemyTeam}
+            n={matrix.n}
             canRun={solvable}
             solve={solve}
             k={k}

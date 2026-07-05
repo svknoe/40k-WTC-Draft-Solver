@@ -7,6 +7,8 @@ import './solve.css';
 interface SolveViewProps {
   myTeam: string;
   enemyTeam: string;
+  /** Team size, for the displayed team-result baseline (20n total). */
+  n: number;
   /** Whether the current matrix is complete/valid enough to solve. */
   canRun: boolean;
   solve: SolveState;
@@ -26,13 +28,13 @@ function nameOf(name: string | [string, string]): string {
   return typeof name === 'string' ? name : `${name[0]} + ${name[1]}`;
 }
 
-export function SolveView({ myTeam, enemyTeam, canRun, solve, k, onKChange, onRun, onTrain }: SolveViewProps) {
+export function SolveView({ myTeam, enemyTeam, n, canRun, solve, k, onKChange, onRun, onTrain }: SolveViewProps) {
   const my = myTeam || 'Your team';
   const enemy = enemyTeam || 'Opponent';
 
   if (solve.status === 'done' && solve.result) {
     const { expected, root } = solve.result;
-    const score = teamResult(expected);
+    const score = teamResult(expected, n);
     const verdict =
       score.favored > 0 ? `${my} favored by ${score.favored}`
       : score.favored < 0 ? `${enemy} favored by ${-score.favored}`
@@ -60,7 +62,7 @@ export function SolveView({ myTeam, enemyTeam, canRun, solve, k, onKChange, onRu
           </div>
           <div className="verdict">{verdict}</div>
           <div className="muted">
-            sum of 8 games · 160 points total{k !== null ? ` · fast preview (k=${k})` : ''}
+            sum of {n} games · {20 * n} points total{k !== null ? ` · fast preview (k=${k})` : ''}
           </div>
         </div>
 

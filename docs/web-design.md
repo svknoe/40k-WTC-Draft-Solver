@@ -37,8 +37,10 @@ What the artifact *does* correctly encode, and we keep:
 - Draft state machine: `defender → attackers → refusal → done`, over rounds at
   8/6/4 players, last 4 games auto-resolving.
 - The **value model** (matches PLAN.md workstream C): `best` map value when the friendly
-  side defends, `worst` when the enemy defends, midpoint `(best+worst)/2` for neutral
-  games (refused-vs-refused, last players).
+  side defends, `worst` when the enemy defends, and `worst + w·(best − worst)` for neutral
+  games (refused-vs-refused, last players), where `w = neutral_map_weight` (default
+  **0.5**, i.e. the midpoint — see `drafter/solver/context.py`). Midpoint is the default,
+  not the model; the MVP hardcodes `w = 0.5` (see §7).
 - Bot "styles" (equilibrium / greedy / wildcard), colourblind toggle, undo stack,
   localStorage saves, JSON import/export, paste-from-spreadsheet, simple/advanced mode.
 
@@ -87,7 +89,8 @@ correlate responses. Versioned with `protocol: 1`.
 // Run the full solve for the current matrix. Long-running → emits progress.
 { type: 'solve', reqId, protocol: 1,
   matrix: Matrix,           // see §4.1 — best/worst per cell, internal scale
-  k: number | null }        // k-restriction (null = exact; M3/#5 decides default)
+  k: number | null,         // k-restriction (null = exact; M3/#5 decides default)
+  neutralWeight?: number }  // neutral-game weight w (default 0.5 = midpoint); MVP omits/hardcodes
 
 // Query one draft node (instant; served from the solved values held in the worker).
 { type: 'node', reqId, path: Move[] }   // path from root; [] = opening node
@@ -115,13 +118,16 @@ engine-internal detail; the UI treats `path` as an opaque list it appends to.
 // node() response:
 { type: 'nodeResult', reqId, node: NodeResult }
 
+// reset() ack (reset is not fire-and-forget — the UI awaits confirmation):
+{ type: 'reset-ok', reqId }
+
 { type: 'error', reqId, code: string, message: string }
 ```
 
 ### 3.3 `NodeResult` — the per-node payload the trainer + Why panel consume
 
-This is the shape the UI already expects (the mockup's `{cands, evs, probs, names,
-_pairData}`), restated with **real** semantics:
+This is the shape the UI already expects (illustratively, the mockup's internal
+`cands` / `evs` / `probs` / `names` / `_pairData`), restated with **real** semantics:
 
 ```ts
 type NodeResult = {
@@ -135,8 +141,12 @@ type NodeResult = {
     id: number | [number, number],   // player index, or attacker pair
     name: string | [string, string],
     prob: number,                     // ← EQUILIBRIUM mixed-strategy weight (LP), NOT softmax(ev)
-    ev: number                        // ← continuation value if this choice is taken
-                                      //   (backward-induction value, internal scale)
+    ev: number                        // ← value of the sub-game reached by fixing this choice
+                                      //   against the opponent's equilibrium mix (a row/col
+                                      //   expectation over the payoff matrix). The worker
+                                      //   derives this alongside the strategy; today's
+                                      //   get_game_strategy returns only per-option probs + one
+                                      //   scalar game value, so this is a NEW per-choice field.
   }>,
 
   // "Why" panel: the payoff matrix at this node (child values), so the panel can
@@ -219,7 +229,7 @@ losslessly, tolerates in-progress/invalid edits).
 | Strategy (`prob`) | `softmax(evs)` heuristic | **Nash mixed strategy from the LP** |
 | Why panel | approximate | real payoff matrix (child values) + equilibrium mixes |
 | Bot styles | client-side sampling of a heuristic | client-side sampling of the **true** strategy (unchanged) |
-| Value model | best/worst/midpoint ✓ | best/worst/midpoint ✓ (already correct — keep) |
+| Value model | best/worst; neutral = midpoint ✓ | best/worst; neutral = `worst + w·(best−worst)`, `w`=`neutral_map_weight` (default 0.5 = midpoint) |
 
 The UI's data *shapes* barely change; its *source* changes from "compute inline with a
 heuristic" to "await a message from the worker." This is why Slices 1–3 can be built
@@ -255,8 +265,11 @@ real engine dropped in behind the same contract at Slice 2.
 ### 7.1 The k / engine performance ladder
 
 `k` (the attacker-restriction, `restricted_attackers_count`) is the dominant cost lever:
-the gamestate count fans out **~4× per k-increment** at each select-attackers stage, and
-the 4-player stages already dominate the tree. So:
+each select-attackers step considers only the `k` heuristically-best attackers per side —
+ranked by *advantage vs the specific opposing defender minus average vs the rest*
+(`team_permutation.py`), **not** simply the k globally-best. The gamestate count fans out
+**~4× per k-increment** at each select-attackers stage, and the 4-player stages already
+dominate the tree. So:
 
 - **k=3 — MVP.** Smallest tree; the interactive target that must "feel like seconds."
   Ship the trainer here first.

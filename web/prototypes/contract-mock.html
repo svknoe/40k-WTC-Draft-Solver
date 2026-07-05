@@ -184,6 +184,7 @@ function request(msg, onProgress) {
 }
 const solve = (matrix, k, onProgress) => request({ type: 'solve', protocol: 1, matrix, k }, onProgress);
 const node  = (path)               => request({ type: 'node', path });
+const reset = ()                   => request({ type: 'reset' });
 
 /* ------------------------------------------------------------------ *
  * Helpers: a demo matrix, shape validators, DOM logging.
@@ -282,6 +283,11 @@ document.getElementById('nodeBtn').onclick = async () => {
       validateNodeResult(r.node, 'node@' + depth + ' (' + r.node.stage + ')');
       log('node(depth=' + depth + '): stage=' + r.node.stage + ', choices=' + r.node.choices.length);
     }
+
+    // 2b. reset() acks through the contract (not fire-and-forget).
+    const rst = await reset();
+    assert(rst.type === 'reset-ok', 'reset() -> reset-ok');
+    log('reset(): ' + rst.type);
 
     // 3. errors surface through the contract (query before solve on a fresh worker).
     const w2 = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'application/javascript' })));

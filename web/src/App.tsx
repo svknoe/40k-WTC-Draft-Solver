@@ -20,7 +20,6 @@ const NEUTRAL_WEIGHT = 0.5;
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('editor');
-  const [k, setK] = useState<number | null>(null); // null = exact (§7 default)
   const [botStyle, setBotStyle] = useState<BotStyle>('equilibrium');
   const [showAbout, setShowAbout] = useState(false);
   const solve = useSolve();
@@ -142,9 +141,7 @@ export function App() {
             n={matrix.n}
             canRun={solvable}
             solve={solve}
-            k={k}
-            onKChange={setK}
-            onRun={() => solve.solve(matrix, k)}
+            onRun={() => solve.solve(matrix, null)}
             onTrain={solvable ? startTraining : undefined}
           />
         )}

@@ -33,7 +33,7 @@ const result: SolvedEvent = {
 describe('SolveView', () => {
   test('done: shows the 0-160 expected result and both opening mixes', () => {
     const solve: SolveState = { ...base, status: 'done', progress: 1, phase: null, result, error: null };
-    render(<SolveView myTeam="Norway" enemyTeam="Scotland" n={8} canRun solve={solve} k={null} onKChange={() => {}} onRun={() => {}} />);
+    render(<SolveView myTeam="Norway" enemyTeam="Scotland" n={8} canRun solve={solve} onRun={() => {}} />);
     expect(screen.getByText('85')).toBeInTheDocument(); // 80 + 5
     expect(screen.getByText('75')).toBeInTheDocument(); // 80 - 5
     expect(screen.getByText(/Norway favored by 5/)).toBeInTheDocument();
@@ -43,17 +43,17 @@ describe('SolveView', () => {
     expect(screen.getByText('70%')).toBeInTheDocument();
   });
 
-  test('idle: offers exact vs fast-preview and gates Run on canRun', () => {
+  test('idle: gates Run on canRun and offers no k/preview toggle (always exact)', () => {
     const solve: SolveState = { ...base, status: 'idle', progress: 0, phase: null, result: null, error: null };
-    render(<SolveView myTeam="A" enemyTeam="B" n={8} canRun={false} solve={solve} k={null} onKChange={() => {}} onRun={() => {}} />);
+    render(<SolveView myTeam="A" enemyTeam="B" n={8} canRun={false} solve={solve} onRun={() => {}} />);
     expect(screen.getByRole('button', { name: 'Run solver' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Exact' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Fast preview/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Fast preview/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Exact' })).not.toBeInTheDocument();
   });
 
   test('solving: shows a live progress bar', () => {
     const solve: SolveState = { ...base, status: 'solving', progress: 0.4, phase: 'inducting', result: null, error: null };
-    render(<SolveView myTeam="A" enemyTeam="B" n={8} canRun solve={solve} k={null} onKChange={() => {}} onRun={() => {}} />);
+    render(<SolveView myTeam="A" enemyTeam="B" n={8} canRun solve={solve} onRun={() => {}} />);
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
   });
 });

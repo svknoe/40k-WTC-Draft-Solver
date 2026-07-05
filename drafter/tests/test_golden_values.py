@@ -60,7 +60,11 @@ from drafter.tests.conftest import solve_fixture, strategy_probabilities, suppor
 # closed-form endgame. Re-verified 3x bit-identical.
 
 SMOKE_K = 4
-SMOKE_EXPECTED_VALUE = 4.997553182223153
+# Exact repr of the current engine's value (was 4.997553182223153, 1 ulp off:
+# the B1 LP solver shifted the last bit but the pin was only re-verified at the
+# 1e-9 tolerance below, not bit-exactly). Cross-platform float noise keeps the
+# tolerance; the literal now matches a fresh solve.
+SMOKE_EXPECTED_VALUE = 4.997553182223154
 SMOKE_EXPECTED_FRIENDLY_PROBS = [0.293, 0.0, 0.691, 0.015]  # Alice, Bob, Carol, Dave
 SMOKE_EXPECTED_ENEMY_PROBS = [0.047, 0.0, 0.513, 0.439]  # Chaos, Eldar, Ork, Tau
 
@@ -103,7 +107,9 @@ def test_smoke_4_player_top_level_strategies():
 # (issues #9/#30, encoding the pre-#32 child-key bug).
 
 SIX_K = 4
-SIX_EXPECTED_VALUE = 1.9058104884743512
+# Exact repr of the current engine's value (was 1.9058104884743512, 2 ulp off
+# for the same B1-LP reason as SMOKE above); tolerance kept for cross-platform.
+SIX_EXPECTED_VALUE = 1.9058104884743532
 
 
 def test_six_player_top_level_value():

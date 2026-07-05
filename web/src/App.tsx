@@ -82,7 +82,7 @@ export function App() {
 
       <footer className="app-footer">
         Runs entirely in your browser — your matrix never leaves the tab.{' '}
-        <a href="/bench.html">Engine benchmark →</a>
+        <a href={`${import.meta.env.BASE_URL}bench.html`}>Engine benchmark →</a>
       </footer>
     </div>
   );

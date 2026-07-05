@@ -25,6 +25,18 @@ def test_resolve_match_falls_back_to_packaged(monkeypatch, tmp_path):
     assert match_paths.cache_dir == tmp_path / "cache" / "Smoke"
 
 
+def test_resolve_match_falls_back_when_user_dir_lacks_team(monkeypatch, tmp_path):
+    # The user matches dir exists but has no folder for this team -> packaged.
+    user = tmp_path / "user" / "matches"
+    (user / "SomeOtherTeam").mkdir(parents=True)
+    monkeypatch.setattr(paths, "user_matches_dir", lambda: user)
+    monkeypatch.setattr(paths, "user_cache_root", lambda: tmp_path / "cache")
+
+    match_paths = paths.resolve_match("Smoke")
+
+    assert match_paths.input_dir == paths.packaged_matches_dir() / "Smoke"
+
+
 def test_resolve_match_prefers_user_dir(monkeypatch, tmp_path):
     user = tmp_path / "user" / "matches"
     (user / "MyTeam").mkdir(parents=True)

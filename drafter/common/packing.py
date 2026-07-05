@@ -10,9 +10,11 @@ A team permutation over <=8 players packs into a 24-bit int:
     bits 20..23 : discarded_attacker (4 bits)
 
 Indices are per side (friendly = CSV rows, enemy = CSV columns), 0..n-1. A
-gamestate key is the pair (friendly_code, enemy_code); the draft stage is
-derivable from either code (see draft_stage_of_code). Names live only in the
-presentation layer (drafter.solver.context NameIndex).
+gamestate key is a single int: the friendly team code in the low 24 bits and the
+enemy team code in the next 24 (so it fits a numpy int64 and packs the whole
+state into one hashable/array-able value, B3). The draft stage is derivable from
+either code (see draft_stage_of_code). Names live only in the presentation layer
+(drafter.solver.context NameIndex).
 """
 from drafter.common.draft_stage import DraftStage
 
@@ -24,6 +26,18 @@ _ATTACKER_B_SHIFT = 16
 _DISCARDED_SHIFT = 20
 _ROLE_MASK = 0xF
 _REMAINING_MASK = 0xFF
+
+# A team code occupies 24 bits; the gamestate key stacks enemy above friendly.
+_TEAM_BITS = 24
+_TEAM_MASK = (1 << _TEAM_BITS) - 1
+
+
+def encode_gamestate(friendly_code, enemy_code):
+    return friendly_code | (enemy_code << _TEAM_BITS)
+
+
+def decode_gamestate(key):
+    return (key & _TEAM_MASK, key >> _TEAM_BITS)
 
 
 def _pack_role(index):

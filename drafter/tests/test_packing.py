@@ -63,6 +63,16 @@ def test_draft_stage_of_code(defender, attacker_a, attacker_b, discarded, expect
     assert packing.draft_stage_of_code(code) == expected
 
 
+def test_gamestate_key_round_trip():
+    # A gamestate key stacks the enemy team code above the friendly one; both
+    # must survive the round trip and fit the 48-bit budget.
+    for friendly_code, enemy_code in [(0, 0), (0xABCDEF, 0x123456), (0xFFFFFF, 0),
+                                      (0, 0xFFFFFF), (0xFFFFFF, 0xFFFFFF)]:
+        key = packing.encode_gamestate(friendly_code, enemy_code)
+        assert packing.decode_gamestate(key) == (friendly_code, enemy_code)
+        assert key < (1 << 48)
+
+
 def test_team_permutation_n_counts_remaining_plus_roles():
     # 2 remaining + defender + 2 attackers = 5.
     code = packing.encode_team_permutation(packing.mask_from_indices([6, 7]), 0, 1, 2, None)

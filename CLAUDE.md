@@ -38,11 +38,11 @@ drafter/
     initialise_dictionaries.py  reads CSVs (read_pairing_matrix), builds the SolverContext, solves
     paths.py               match-folder + cache resolution (platformdirs, issue #26)
     set_enemy_team.py      InquirerPy menu over paths.list_available_teams() (returns the name)
-    read_write.py          JSON cache IO
+    read_write.py          JSON IO (used only by scripts/migrate_match_folder.py now)
   solver/
     context.py             SolverConfig (the knobs) + SolverContext (all per-run state, passed explicitly)
-    game_state_dictionaries.py  enumerate all reachable gamestates per (n, stage)
-    strategy_dictionaries.py    backward induction: solve every gamestate's game, deepest first
+    game_state_dictionaries.py  enumerate reachable gamestate keys per (n, stage) -> numpy int64 arrays
+    strategy_dictionaries.py    value-only backward induction; StageValues + draft strategy recompute (B3)
     games.py               build the payoff matrix for one gamestate from child values
     draft.py               interactive draft loop (uses plain input(), not InquirerPy)
     draft_loop.py          replay wrapper
@@ -55,33 +55,35 @@ Match folders resolve from a **per-user data dir first, packaged samples
 second** (`drafter/data/paths.py`, issue #26): a user's own opponents live in
 `platformdirs.user_data_dir("wtc-draft-solver")/matches/<Team>/`
 (`%APPDATA%\wtc-draft-solver\matches` on Windows), searched before the bundled
-samples under `drafter/resources/matches/`. Solver JSON caches
-(`cache_format.json`, `*_dictionary.json`) are written to the platform **cache**
-dir (`user_cache_dir(...)/matches/<Team>/`), never into the package — so a
-pip/pipx install stays clean. `ctx.paths` (a `MatchPaths`) carries `input_dir`
-and `cache_dir` for the current match.
+samples under `drafter/resources/matches/`. `ctx.paths` (a `MatchPaths`) carries
+the resolved `input_dir`. There is **no disk cache** (B3, issue #13): the solve
+is fast and low-RAM and is held in-process for the whole draft session.
 
 ## How it works (important for any performance work)
 
-1. **Gamestate enumeration** (`game_state_dictionaries`): starting from the
-   full 8v8 state, breadth-first enumerate every reachable `GameState` for
-   each (n ∈ {8,6,4}, stage) pair. States are stored in dicts keyed by
-   verbose human-readable strings (`"{Defender: X}, {Attacker A: Y}, ..."`).
-2. **Strategy solving** (`strategy_dictionaries`): iterate stages deepest
-   first (4-player select_attackers up to 8-player none). For each gamestate
-   build the payoff matrix whose entries are the already-solved values of
-   child states (`games.py`), then solve that matrix game **directly as the
-   zero-sum game it is** (`utilities.get_game_solution`, PLAN.md B1): a pure
-   saddle point when one exists, otherwise a 2x2 closed form, otherwise one
-   `scipy.optimize.linprog` (HiGHS) call whose dual yields the opposing
-   strategy. Deterministic, no degenerate-game warnings. Solutions are cached
-   by matrix hash — both bit-identical (per-stage caches in `games.py`) and
-   translation-normalised (`utilities.normalised_game_solution_cache`, since
-   zero-sum strategies/value are invariant under adding a constant). The
-   4-player discard endgame is closed-form.
-3. **Draft loop** (`draft.py`): walks the solved tree interactively. If the
-   user makes a move outside the enumerated tree (possible with k-restriction),
-   the tree is extended and re-solved on the fly.
+1. **Gamestate enumeration** (`game_state_dictionaries.enumerate_gamestates`):
+   breadth-first from the full 8v8 state, storing each (n ∈ {8,6,4}, stage)
+   level as a **sorted numpy int64 array of packed gamestate keys** — no
+   `GameState` objects are kept (they're decoded from keys on demand), so the
+   whole tree costs ~12 MB. A key is one int: friendly team code + enemy team
+   code (`drafter/common/packing.py`).
+2. **Value-only backward induction** (`strategy_dictionaries.initialise_values`,
+   B3): iterate the stages deepest first; for each gamestate build the payoff
+   matrix from its children's already-solved values (`games.build_game`) and
+   solve **directly as the zero-sum game it is** for the VALUE only
+   (`utilities.get_game_value` → `get_game_solution`, PLAN.md B1: saddle / 2x2
+   closed form / one HiGHS LP whose dual yields the opposing strategy). Values
+   are stored per stage as parallel sorted `(keys, values)` numpy arrays
+   (`StageValues`, binary-search lookup) — ~8 MB, not the ~810 MB of full
+   strategy vectors. Only the LP solves are memoised
+   (`utilities.normalised_game_solution_cache`). The 4-player discard endgame is
+   closed-form.
+3. **Draft loop** (`draft.py`): walks the solved tree interactively,
+   **recomputing** the labelled mixed strategy for each visited gamestate on
+   demand from its children's values (`strategy_dictionaries.game_strategy`).
+   The same recursion (`game_value`) transparently solves any off-tree,
+   non-k-restricted subtree the user navigates into — no separate tree
+   extension.
 
 Values are read through `ctx.pairing.value(friend, enemy, defender)`
 (a `PairingTables`, drafter/common/pairing.py): the best-map value when the
@@ -99,10 +101,13 @@ best when neither does (refused-vs-refused and last-players games).
   This cut the Scotland k=3 strategy phase from ~275 s to ~29 s (≈9×) with
   bit-stable golden values and no warnings. The remaining strategy-phase cost
   is now split between the ~35k genuinely-mixed LP solves (scipy's per-call
-  wrapper overhead dominates for these tiny games) and the string-keyed
-  gamestate iteration — the latter is what B2 (integer state encoding) targets.
-- Cached JSON for one 8-player opponent ≈ 630 MB (strategy dicts dominate);
-  loading that cache takes ~19 s. String keys are a large share of the RAM.
+  wrapper overhead dominates for these tiny games) and gamestate iteration.
+- **B2 (done, issue #13):** packed-integer gamestate keys + an explicit
+  `SolverContext` replaced the verbose string keys and module globals.
+- **B3 (done, issue #13):** value-only backward induction with numpy key/value
+  arrays (above) cut Scotland k=3 **peak RAM from ~1.8 GB to ~120 MB** (~15×);
+  fresh solve ≈ 28 s (enumeration ~8 s, values ~20 s). The old 630 MB JSON disk
+  cache is gone — the in-memory solve is fast and cheap enough not to need it.
 - `restricted_attackers_count` (k) in `SolverConfig` (drafter/solver/context.py) is the only current knob:
   each select-attackers step only considers the k heuristically best
   attackers per side (heuristic: advantage vs defender minus average vs

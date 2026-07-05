@@ -108,8 +108,8 @@ normalised_game_solution_cache = {}
 # -- so one solve yields both sides; no need for the symmetric second LP. The
 # shift is undone on the value. This is the formulation the independent oracle
 # (scripts/brute_force_oracle.py) uses to cross-check golden values. Only the
-# value propagates up the tree (games.get_game_array); the strategies are read
-# solely by the interactive draft loop.
+# value propagates up the tree (get_game_value); the strategies are read solely
+# by the interactive draft loop (get_game_strategy).
 def solve_zero_sum_game_by_linear_program(a):
     shift = a.min()
     positive_a = a - shift + 1.0
@@ -148,6 +148,18 @@ def solve_positivity_shifted_matrix_game(positive_a):
     column_strategy = list(np.abs(result.ineqlin.marginals) * shifted_value)
 
     return [row_strategy, column_strategy, shifted_value]
+
+
+# Value-only game solve for the backward induction (GitHub issue #13, B3): the
+# tree only propagates game VALUES, so skip building/labelling the mixed-strategy
+# vectors (the draft loop recomputes those on demand for the ~20 states it
+# visits). Deliberately not memoised per matrix: caching every one of the ~950k
+# small games would cost ~70 MB of peak RAM (the whole point of B3 is to keep RAM
+# down), while re-solving them is cheap -- 2x2 games are closed form and the
+# larger LP solves are still deduped by the translation-normalised cache inside
+# solve_zero_sum_game_by_linear_program.
+def get_game_value(game_array):
+    return get_game_solution(game_array)[2]
 
 
 def get_game_strategy(game_solution_cache, game_array, friendly_team_options, enemy_team_options):
@@ -211,33 +223,3 @@ def list_to_string(input_list):
     output_string += input_list[len(input_list) - 1]
 
     return output_string
-
-
-def get_gamestate_dictionary_name(n, draft_stage):
-    return get_dictionary_name(n, draft_stage, "gamestate")
-
-
-def get_strategy_dictionary_name(n, draft_stage):
-    return get_dictionary_name(n, draft_stage, "strategy")
-
-
-def get_dictionary_name(n, draft_stage, dictionary_type):
-    if not (n == 4 or n == 6 or n == 8):
-        raise Exception("{} is no a legal entry for n. Choose 4, 6 or 8.".format(n))
-
-    dictionary_name = "{}_{}_player_{}_dictionary".format(dictionary_type, n, draft_stage.name)
-
-    return dictionary_name
-
-
-def get_arbitrary_dictionary_entry(dictionary):
-    dictionary_keys = list(dictionary.keys())
-
-    if 'descriptor' in dictionary_keys:
-        dictionary_keys.remove('descriptor')
-
-    if (len(dictionary_keys) > 0):
-        arbitrary_dictionary_entry = dictionary[dictionary_keys[0]]
-        return arbitrary_dictionary_entry
-    else:
-        return None

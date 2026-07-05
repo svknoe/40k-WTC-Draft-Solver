@@ -102,20 +102,14 @@ def play_draft(ctx):
             draft_finished = True
             break
 
-        update_dictionaries(ctx, current_gamestate)
-
     if draft_finished:
-        initial_n = gamestate_tree[0].get_n()
         print("\nDraft vs. {} finished!\n".format(ctx.enemy_team_name))
         print("Pairings:")
         for new_pairings in pairings:
             print(" - [{}]: {}".format(new_pairings[0], new_pairings[1]))
         result_sum = sum([pairing[0] for pairing in pairings])
         print("\nTotal: {}".format(round(result_sum, 2)))
-        initial_strategy_dictionary_name = utilities.get_strategy_dictionary_name(initial_n, DraftStage.select_defender)
-        initial_strategy_dictionary = ctx.strategy_dictionaries[initial_strategy_dictionary_name]
-        initial_strategy = utilities.get_arbitrary_dictionary_entry(initial_strategy_dictionary)
-        expected_result = initial_strategy[2]
+        expected_result = strategy_dictionaries.game_value(ctx, gamestate_tree[0])
         print("Expected result: {}".format(round(expected_result, 2)))
         difference = result_sum - expected_result
         print("Difference: {}".format(round(difference, 2)))
@@ -142,43 +136,10 @@ def play_draft(ctx):
 
 
 def get_team_strategies(ctx, _gamestate):
-    strategy_dictionary_name = _gamestate.get_strategy_dictionary_name()
-    strategy_dictionary = ctx.strategy_dictionaries[strategy_dictionary_name]
-    key = _gamestate.get_key()
-    team_strategies = strategy_dictionary[key]
-    return team_strategies
-
-
-def update_dictionaries(ctx, seed_gamestate):
-    seed_gamestate_dictionary_name = seed_gamestate.get_gamestate_dictionary_name()
-    gamestate_dictionary = ctx.gamestate_dictionaries[seed_gamestate_dictionary_name]
-    seed_gamestate_key = seed_gamestate.get_key()
-
-    if seed_gamestate_key not in gamestate_dictionary:
-        print("\nUnexpected selection made. Extending game dictionaries...")
-
-        added_gamestate_dictionaries = game_state_dictionaries.perform_gamestate_tree_extension(
-            ctx, {seed_gamestate_key: seed_gamestate}, [])
-
-        gamestate_dictionaries_to_process = []
-        for i in range(0, len(added_gamestate_dictionaries)):
-            gamestate_dictionary = added_gamestate_dictionaries[i]
-            gamestate_dictionary_draft_stage = utilities.get_arbitrary_dictionary_entry(
-                gamestate_dictionary).draft_stage
-
-            if gamestate_dictionary_draft_stage != DraftStage.discard_attacker:
-                gamestate_dictionaries_to_process.append(gamestate_dictionary)
-
-        gamestate_dictionaries_to_process = list(reversed(gamestate_dictionaries_to_process))
-
-        if len(gamestate_dictionaries_to_process) > 0:
-            first_gamestate_dictionary = gamestate_dictionaries_to_process[0]
-            first_arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(first_gamestate_dictionary)
-            lower_level_strategies = strategy_dictionaries.get_dictionary_for_gamestate(ctx, first_arbitrary_gamestate)
-
-            for gamestate_dictionary in gamestate_dictionaries_to_process:
-                lower_level_strategies = strategy_dictionaries.process_gamestate_dictionary(
-                    ctx, False, False, gamestate_dictionary, lower_level_strategies)
+    # Recompute the labelled strategy for the visited gamestate on demand from its
+    # children's values (GitHub issue #13, B3). The same recursion transparently
+    # solves any off-tree, non-k-restricted subtree the user navigates into.
+    return strategy_dictionaries.game_strategy(ctx, _gamestate)
 
 
 def prompt_next_gamestate(ctx, _gamestate, gamestate_team_strategies, next_draft_stage):

@@ -3,18 +3,17 @@ import csv
 
 import drafter.common.team_permutation as team_permutation  # local source
 from drafter.common.pairing import PairingTables
-import drafter.data.read_write as read_write
 import drafter.data.paths as paths
 import drafter.solver.context as context
-import drafter.solver.games as games
 import drafter.solver.strategy_dictionaries as strategy_dictionaries
 import drafter.solver.game_state_dictionaries as game_state_dictionaries
 
 
 def initialise(enemy_team_name, config):
-    """Load a match's input matrices, build the SolverContext, and solve the
-    whole draft tree into it. Returns the populated SolverContext (GitHub issue
-    #13, B2 solver-context refactor: no module-level globals)."""
+    """Load a match's input matrices, build the SolverContext, and solve the whole
+    draft tree into it (value-only, GitHub issue #13). Returns the populated
+    SolverContext. There is no disk cache: the solve is fast and low-RAM and lives
+    in-process for the whole draft session."""
     match_paths = paths.resolve_match(enemy_team_name)
 
     best = read_pairing_matrix(
@@ -41,50 +40,20 @@ def initialise(enemy_team_name, config):
         pairing=pairing,
         restriction=restriction,
         paths=match_paths,
-        gamestate_dictionaries=game_state_dictionaries.make_gamestate_dictionaries(),
-        strategy_dictionaries=strategy_dictionaries.make_strategy_dictionaries(),
-        game_solution_caches=games.make_game_solution_caches())
-
-    friendly_names = list(friendly.names)
-    enemy_names = list(enemy.names)
-
-    # Cached JSONs carry solved game values keyed by positional integer codes, so
-    # a cache written under an older value model or a different player set/order
-    # would load fine but be silently wrong. Only read caches whose marker matches
-    # the current engine and the current name ordering; the marker is written
-    # after a successful solve+write below.
-    caches_are_current = read_write.cache_format_is_current(
-        match_paths.cache_file(read_write.CACHE_FORMAT_FILENAME), friendly_names, enemy_names)
-    if (config.read_gamestates or config.read_strategies) and not caches_are_current:
-        print("Ignoring cached JSONs in this match folder (missing or outdated {}): "
-            "they were computed under an older value model. Solving fresh."
-            .format(read_write.CACHE_FORMAT_FILENAME))
+        gamestate_key_arrays={},
+        value_arrays={},
+        draft_strategy_cache={},
+        extension_values={})
 
     t0 = time.time()
-    print("Initialising gamestate dictionaries (This might take a few minutes):")
-    game_state_dictionaries.initialise_dictionaries(
-        ctx, config.read_gamestates and caches_are_current, config.write_gamestates)
+    print("Enumerating gamestates (This might take a few minutes):")
+    ctx.gamestate_key_arrays = game_state_dictionaries.enumerate_gamestates(ctx)
     print("time: {}s".format(round(time.time() - t0, 2)))
 
     t0 = time.time()
-    if config.read_strategies:
-        print("Initialising strategy dictionaries (This might take a few minutes):")
-    else:
-        if config.restrict_attackers and config.restricted_attackers_count < 4:
-            print("Initialising strategy dictionaries (This might take a few minutes):")
-        elif config.restrict_attackers and config.restricted_attackers_count < 5:
-            print("Initialising strategy dictionaries (This might take an hour.):")
-        else:
-            long_runtime_warning = ("Initialising strategy dictionaries (This might take many hours."
-                + " Enable restrict_attackers with restricted_attackers_count < 5 to reduce runtime.):")
-            print(long_runtime_warning)
-    strategy_dictionaries.initialise_dictionaries(
-        ctx, config.read_strategies and caches_are_current, config.write_strategies)
+    print("Solving game values (This might take a few minutes):")
+    strategy_dictionaries.initialise_values(ctx)
     print("time: {}s".format(round(time.time() - t0, 2)))
-
-    if config.write_gamestates and config.write_strategies:
-        read_write.write_cache_format_marker(
-            match_paths.cache_file(read_write.CACHE_FORMAT_FILENAME), friendly_names, enemy_names)
 
     return ctx
 

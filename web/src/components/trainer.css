@@ -25,6 +25,28 @@
 .reveal .r-enemy { color: var(--enemy); font-weight: 600; }
 @keyframes wtcFlip { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
+/* --- draft board (docs/design-mockup.html "Trainer") --- */
+.draft-board { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.board-panel { flex: 1; min-width: 0; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.board-title { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-4); margin-bottom: 0.6rem; }
+.slot { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.7rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg-2); }
+.slot .slot-name { font-weight: 600; }
+.slot.def { margin-bottom: 0.5rem; }
+.slot.def .slot-tag { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; padding: 0.1rem 0.35rem; border-radius: 4px; color: #06101c; }
+.slot.mine .slot-tag { background: var(--blue); }
+.slot.enemy .slot-tag { background: var(--enemy); }
+.slot.mine.filled .slot-name { color: var(--blue); }
+.slot.enemy.filled .slot-name { color: var(--enemy); }
+.slot.pending .slot-name, .slot.hidden .slot-name, .slot.empty .slot-name { color: var(--text-4); font-weight: 500; }
+.slot.hidden, .slot.empty { border-style: dashed; }
+.slot.atk.enemy.hidden { border-color: #e0573e55; }
+.slot.active { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; }
+.slot-pair { display: flex; gap: 0.4rem; }
+.slot-pair .slot { flex: 1; justify-content: center; }
+.board-hint { margin-top: 0.4rem; color: var(--text-4); font-size: 0.78rem; }
+
+@media (max-width: 640px) { .draft-board { flex-direction: column; } }
+
 .choices { display: flex; flex-direction: column; gap: 0.4rem; }
 .choice {
   display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left;

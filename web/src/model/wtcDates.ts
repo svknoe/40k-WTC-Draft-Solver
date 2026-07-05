@@ -2,8 +2,10 @@
  * dates the trainer's coaching hints auto-disable so the app can't be used to
  * gain an edge at the table (docs/design-mockup.html privacy explainer).
  *
- * Inclusive local-date ranges. MAINTAIN ANNUALLY — add each year's event.
- * Source: wtc-belgium.com (WTC 2026: 11–16 Aug, Nekkerhallen, Mechelen, BE). */
+ * Inclusive local-date ranges covering when games are actually played (so the
+ * app can't be used at the table) — not the full venue window. MAINTAIN
+ * ANNUALLY. Source: wtc-belgium.com (WTC 2026, Nekkerhallen, Mechelen, BE;
+ * venue 11–16 Aug, team games 13–16 Aug). */
 export interface WtcEvent {
   name: string;
   /** Inclusive start, ISO YYYY-MM-DD (local date). */
@@ -13,7 +15,7 @@ export interface WtcEvent {
 }
 
 export const WTC_EVENTS: WtcEvent[] = [
-  { name: 'WTC 2026 · Mechelen', start: '2026-08-11', end: '2026-08-16' },
+  { name: 'WTC 2026 · Mechelen', start: '2026-08-13', end: '2026-08-16' },
 ];
 
 /** Local-time YYYY-MM-DD stamp (comparable lexicographically as a date). */

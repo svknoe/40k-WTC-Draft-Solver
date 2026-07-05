@@ -198,6 +198,14 @@ the M4 browser spike (#17), as a distribution choice.
 Web MVP scope (decided 2026-07): **full train-against-the-bot**, shipped in
 the slices above.
 
+**Single-engine end state (decided 2026-07-05):** once the TS engine is
+trusted — conformance suite green, feature parity, the independent
+brute-force oracle also ported to TS, and a real-usage trust window — the
+Python engine is deleted (tagged first; git history keeps it) and TypeScript
+becomes the sole source of truth. Two engines exist only during the
+transition; rules changes are never maintained twice beyond it. Port notes
+live in docs/web-design.md §7.2.
+
 ## Process
 
 Status is tracked on GitHub: milestones M1–M4 with one issue per step —

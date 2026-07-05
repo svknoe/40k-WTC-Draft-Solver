@@ -311,6 +311,27 @@ Implication for issue #17: benchmark the TS engine at **k=4 and exact**, not jus
 k=3. A TS engine on typed arrays may well beat numpy-Python here; measure, don't
 assume. Rust→WASM is the escape hatch behind the same worker contract.
 
+### 7.2 Engine port notes (read before writing any TS engine code)
+
+- **53-bit trap:** JS numbers hold only 53 safe integer bits. Do **not** port the
+  Python engine's int64 packed gamestate keys via `BigInt` (slow, off V8 fast
+  paths). A team permutation fits in ~20 bits (defender + two attackers + discard
+  flag + 8-bit remaining mask), so **repack the gamestate to ≤40 bits** and use
+  plain numbers as keys.
+- **No LP library:** 2×2 games closed-form; larger games (≤21×21) via a bespoke
+  ~100-line dense simplex on `Float64Array`. scipy's per-call overhead is the
+  thing being escaped — don't reintroduce it via a JS LP dependency.
+- **Conformance, not bit-equality:** different pivot orders ⇒ values agree to
+  ~1e-9, not bitwise. The conformance suite (fixtures + expected values/strategies
+  exported from the Python engine) runs in web CI on every push.
+- **Single-engine end state (decided 2026-07-05):** Python remains the oracle
+  only until the TS engine is trusted — conformance green, feature parity, the
+  brute-force oracle also ported to TS (so an independent implementation survives
+  as a CI check), and a real-usage trust window. Then the Python engine is
+  deleted (tagged first; git history keeps it), and TS becomes the sole source
+  of truth. Rules changes are never implemented twice for longer than that
+  transition.
+
 ---
 
 ## 8. How this slices (issues #19 / #20 / #21)

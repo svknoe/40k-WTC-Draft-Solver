@@ -25,6 +25,11 @@
 .reveal .r-enemy { color: var(--enemy); font-weight: 600; }
 @keyframes wtcFlip { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
+/* phase stepper (Defenders | Attackers | Refusal) */
+.stepper { margin-bottom: 0.75rem; }
+.stepper span { padding: 0.35rem 0.8rem; border-radius: 6px; color: var(--text-4); font-size: 0.85rem; }
+.stepper span.on { background: var(--blue); color: #06101c; font-weight: 600; }
+
 /* --- draft board (docs/design-mockup.html "Trainer") --- */
 .draft-board { display: flex; gap: 1rem; margin-bottom: 1rem; }
 .board-panel { flex: 1; min-width: 0; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; }

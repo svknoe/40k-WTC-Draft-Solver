@@ -1,7 +1,8 @@
 from pathlib import Path  # standard libraries
 from enum import Enum
 
-import nashpy  # 3rd party packages
+import numpy as np  # 3rd party packages
+from scipy.optimize import linprog
 
 import drafter.data.match_info as match_info  # local source
 import drafter.data.settings as settings
@@ -22,65 +23,175 @@ def get_transposed_pairing_dictionary(pairing_dictionary):
     return transposed_pairing_dictionary
 
 
-def get_game_solution(game):
-    support_value = get_game_overview_from_equilibria(game, game.support_enumeration())
-    if support_value is not None:
-        return support_value
+# Every game in the draft tree is zero-sum: the row (friendly) player maximises
+# `game_array`, the column (enemy) player minimises it. Solve it directly rather
+# than by nashpy's general-bimatrix support enumeration (issue #12 / PLAN.md B1):
+# a pure saddle point when one exists, else a 2x2 closed form, else one small LP.
+# All paths are deterministic and never emit nashpy's "degenerate game" warnings.
+# Returns [row_strategy, column_strategy, value]; the value of a zero-sum game is
+# unique even when multiple equilibrium strategies exist.
+def get_game_solution(game_array):
+    a = np.asarray(game_array, dtype=float)
 
-    vertex_value = get_game_overview_from_equilibria(game, game.vertex_enumeration())
-    if vertex_value is not None:
-        return vertex_value
+    if a.shape == (2, 2):
+        return solve_2x2_zero_sum_game(a)
 
-    lemke_howson_value = get_game_overview_from_equilibria(game, game.lemke_howson_enumeration())
-    if lemke_howson_value is not None:
-        return lemke_howson_value
+    return solve_larger_zero_sum_game(a)
 
-    return None
+
+# Closed form for the 2x2 zero-sum game (the ~90% common case in the tree). A
+# 2x2 zero-sum game is either fully mixed or has a pure saddle point. The mixed
+# formula is tried first; if it yields a probability outside [0, 1] (or the
+# denominator is zero) no interior equilibrium exists, so a saddle point does.
+# `.tolist()` pulls the four entries out as Python floats in one call: the whole
+# closed form is then plain-float arithmetic, far cheaper than repeated numpy
+# scalar indexing over the ~200k distinct 2x2 games on the Scotland k=3 tree.
+def solve_2x2_zero_sum_game(a):
+    (a11, a12), (a21, a22) = a.tolist()
+
+    denominator = a11 + a22 - a12 - a21
+
+    if denominator != 0.0:
+        row_probability = (a22 - a21) / denominator
+        column_probability = (a22 - a12) / denominator
+
+        if 0.0 <= row_probability <= 1.0 and 0.0 <= column_probability <= 1.0:
+            value = (a11 * a22 - a12 * a21) / denominator
+            return [[row_probability, 1.0 - row_probability],
+                    [column_probability, 1.0 - column_probability],
+                    value]
+
+    return solve_2x2_saddle_point(a11, a12, a21, a22)
+
+
+# No interior mixed equilibrium => a pure saddle point exists. The row
+# (maximising) player plays the row with the largest row-minimum; the column
+# (minimising) player plays the column with the smallest column-maximum. For a
+# 2x2 zero-sum game these coincide at the saddle, whose entry is the value.
+def solve_2x2_saddle_point(a11, a12, a21, a22):
+    row_minima = [min(a11, a12), min(a21, a22)]
+    best_row = 0 if row_minima[0] >= row_minima[1] else 1
+
+    column_maxima = [max(a11, a21), max(a12, a22)]
+    best_column = 0 if column_maxima[0] <= column_maxima[1] else 1
+
+    row_strategy = [0.0, 0.0]
+    row_strategy[best_row] = 1.0
+
+    column_strategy = [0.0, 0.0]
+    column_strategy[best_column] = 1.0
+
+    value = [[a11, a12], [a21, a22]][best_row][best_column]
+
+    return [row_strategy, column_strategy, value]
+
+
+# Larger games: try a pure saddle point first, else one LP. The discrete rating
+# scale leaves many games with a pure equilibrium -- on the Scotland k=3 tree
+# ~half of the non-2x2 games do -- and detecting one costs two array reductions,
+# far cheaper than an LP. A pure saddle exists iff the maximin (best row-minimum)
+# equals the minimax (best column-maximum); that entry is then the game value.
+def solve_larger_zero_sum_game(a):
+    row_minima = a.min(axis=1)
+    column_maxima = a.max(axis=0)
+
+    best_row = int(row_minima.argmax())
+    best_column = int(column_maxima.argmin())
+
+    if row_minima[best_row] == column_maxima[best_column]:
+        row_strategy = [0.0] * a.shape[0]
+        row_strategy[best_row] = 1.0
+        column_strategy = [0.0] * a.shape[1]
+        column_strategy[best_column] = 1.0
+        return [row_strategy, column_strategy, float(a[best_row, best_column])]
+
+    return solve_zero_sum_game_by_linear_program(a)
+
+
+# Solved games keyed by their translation-normalised (positivity-shifted) matrix.
+# A zero-sum game's optimal strategies and its value are translation-invariant --
+# adding a constant to every payoff shifts only the value -- so matrices that
+# differ only by a constant, common on the discrete rating scale, share one LP
+# solve. Cache the shifted matrix's solution (strategies + shifted value); each
+# caller adds back its own shift. Complements the per-stage matrix-hash caches in
+# games.py, which catch bit-identical (un-shifted) matrices.
+normalised_game_solution_cache = {}
+
+
+# The mixed larger game, by one linear program (scipy's HiGHS). Shift the payoff
+# matrix to be strictly positive so the classic LP reformulation applies: the row
+# maximiser solves  min 1.x  s.t.  A^T x >= 1, x >= 0, with game value = 1/sum x
+# and row strategy = x * value. The column (minimising) player's strategy is the
+# dual of that same LP -- scipy exposes it as the inequality-constraint marginals
+# -- so one solve yields both sides; no need for the symmetric second LP. The
+# shift is undone on the value. This is the formulation the independent oracle
+# (scripts/brute_force_oracle.py) uses to cross-check golden values. Only the
+# value propagates up the tree (games.get_game_array); the strategies are read
+# solely by the interactive draft loop.
+def solve_zero_sum_game_by_linear_program(a):
+    shift = a.min()
+    positive_a = a - shift + 1.0
+
+    cache_key = hash(positive_a.tobytes())
+    solution = normalised_game_solution_cache.get(cache_key)
+    if solution is None:
+        solution = solve_positivity_shifted_matrix_game(positive_a)
+        normalised_game_solution_cache[cache_key] = solution
+
+    row_strategy, column_strategy, shifted_value = solution
+
+    return [row_strategy, column_strategy, shifted_value + shift - 1.0]
+
+
+def solve_positivity_shifted_matrix_game(positive_a):
+    row_count, column_count = positive_a.shape
+
+    result = linprog(
+        c=np.ones(row_count),
+        A_ub=-positive_a.T,
+        b_ub=-np.ones(column_count),
+        bounds=(0, None),
+        method="highs")
+
+    if not result.success:
+        raise RuntimeError("Zero-sum LP failed: {}".format(result.message))
+
+    shifted_value = 1.0 / result.x.sum()
+    row_strategy = list(result.x * shifted_value)
+
+    # Dual solution: |marginals| of the column constraints is the column
+    # player's optimal (unnormalised) mix; scaling by the value normalises it.
+    column_strategy = list(np.abs(result.ineqlin.marginals) * shifted_value)
+
+    return [row_strategy, column_strategy, shifted_value]
 
 
 def get_game_strategy(game_solution_cache, game_array, friendly_team_options, enemy_team_options):
     game_array_hash = hash(game_array.tostring())
 
     if game_array_hash in game_solution_cache:
-        game_solution = game_solution_cache[game_array_hash]
+        row_probabilities, column_probabilities, value = game_solution_cache[game_array_hash]
     else:
-        game = nashpy.Game(game_array)
-        game_solution = get_game_solution(game)
-        game_solution_cache[game_array_hash] = game_solution
+        row_probabilities, column_probabilities, value = get_game_solution(game_array)
+        # Round the mixed strategies once, when the matrix is first solved, rather
+        # than on every one of the ~950k labelling passes that share these cached
+        # solutions. Only the strategies are rounded; the value keeps full
+        # precision because it is what propagates up the tree.
+        row_probabilities = [round(probability, 3) for probability in row_probabilities]
+        column_probabilities = [round(probability, 3) for probability in column_probabilities]
+        game_solution_cache[game_array_hash] = [row_probabilities, column_probabilities, value]
 
-    game_strategy = [[], [], game_solution[2]]
-
-    if (len(friendly_team_options) != len(game_solution[0])):
+    if len(friendly_team_options) != len(row_probabilities):
         raise ValueError("Inconsistent friendly team options.")
 
-    for i in range(0, len(friendly_team_options)):
-        game_strategy[0].append([friendly_team_options[i], round(game_solution[0][i], 3)])
-
-    if (len(enemy_team_options) != len(game_solution[1])):
+    if len(enemy_team_options) != len(column_probabilities):
         raise ValueError("Inconsistent enemy team options.")
 
-    for i in range(0, len(enemy_team_options)):
-        game_strategy[1].append([enemy_team_options[i], round(game_solution[1][i], 3)])
-
-    return game_strategy
-
-
-# Returns overview of first equilibrium.
-def get_game_overview_from_equilibria(game, equilibria):
-    for equilibrium in equilibria:
-        row_strategy = equilibrium[0]
-        column_strategy = equilibrium[1]
-
-        try:
-            value = game[row_strategy, column_strategy][0]
-        except:
-            print(game)
-            print(row_strategy)
-            print(column_strategy)
-            raise SystemError()
-        return [row_strategy, column_strategy, value]
-
-    return None
+    return [
+        [[option, probability] for option, probability in zip(friendly_team_options, row_probabilities)],
+        [[option, probability] for option, probability in zip(enemy_team_options, column_probabilities)],
+        value,
+    ]
 
 
 def print_overview(game_overview, roundTo=3):

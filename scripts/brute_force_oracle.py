@@ -2,9 +2,11 @@
 
 Shares NO solver code with the drafter package: reads the two CSVs directly,
 enumerates the draft explicitly, and solves every zero-sum stage game with
-scipy's linear-programming solver (drafter uses nashpy enumeration instead).
-Used to cross-check golden values whenever the value model or the solver
-changes (issues #9, #30, #32).
+scipy's linear-programming solver. The engine now also solves by LP/closed form
+(issue #12) rather than nashpy, but this oracle stays a genuinely independent
+check -- its own explicit recursion, its own LP formulation. Used to cross-check
+golden values whenever the value model or the solver changes (issues #9, #30,
+#32, #12).
 
 Model (11th edition, PLAN.md workstream C):
   - defender picks the map: friendly defender -> best-map value, enemy

@@ -23,11 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import drafter.solver.context as context
 
 enemy_team_name = sys.argv[1] if len(sys.argv) > 1 else "Smoke"
-config = context.SolverConfig(
-    read_gamestates=False,
-    write_gamestates=False,
-    read_strategies=False,
-    write_strategies=False)
+config = context.SolverConfig()
 random.seed(0)
 
 import drafter.data.initialise_dictionaries as initialise_dictionaries

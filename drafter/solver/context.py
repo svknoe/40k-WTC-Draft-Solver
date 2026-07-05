@@ -43,11 +43,6 @@ class SolverConfig:
     # to the best-map value. 0.5 = midpoint, a 50/50 model of who ends up with
     # map advantage (PLAN.md workstream C).
     neutral_map_weight: float = 0.5
-    # JSON cache read/write toggles.
-    read_gamestates: bool = True
-    write_gamestates: bool = True
-    read_strategies: bool = True
-    write_strategies: bool = True
     # Maximum number of attacker players considered by each team in each select
     # attackers step. Default 4. Decrease to 3 for shorter runtime, increase to
     # 5 for better precision.
@@ -57,11 +52,18 @@ class SolverConfig:
 
 # Everything one solve run needs, passed around explicitly instead of read from
 # module-level globals (GitHub issue #13). Replaces drafter.data.match_info, the
-# mutable drafter.data.settings, the restrict-attackers caches that used to live
-# in drafter.common.team_permutation, and the gamestate/strategy dictionaries
-# that used to be module globals in the solver package. Gamestate keys are packed
-# integers (drafter.common.packing); the friendly/enemy NameIndex maps here are
-# the only place player names live.
+# mutable drafter.data.settings, and the restrict-attackers caches that used to
+# live in drafter.common.team_permutation. Gamestate keys are packed integers
+# (drafter.common.packing); the friendly/enemy NameIndex maps here are the only
+# place player names live.
+#
+# Value-only storage (B3): the whole solve lives in numpy arrays instead of
+# dictionaries of GameState / strategy objects --
+#   gamestate_key_arrays[(n, stage)] -> sorted int64 keys (enumeration output),
+#   value_arrays[(n, stage)]         -> StageValues(keys, values) (solved values),
+# with draft_strategy_cache (the handful of labelled strategies the draft
+# recomputes) and extension_values (values solved on demand for off-tree,
+# non-k-restricted moves).
 @dataclass
 class SolverContext:
     config: SolverConfig
@@ -71,6 +73,7 @@ class SolverContext:
     pairing: Any                      # drafter.common.pairing.PairingTables
     restriction: Any                  # team_permutation.RestrictionData | None
     paths: Any                        # drafter.data.paths.MatchPaths
-    gamestate_dictionaries: dict
-    strategy_dictionaries: dict
-    game_solution_caches: dict
+    gamestate_key_arrays: dict
+    value_arrays: dict
+    draft_strategy_cache: dict
+    extension_values: dict

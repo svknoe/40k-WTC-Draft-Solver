@@ -1,6 +1,7 @@
 import drafter.common.utilities as utilities  # local source
 import drafter.common.team_permutation as team_permutation
 import drafter.common.draft_stage as draft_stage
+import drafter.common.packing as packing
 
 class GameState:
     def __init__(self, draft_stage, friendly_team_permutation, enemy_team_permutation):
@@ -9,10 +10,11 @@ class GameState:
         self.enemy_team_permutation = enemy_team_permutation
 
     def get_key(self):
-        # A gamestate key is the pair of packed-integer team-permutation codes
-        # (GitHub issue #13, B2). Hashable and compact; names are resolved only
-        # at the presentation layer.
-        return (self.friendly_team_permutation.get_key(), self.enemy_team_permutation.get_key())
+        # A gamestate key is a single packed integer combining the friendly and
+        # enemy team-permutation codes (issue #13; single-int form for numpy
+        # storage, B3). Names are resolved only at the presentation layer.
+        return packing.encode_gamestate(
+            self.friendly_team_permutation.get_key(), self.enemy_team_permutation.get_key())
 
     def get_n(self):
         friendly_n = self.friendly_team_permutation.get_n()
@@ -22,18 +24,6 @@ class GameState:
             raise ValueError("Inconsistent number of players.")
 
         return friendly_n
-
-    def get_gamestate_dictionary_name(self):
-        n = self.get_n()
-        gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(n, self.draft_stage)
-        return gamestate_dictionary_name
-
-    # Returns the name of the draft iteration that follows this gamestate.
-    def get_strategy_dictionary_name(self):
-        n = self.get_n()
-        draft_stage_to_solve = draft_stage.get_next_draft_stage(self.draft_stage)
-        strategy_dictionary_name = utilities.get_strategy_dictionary_name(n, draft_stage_to_solve)
-        return strategy_dictionary_name
 
 
 def get_next_gamestates(ctx, game_permutation):
@@ -69,7 +59,7 @@ def get_next_gamestate_matrix(ctx, gamestate):
 
 
 def get_gamestate_from_key(key):
-    friendly_code, enemy_code = key
+    friendly_code, enemy_code = packing.decode_gamestate(key)
     friendly_team_permutation = team_permutation.get_team_permutation_from_key(friendly_code)
     enemy_team_permutation = team_permutation.get_team_permutation_from_key(enemy_code)
     draft_stage = friendly_team_permutation.get_draft_stage()

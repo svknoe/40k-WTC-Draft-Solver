@@ -1,165 +1,134 @@
-import math  # standard libraries
-import sys
-import time
+"""Value-only backward induction (GitHub issue #13, B3).
+
+The tree only propagates game *values*, stored per (n, draft_stage) as parallel
+sorted numpy arrays (keys + values) with binary-search lookup -- ~8 MB total
+instead of the ~810 MB of full strategy vectors the old strategy dictionaries
+held. The interactive draft recomputes the labelled mixed strategy on demand for
+the ~20 gamestates it actually visits (games.build_game + get_game_strategy), and
+the same recursion transparently solves any off-tree (non-k-restricted) subtree
+the user navigates into -- no separate tree-extension machinery.
+"""
+import numpy as np  # 3rd party packages
 
 import drafter.common.utilities as utilities  # local source
-import drafter.common.draft_stage as draft_stage
+import drafter.common.game_state as game_state
+import drafter.common.packing as packing
 from drafter.common.draft_stage import DraftStage
-import drafter.data.read_write as read_write
 import drafter.solver.games as games
-import drafter.solver.game_state_dictionaries as game_state_dictionaries
-
-def make_strategy_dictionaries():
-    # A fresh strategy store for one SolverContext (GitHub issue #13); replaces
-    # the module-level `dictionaries` global. Each per-(n, stage) sub-dictionary
-    # is seeded with its 'descriptor' so get_dictionary_for_gamestate can match
-    # it before any strategies are solved.
-    dictionaries = {}
-    for n in (8, 6, 4):
-        for stage in (DraftStage.select_defender, DraftStage.select_attackers, DraftStage.discard_attacker):
-            dictionaries[utilities.get_strategy_dictionary_name(n, stage)] = {'descriptor': [n, stage]}
-    return dictionaries
 
 
-def initialise_dictionaries(ctx, read, write):
-    final_gamestate_dictionary_name = utilities.get_gamestate_dictionary_name(4, DraftStage.select_attackers)
-    gamestate_dictionary = ctx.gamestate_dictionaries[final_gamestate_dictionary_name]
+class StageValues:
+    """Solved game values for one (n, draft_stage), as a sorted key array and a
+    parallel value array; O(log n) binary-search lookup."""
+    __slots__ = ("keys", "values")
 
-    strategy_dictionary = process_gamestate_dictionary(ctx, read, write, gamestate_dictionary)
+    def __init__(self, keys, values):
+        self.keys = keys
+        self.values = values
 
-    while strategy_dictionary is not None:
-        gamestate_dictionary = game_state_dictionaries.get_previous_gamestate_dictionary(ctx, gamestate_dictionary)
-
-        if (gamestate_dictionary is None):
-            break
-
-        arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary)
-        if (arbitrary_gamestate is None):
-            break
-        elif (arbitrary_gamestate.draft_stage == DraftStage.discard_attacker):
-            gamestate_dictionary = game_state_dictionaries.get_previous_gamestate_dictionary(ctx, gamestate_dictionary)
-
-        if (gamestate_dictionary is None):
-            break
-
-        strategy_dictionary = process_gamestate_dictionary(ctx, read, write, gamestate_dictionary, strategy_dictionary)
-
-
-def update_dictionaries(ctx, read, write, gamestate_dictionaries):
-    reversed_gamestate_dictionaries = reversed(gamestate_dictionaries)
-    lower_level_strategies = None
-
-    for gamestate_dictionary in reversed_gamestate_dictionaries:
-        arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary)
-        if arbitrary_gamestate.draft_stage == DraftStage.discard_attacker:
-            continue
-
-        lower_level_strategies = process_gamestate_dictionary(ctx, read, write, gamestate_dictionary, lower_level_strategies)
-
-
-def process_gamestate_dictionary(ctx, read, write, gamestate_dictionary_to_solve, lower_level_strategies=None):
-    arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
-    strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
-    path = ctx.paths.cache_file(strategy_dictionary_name + ".json")
-
-    draft_stage_strategies = None
-
-    if read:
-        # The strategy dict is keyed by (friendly, enemy) integer-code tuples,
-        # which JSON can't use as object keys, so it is persisted as a list of
-        # [key, strategy] pairs (GitHub issue #13, B2). Tuple the keys on read.
-        serialised = read_write.read_dictionary(path)
-        if serialised is not None:
-            draft_stage_strategies = {tuple(key): strategy for key, strategy in serialised}
-
-    if draft_stage_strategies is None:
-        draft_stage_strategies = get_strategy_dictionary(ctx, gamestate_dictionary_to_solve, lower_level_strategies)
-
-        if write:
-            read_write.write_dictionary(
-                path, [[list(key), strategy] for key, strategy in draft_stage_strategies.items()])
-
-    ctx.strategy_dictionaries[strategy_dictionary_name].update(draft_stage_strategies)
-
-    return ctx.strategy_dictionaries[strategy_dictionary_name]
-
-
-def get_strategy_dictionary(ctx, gamestate_dictionary_to_solve, lower_level_strategies):
-    arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
-    n = arbitrary_gamestate.get_n()
-    draft_stage_to_solve = draft_stage.get_next_draft_stage(arbitrary_gamestate.draft_stage)
-
-    if (not (n == 4 or n == 6 or n == 8)):
-        sys.exit("{} is not a valid number of players. Choose 4, 6 or 8.".format(n))
-
-    print(" - Generating {}-player {} strategies:".format(n, draft_stage_to_solve.name))
-    counter = 0
-    percentage = -1
-    draft_stage_strategies = {}
-    previous_time = time.time()
-    for key in gamestate_dictionary_to_solve:
-        gamestate_to_solve = gamestate_dictionary_to_solve[key]
-        counter += 1
-        new_percentage = math.floor(10 * counter / len(gamestate_dictionary_to_solve))
-        new_time = time.time()
-        if (new_percentage > percentage):
-            percentage = new_percentage
-            print("    - {}%: ".format(10 * percentage), counter, "/", len(list(gamestate_dictionary_to_solve)))
-            previous_time = new_time
-        elif new_time - previous_time > 30:
-            print("    - {}%: ".format(round(100 * counter / len(gamestate_dictionary_to_solve), 1)),
-                counter, "/", len(list(gamestate_dictionary_to_solve)))
-
-            previous_time = new_time
-
-        if draft_stage_to_solve == DraftStage.select_defender:
-            strategy = games.select_defender(ctx, n, gamestate_to_solve, lower_level_strategies)
-        elif draft_stage_to_solve == DraftStage.select_attackers:
-            strategy = games.select_attackers(ctx, n, gamestate_to_solve, lower_level_strategies)
-        elif draft_stage_to_solve == DraftStage.discard_attacker:
-            strategy = games.discard_attacker(ctx, n, gamestate_to_solve, lower_level_strategies)
-        else:
-            raise ValueError("Unsolvavle draft stage: {}.".format(draft_stage_to_solve))
-
-        draft_stage_strategies[gamestate_to_solve.get_key()] = strategy
-
-    return draft_stage_strategies
-
-
-def extend_dictionary(ctx, new_gamestates_to_solve, lower_level_strategies):
-    arbitrary_gamestate = new_gamestates_to_solve[list(new_gamestates_to_solve.keys())[0]]
-    strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
-
-    strategies = get_strategy_dictionary(ctx, new_gamestates_to_solve, lower_level_strategies)
-    dictionary_to_update = ctx.strategy_dictionaries[strategy_dictionary_name]
-    dictionary_to_update.update(strategies)
-
-    return strategies
-
-
-def get_dictionary_for_gamestate(ctx, achieved_gamestate):
-    n = achieved_gamestate.get_n()
-    achieved_draft_stage = achieved_gamestate.draft_stage
-
-    draft_stage_to_solve = draft_stage.get_next_draft_stage(achieved_draft_stage)
-    if draft_stage_to_solve == DraftStage.none:
-        draft_stage_to_solve = draft_stage.get_next_draft_stage(draft_stage_to_solve)
-
-    supporting_draft_stage = draft_stage.get_next_draft_stage(draft_stage_to_solve)
-    if supporting_draft_stage == DraftStage.none:
-        supporting_draft_stage = draft_stage.get_next_draft_stage(supporting_draft_stage)
-
-    if supporting_draft_stage.value < achieved_draft_stage.value:
-        n -= 2
-
-    if n < 4:
+    def get(self, gamestate_key):
+        # Value for the key, or None if this stage doesn't hold it (one search).
+        index = np.searchsorted(self.keys, gamestate_key)
+        if index < len(self.keys) and self.keys[index] == gamestate_key:
+            return float(self.values[index])
         return None
 
-    for key in ctx.strategy_dictionaries:
-        dictionary = ctx.strategy_dictionaries[key]
-        descriptor = dictionary['descriptor']
+    def value(self, gamestate_key):
+        # Hot-path lookup for keys known to be present (backward induction reads
+        # only already-solved children). Guarded so a future mis-wire fails loudly
+        # instead of silently returning a neighbouring value.
+        result = self.get(gamestate_key)
+        if result is None:
+            raise KeyError("Gamestate key {} not in this stage's solved values.".format(gamestate_key))
+        return result
 
-        if n == descriptor[0] and supporting_draft_stage == descriptor[1]:
-            return dictionary
 
-    return None
+# Deepest first: a gamestate's game reads the values of its children, so children
+# must be solved before their parents.
+def solve_order():
+    order = []
+    for n in (4, 6, 8):
+        for stage in (DraftStage.select_attackers, DraftStage.select_defender, DraftStage.none):
+            order.append((n, stage))
+    return order
+
+
+def child_stage(n, stage):
+    # The stage whose gamestate values the (n, stage) game is built from.
+    if stage == DraftStage.none:
+        return (n, DraftStage.select_defender)
+    if stage == DraftStage.select_defender:
+        return (n, DraftStage.select_attackers)
+    if stage == DraftStage.select_attackers:
+        return (n - 2, DraftStage.none)  # the discard game's 'none' subgames (n>4)
+    raise ValueError("No child stage for {}.".format(stage))
+
+
+def initialise_values(ctx):
+    """Solve every enumerated gamestate's value into ctx.value_arrays, deepest
+    stage first."""
+    for (n, stage) in solve_order():
+        keys = ctx.gamestate_key_arrays.get((n, stage))
+        if keys is None or len(keys) == 0:
+            continue
+
+        child_store = ctx.value_arrays.get(child_stage(n, stage))
+        get_child_value = child_store.value if child_store is not None else _missing_child
+
+        values = np.empty(len(keys), dtype=float)
+        for index in range(len(keys)):
+            gamestate = game_state.get_gamestate_from_key(int(keys[index]))
+            game_array, _, _ = games.build_game(ctx, gamestate, get_child_value)
+            values[index] = utilities.get_game_value(game_array)
+
+        ctx.value_arrays[(n, stage)] = StageValues(keys, values)
+
+
+def _missing_child(gamestate_key):
+    # Only wired for the 4-player select_attackers stage, whose discard game is
+    # closed-form and never looks up a child value; reaching here is a bug.
+    raise KeyError("No child value store for the requested gamestate: {}.".format(gamestate_key))
+
+
+# --- draft-time lookups: recompute strategies / values on demand ---
+
+def known_value(ctx, gamestate_key):
+    friendly_code = packing.decode_gamestate(gamestate_key)[0]
+    n = packing.team_permutation_n(friendly_code)
+    stage = packing.draft_stage_of_code(friendly_code)
+
+    store = ctx.value_arrays.get((n, stage))
+    if store is not None:
+        precomputed = store.get(gamestate_key)
+        if precomputed is not None:
+            return precomputed
+
+    return ctx.extension_values.get(gamestate_key)
+
+
+def game_value(ctx, gamestate):
+    """The value of `gamestate`: precomputed if it's on the solved tree, else
+    solved on demand (recursively) and memoised -- this is what lets the draft
+    follow off-tree, non-k-restricted moves."""
+    gamestate_key = gamestate.get_key()
+
+    value = known_value(ctx, gamestate_key)
+    if value is not None:
+        return value
+
+    game_array, _, _ = games.build_game(ctx, gamestate, _child_value_getter(ctx))
+    value = utilities.get_game_value(game_array)
+    ctx.extension_values[gamestate_key] = value
+    return value
+
+
+def game_strategy(ctx, gamestate):
+    """The labelled mixed strategy for the game decided at `gamestate`, recomputed
+    from its children's values (one solve; the draft visits ~20 gamestates)."""
+    game_array, friendly_options, enemy_options = games.build_game(
+        ctx, gamestate, _child_value_getter(ctx))
+    return utilities.get_game_strategy(ctx.draft_strategy_cache, game_array, friendly_options, enemy_options)
+
+
+def _child_value_getter(ctx):
+    return lambda child_key: game_value(ctx, game_state.get_gamestate_from_key(child_key))

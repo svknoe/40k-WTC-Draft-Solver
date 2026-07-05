@@ -68,6 +68,15 @@
 .lock-bar { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
 
 .why { margin-top: 1.25rem; }
+.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+.why-ev .section-head, .why-threats .section-head { margin-bottom: 0.6rem; }
+.ev-table { width: 100%; border-collapse: collapse; }
+.ev-table td { padding: 0.22rem 0.35rem; vertical-align: middle; }
+.ev-name { white-space: nowrap; color: var(--text-1); }
+.ev-bar { width: 100%; }
+.ev-bar > span { display: block; height: 0.5rem; border-radius: 3px; background: var(--text-3); min-width: 2px; }
+.ev-bar > span.top { background: var(--green); }
+.ev-val { text-align: right; color: var(--text-2); width: 3rem; }
 .why-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 .why-table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
 .why-table th, .why-table td { border: 1px solid var(--border); padding: 0.35rem 0.5rem; text-align: center; }
@@ -75,9 +84,6 @@
 .why-table .wrow { text-align: left; white-space: nowrap; background: var(--bg-2); }
 .wlabel.mine { color: var(--blue); }
 .wlabel.enemy { color: var(--enemy); }
-.wprob { color: var(--text-4); font-family: var(--font-mono); font-size: 0.78rem; }
-.wcell { color: var(--text-3); }
-.wcell.support { color: var(--text); background: #4e9af114; font-weight: 600; }
 
 /* remaining-matchups collapsible */
 .remaining { margin-top: 1.25rem; }

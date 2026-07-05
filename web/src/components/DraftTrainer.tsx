@@ -210,7 +210,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         <span className="muted">{enemy} picks simultaneously — revealed after you lock.</span>
       </div>
 
-      {showWhy && hintsAllowed && <WhyPanel node={node} />}
+      {showWhy && hintsAllowed && <WhyPanel node={node} model={model} myNames={myNames} enemyNames={enemyNames} />}
 
       {model.fixed.length > 0 && (
         <div className="locked">

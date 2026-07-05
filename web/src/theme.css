@@ -108,9 +108,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--blue); outl
   background: var(--bg-2);
   position: sticky; top: 0; z-index: 10;
 }
-.brand { display: flex; align-items: baseline; gap: 0.5rem; }
-.brand-mark { color: var(--blue); font-weight: 700; letter-spacing: 0.04em; }
-.brand-name { color: var(--text); font-weight: 600; }
+.brand { display: flex; align-items: baseline; gap: 0.4rem; }
+.brand-mark { color: var(--blue); font-weight: 700; letter-spacing: 0.06em; }
+/* one uppercase, letter-spaced wordmark: "WTC DRAFT TRAINER" (design mockup) */
+.brand-name { color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 
 nav.screens { display: flex; gap: 0.25rem; flex-wrap: wrap; }
 .tab { background: transparent; border-color: transparent; color: var(--text-3); padding: 0.35rem 0.7rem; }

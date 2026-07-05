@@ -92,7 +92,7 @@ export function App() {
             title={solvable ? undefined : 'Complete the matrix first'}
             onClick={goSolve}
           >
-            Solver
+            Solve
           </button>
           <button
             className={screen === 'trainer' ? 'tab active' : 'tab'}

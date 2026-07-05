@@ -70,6 +70,7 @@ class SolverContext:
     enemy: NameIndex                  # index <-> name for the enemy team
     pairing: Any                      # drafter.common.pairing.PairingTables
     restriction: Any                  # team_permutation.RestrictionData | None
+    paths: Any                        # drafter.data.paths.MatchPaths
     gamestate_dictionaries: dict
     strategy_dictionaries: dict
     game_solution_caches: dict

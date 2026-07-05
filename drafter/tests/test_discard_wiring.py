@@ -31,6 +31,7 @@ def make_ctx(best, worst):
         enemy=enemy,
         pairing=PairingTables(best, worst, 0.5),
         restriction=None,
+        paths=None,
         gamestate_dictionaries={},
         strategy_dictionaries={},
         game_solution_caches=games.make_game_solution_caches())

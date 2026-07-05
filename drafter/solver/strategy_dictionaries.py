@@ -60,7 +60,7 @@ def update_dictionaries(ctx, read, write, gamestate_dictionaries):
 def process_gamestate_dictionary(ctx, read, write, gamestate_dictionary_to_solve, lower_level_strategies=None):
     arbitrary_gamestate = utilities.get_arbitrary_dictionary_entry(gamestate_dictionary_to_solve)
     strategy_dictionary_name = arbitrary_gamestate.get_strategy_dictionary_name()
-    path = utilities.get_path(ctx.enemy_team_name, strategy_dictionary_name + ".json")
+    path = ctx.paths.cache_file(strategy_dictionary_name + ".json")
 
     draft_stage_strategies = None
 

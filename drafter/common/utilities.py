@@ -1,5 +1,3 @@
-from pathlib import Path  # standard libraries
-
 import numpy as np  # 3rd party packages
 from scipy.optimize import linprog
 
@@ -187,18 +185,6 @@ def print_overview(game_overview, roundTo=3):
     print("Row strategy: ", round_row_strategy)
     print("Column strategy: ", round_column_strategy)
     print("Value: ", round_value)
-
-
-def get_path(enemy_team_name, filename):
-    drafter_path = Path(__file__).parent.parent
-
-    if enemy_team_name is None:
-        path = drafter_path / (filename)
-    else:
-        subfolder = "resources/matches/" + enemy_team_name
-        path = drafter_path / (subfolder + "/" + filename)
-
-    return path
 
 
 def get_empty_matrix(n, m):

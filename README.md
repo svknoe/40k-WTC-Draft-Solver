@@ -25,6 +25,21 @@ matchup (10–10). Best must be ≥ worst in every cell.
 Folders in the old single-matrix format can be converted with
 `python scripts/migrate_match_folder.py drafter/resources/matches/<Team>`.
 
+### Where match folders live
+
+The bundled `drafter/resources/matches/<Team>/` folders are **read-only
+samples**. Put your own opponents in a per-user data directory, which is
+searched first (so they survive package upgrades and work with `pipx`
+installs):
+
+- **Windows:** `%APPDATA%\wtc-draft-solver\matches\<Team>\`
+- **macOS:** `~/Library/Application Support/wtc-draft-solver/matches/<Team>/`
+- **Linux:** `~/.local/share/wtc-draft-solver/matches/<Team>/`
+
+Each folder holds the two CSVs above. Solver caches are written to the platform
+cache directory (e.g. `%LOCALAPPDATA%\wtc-draft-solver\Cache\matches\` on
+Windows), never into the installed package.
+
 ## Local setup
 
 ### Prerequisites

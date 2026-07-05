@@ -1,10 +1,10 @@
 import time  # standard libraries
 import csv
 
-import drafter.common.utilities as utilities  # local source
-import drafter.common.team_permutation as team_permutation
+import drafter.common.team_permutation as team_permutation  # local source
 from drafter.common.pairing import PairingTables
 import drafter.data.read_write as read_write
+import drafter.data.paths as paths
 import drafter.solver.context as context
 import drafter.solver.games as games
 import drafter.solver.strategy_dictionaries as strategy_dictionaries
@@ -15,10 +15,12 @@ def initialise(enemy_team_name, config):
     """Load a match's input matrices, build the SolverContext, and solve the
     whole draft tree into it. Returns the populated SolverContext (GitHub issue
     #13, B2 solver-context refactor: no module-level globals)."""
+    match_paths = paths.resolve_match(enemy_team_name)
+
     best = read_pairing_matrix(
-        utilities.get_path(enemy_team_name, "pairing_matrix_best.csv"), config.require_unique_names)
+        match_paths.input_file("pairing_matrix_best.csv"), config.require_unique_names)
     worst = read_pairing_matrix(
-        utilities.get_path(enemy_team_name, "pairing_matrix_worst.csv"), config.require_unique_names)
+        match_paths.input_file("pairing_matrix_worst.csv"), config.require_unique_names)
     validate_best_not_below_worst(best, worst)
 
     # Assign player indices in name-sorted order (see context.NameIndex): enemy
@@ -38,6 +40,7 @@ def initialise(enemy_team_name, config):
         enemy=enemy,
         pairing=pairing,
         restriction=restriction,
+        paths=match_paths,
         gamestate_dictionaries=game_state_dictionaries.make_gamestate_dictionaries(),
         strategy_dictionaries=strategy_dictionaries.make_strategy_dictionaries(),
         game_solution_caches=games.make_game_solution_caches())
@@ -51,7 +54,7 @@ def initialise(enemy_team_name, config):
     # the current engine and the current name ordering; the marker is written
     # after a successful solve+write below.
     caches_are_current = read_write.cache_format_is_current(
-        utilities.get_path(enemy_team_name, read_write.CACHE_FORMAT_FILENAME), friendly_names, enemy_names)
+        match_paths.cache_file(read_write.CACHE_FORMAT_FILENAME), friendly_names, enemy_names)
     if (config.read_gamestates or config.read_strategies) and not caches_are_current:
         print("Ignoring cached JSONs in this match folder (missing or outdated {}): "
             "they were computed under an older value model. Solving fresh."
@@ -81,7 +84,7 @@ def initialise(enemy_team_name, config):
 
     if config.write_gamestates and config.write_strategies:
         read_write.write_cache_format_marker(
-            utilities.get_path(enemy_team_name, read_write.CACHE_FORMAT_FILENAME), friendly_names, enemy_names)
+            match_paths.cache_file(read_write.CACHE_FORMAT_FILENAME), friendly_names, enemy_names)
 
     return ctx
 

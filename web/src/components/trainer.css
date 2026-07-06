@@ -51,7 +51,10 @@
 .slot.pending .slot-name, .slot.hidden .slot-name, .slot.empty .slot-name { color: var(--text-4); font-weight: 500; }
 .slot.hidden, .slot.empty { border-style: dashed; }
 .slot.atk.enemy.hidden { border-color: #e0573e55; }
-.slot.active { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; }
+/* an in-play slot gets its side's coloured border; a refused attacker dims */
+.slot.mine.on { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; }
+.slot.enemy.on { border-color: var(--enemy); box-shadow: 0 0 0 1px var(--enemy) inset; }
+.slot.muted { opacity: 0.5; }
 .slot-pair { display: flex; gap: 0.4rem; }
 .slot-pair .slot { flex: 1; justify-content: center; }
 .board-hint { margin-top: 0.4rem; color: var(--text-4); font-size: 0.78rem; }

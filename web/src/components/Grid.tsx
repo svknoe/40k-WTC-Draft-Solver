@@ -5,6 +5,8 @@ interface GridProps {
   matrix: EditorMatrix;
   simpleMode: boolean;
   cellErrors: (string | null)[][];
+  /** Freeze every input (names + cells) — set while a draft locks the matrix. */
+  readOnly?: boolean;
   onCellChange: (i: number, j: number, cell: EditorCell) => void;
   onMyName: (i: number, name: string) => void;
   onEnemyName: (j: number, name: string) => void;
@@ -20,7 +22,7 @@ function bandClass(raw: string): string {
 }
 
 export function Grid({
-  matrix, simpleMode, cellErrors, onCellChange, onMyName, onEnemyName,
+  matrix, simpleMode, cellErrors, readOnly = false, onCellChange, onMyName, onEnemyName,
 }: GridProps) {
   const { myNames, enemyNames, cells } = matrix;
 
@@ -37,6 +39,7 @@ export function Grid({
                   value={name}
                   placeholder={`Enemy ${j + 1}`}
                   aria-label={`Enemy player ${j + 1} name`}
+                  readOnly={readOnly}
                   onChange={(e) => onEnemyName(j, e.target.value)}
                 />
               </th>
@@ -52,6 +55,7 @@ export function Grid({
                   value={rowName}
                   placeholder={`Player ${i + 1}`}
                   aria-label={`Your player ${i + 1} name`}
+                  readOnly={readOnly}
                   onChange={(e) => onMyName(i, e.target.value)}
                 />
               </th>
@@ -70,6 +74,7 @@ export function Grid({
                         value={cell.b}
                         aria-label={label}
                         inputMode="decimal"
+                        readOnly={readOnly}
                         onChange={(e) => onCellChange(i, j, { b: e.target.value, w: e.target.value })}
                       />
                     ) : (
@@ -79,6 +84,7 @@ export function Grid({
                           value={cell.b}
                           aria-label={`${label} best`}
                           inputMode="decimal"
+                          readOnly={readOnly}
                           onChange={(e) => onCellChange(i, j, { ...cell, b: e.target.value })}
                         />
                         <span className="sep">/</span>
@@ -87,6 +93,7 @@ export function Grid({
                           value={cell.w}
                           aria-label={`${label} worst`}
                           inputMode="decimal"
+                          readOnly={readOnly}
                           onChange={(e) => onCellChange(i, j, { ...cell, w: e.target.value })}
                         />
                       </div>

@@ -24,6 +24,9 @@ interface DraftTrainerProps {
   /** Trigger an exact solve on demand (from "Start practice draft"). */
   onSolve: () => void;
   onEditMatrix: () => void;
+  /** Notifies the app when a draft is in progress (not done), so it can lock the
+   * Matrix tab while the draft depends on its numbers. */
+  onLiveChange?: (live: boolean) => void;
 }
 
 const STAGE_COPY = {
@@ -45,7 +48,7 @@ function joinName(name: string | [string, string]): string {
   return typeof name === 'string' ? name : `${name[0]} + ${name[1]}`;
 }
 
-export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onSolve, onEditMatrix }: DraftTrainerProps) {
+export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onSolve, onEditMatrix, onLiveChange }: DraftTrainerProps) {
   const { myNames, enemyNames } = matrix;
   const [model, setModel] = useState<DraftModel | null>(null);
   const [history, setHistory] = useState<DraftModel[]>([]);
@@ -88,6 +91,13 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     solve.node([]).then(setNode).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, wantStart]);
+
+  // A draft is "live" once it exists and isn't finished. The app lifts this to
+  // lock the Matrix tab (its numbers must stay fixed for the running draft).
+  const isLive = model !== null && !model.done;
+  useEffect(() => {
+    onLiveChange?.(isLive);
+  }, [isLive, onLiveChange]);
 
   // --- intro ---
   if (model === null) {

@@ -9,6 +9,7 @@ import { loadState, saveState } from './model/storage';
 import type { AppState, Settings } from './model/storage';
 import { validateMatrix } from './model/validation';
 import { useSolve } from './worker/useSolve';
+import type { SolveState } from './worker/useSolve';
 
 type Screen = 'editor' | 'solve' | 'trainer';
 
@@ -16,11 +17,24 @@ type Screen = 'editor' | 'solve' | 'trainer';
 // pairing values must use the same to match the engine's totals.
 const NEUTRAL_WEIGHT = 0.5;
 
-export function App() {
+interface AppProps {
+  /** Injectable solver state for tests (a real worker is awkward in jsdom);
+   * production leaves it undefined and uses the app's own useSolve(). */
+  solve?: SolveState;
+}
+
+export function App({ solve: injectedSolve }: AppProps = {}) {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('editor');
   const [showAbout, setShowAbout] = useState(false);
-  const solve = useSolve();
+  // A practice draft is under way (reported by DraftTrainer). While it is, the
+  // Matrix editor locks so its numbers can't drift out from under the draft.
+  const [draftLive, setDraftLive] = useState(false);
+  // Bumping this remounts DraftTrainer, resetting it to the intro — how "Discard
+  // draft to edit" and a fresh replay clear an in-progress draft.
+  const [draftKey, setDraftKey] = useState(0);
+  const ownSolve = useSolve();
+  const solve = injectedSolve ?? ownSolve;
 
   // Persist the whole blob whenever it changes (§4.2 auto-save).
   useEffect(() => saveState(state), [state]);
@@ -61,6 +75,14 @@ export function App() {
   // The Trainer tab just navigates; DraftTrainer's "Start practice draft"
   // triggers the exact solve on demand, so opening the tab no longer solves.
   const goTrainer = () => setScreen('trainer');
+  // Discard the in-progress draft immediately — no confirm, a draft is quick to
+  // remake. The remount clears the live flag (unlocking the editor); the solve
+  // is cleared too, since discarding to edit means the numbers are about to
+  // change out from under it.
+  const discardDraft = () => {
+    solve.reset();
+    setDraftKey((k) => k + 1);
+  };
 
   return (
     <div className={settings.cb ? 'app cb' : 'app'}>
@@ -126,6 +148,8 @@ export function App() {
             onLoadSave={loadSave}
             onDeleteSave={deleteSave}
             onSolve={solvable ? goSolve : undefined}
+            locked={draftLive}
+            onDiscardDraft={discardDraft}
           />
         )}
         {screen === 'solve' && (
@@ -139,16 +163,22 @@ export function App() {
             onTrain={solvable ? goTrainer : undefined}
           />
         )}
-        {screen === 'trainer' && engineMatrix && (
-          <DraftTrainer
-            matrix={engineMatrix}
-            myTeam={matrix.myTeam}
-            enemyTeam={matrix.enemyTeam}
-            neutralWeight={NEUTRAL_WEIGHT}
-            solve={solve}
-            onSolve={() => solve.solve(matrix, null)}
-            onEditMatrix={() => setScreen('editor')}
-          />
+        {/* The trainer stays mounted for the whole session (only hidden when
+            off-tab), so switching tabs never resets an in-progress draft. */}
+        {engineMatrix && (
+          <div style={{ display: screen === 'trainer' ? 'contents' : 'none' }}>
+            <DraftTrainer
+              key={draftKey}
+              matrix={engineMatrix}
+              myTeam={matrix.myTeam}
+              enemyTeam={matrix.enemyTeam}
+              neutralWeight={NEUTRAL_WEIGHT}
+              solve={solve}
+              onSolve={() => solve.solve(matrix, null)}
+              onEditMatrix={() => setScreen('editor')}
+              onLiveChange={setDraftLive}
+            />
+          </div>
         )}
       </main>
 

@@ -5,7 +5,7 @@ import { sampleIndex } from '../draft/sampling';
 import type { DraftModel } from '../draft/draftState';
 import { applyStep, initDraft } from '../draft/draftState';
 import { candidateStats, projectedResult } from '../draft/cards';
-import { formatTeamScore, teamTotal, toScore } from '../model/scale';
+import { formatTeamScore, scoreBand, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
 import type { SolveState } from '../worker/useSolve';
 import { DraftBoard } from './DraftBoard';
@@ -225,7 +225,15 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
                 {stage === 'refusal' ? `Refuse ${joinName(choice.name)}` : joinName(choice.name)}
               </span>
               <span className="cstat">
-                our map · {stats.avg === stats.floor ? `keeps ${stats.avg}` : `avg ${stats.avg} · floor ${stats.floor}`}
+                our map ·{' '}
+                {stats.avg === stats.floor ? (
+                  <>keeps <span className={`num band-${scoreBand(stats.avg)}`}>{stats.avg}</span></>
+                ) : (
+                  <>
+                    avg <span className={`num band-${scoreBand(stats.avg)}`}>{stats.avg}</span>
+                    {' · '}floor <span className={`num band-${scoreBand(stats.floor)}`}>{stats.floor}</span>
+                  </>
+                )}
               </span>
               {showHints && (
                 <span className="chint">

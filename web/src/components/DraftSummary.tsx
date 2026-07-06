@@ -1,5 +1,5 @@
 import { achievedTotal } from '../draft/draftState';
-import type { DraftModel, FixedGame } from '../draft/draftState';
+import type { DraftDecision, DraftModel, FixedGame } from '../draft/draftState';
 import { decompose, verdict } from '../draft/summary';
 import { formatMatchupScore, teamResult, toScore } from '../model/scale';
 import './trainer.css';
@@ -15,11 +15,20 @@ interface DraftSummaryProps {
   onEditMatrix: () => void;
 }
 
+// The defender picks the map, so a played game is on that side's map; the
+// refused / last games have no defender, so they keep their own labels.
 const KIND_LABEL: Record<FixedGame['kind'], string> = {
-  'my-defends': 'you defended',
-  'enemy-defends': 'they defended',
+  'my-defends': 'your map',
+  'enemy-defends': 'their map',
   refused: 'refused pair',
   last: 'last players',
+};
+
+// History row prefix: the phase label + the verb for what you chose.
+const STAGE_HISTORY: Record<DraftDecision['stage'], { label: string; verb: string }> = {
+  defender: { label: 'defenders', verb: 'put up' },
+  attackers: { label: 'attackers', verb: 'sent' },
+  refusal: { label: 'pairing', verb: 'faced' },
 };
 
 function joinName(name: string | [string, string]): string {
@@ -59,19 +68,24 @@ export function DraftSummary({ myTeam, enemyTeam, myNames, enemyNames, expected,
         </div>
       </div>
 
-      {d.leaks.length > 0 && (
-        <div>
-          <div className="section-head">Where you left points (worst first)</div>
-          <div className="leaks-list">
-            {d.leaks.map((leak, i) => (
-              <div className="leak" key={i}>
-                R{leak.round} {leak.stage} — sent {joinName(leak.chosenName)} · best {joinName(leak.bestName)}{' '}
-                <span className="lcost">−{leak.regret.toFixed(1)}</span>
+      <div>
+        <div className="section-head">Your draft</div>
+        <div className="history">
+          {model.decisions.map((dec, i) => {
+            const opt = dec.regret < 0.05;
+            const sh = STAGE_HISTORY[dec.stage];
+            return (
+              <div className="hrow" key={i}>
+                <span className="hlabel">R{dec.round} {sh.label} — {sh.verb} {joinName(dec.chosenName)}</span>
+                <span className="hbest">{opt ? 'best move' : `best ${joinName(dec.bestName)}`}</span>
+                <span className={`hval ${opt ? 'opt' : dec.regret >= 2 ? 'major' : 'minor'}`}>
+                  {opt ? '✓ 0.0' : `−${dec.regret.toFixed(1)}`}
+                </span>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       <div className="locked">
         <div className="section-head">Final pairings</div>

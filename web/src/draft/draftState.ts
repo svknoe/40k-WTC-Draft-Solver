@@ -1,4 +1,4 @@
-import type { Matrix, Move, NodeResult } from '../engine/types';
+import type { Matrix, Move, NodeChoice, NodeResult } from '../engine/types';
 
 /** One of the 8 games fixed by the draft, with its value-model value (internal
  * scale). `my`/`enemy` are player indices. */
@@ -104,14 +104,19 @@ export function applyStep(model: DraftModel, node: NodeResult, myIndex: number, 
   const choice = node.choices[myIndex];
   const bestChoice = node.choices.reduce((best, c) => (c.ev > best.ev ? c : best), node.choices[0]);
   const bestEv = bestChoice.ev;
+  // At the refusal stage a choice picks which enemy attacker to REFUSE, but the
+  // trainer frames it as who my defender FACES (the kept one), so the decision
+  // log records the faced attacker — the other of the two offered.
+  const facedName = (c: NodeChoice): string | [string, string] =>
+    node.stage === 'refusal' ? (node.choices.find((o) => o !== c) ?? c).name : c.name;
   const decision: DraftDecision = {
     stage: node.stage as DraftDecision['stage'],
     round: model.round,
     chosenId: choice.id,
-    chosenName: choice.name,
+    chosenName: facedName(choice),
     chosenEv: choice.ev,
     bestEv,
-    bestName: bestChoice.name,
+    bestName: facedName(bestChoice),
     regret: bestEv - choice.ev,
   };
 

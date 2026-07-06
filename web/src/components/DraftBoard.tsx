@@ -33,7 +33,7 @@ const NO_PENDING: PendingPicks = { defender: null, attackers: [], face: null };
 export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }: DraftBoardProps) {
   // Our defender: locked → pending pick (highlighted) → "selecting…".
   const myDefIdx = model.myDefender >= 0 ? model.myDefender : pending.defender;
-  const myDefCls = myDefIdx != null ? 'slot def mine filled on' : 'slot def mine pending on';
+  const myDefCls = myDefIdx != null ? 'slot def mine filled on' : 'slot def mine pending';
 
   const enDefName = model.enemyDefender >= 0 ? enemyNames[model.enemyDefender] : null;
 

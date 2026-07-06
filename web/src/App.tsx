@@ -164,7 +164,11 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
           />
         )}
         {/* The trainer stays mounted for the whole session (only hidden when
-            off-tab), so switching tabs never resets an in-progress draft. */}
+            off-tab), so switching tabs never resets an in-progress draft.
+            Invariant: while a draft is live the editor is locked, so
+            `state.current` (hence `engineMatrix`) can't change out from under
+            it — this guard never unmounts DraftTrainer mid-draft, so there's no
+            path that strands `draftLive` true with the trainer gone. */}
         {engineMatrix && (
           <div style={{ display: screen === 'trainer' ? 'contents' : 'none' }}>
             <DraftTrainer

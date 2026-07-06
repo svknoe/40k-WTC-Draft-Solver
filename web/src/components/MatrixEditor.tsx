@@ -116,7 +116,7 @@ export function MatrixEditor({
               {savedNames.map((name) => (
                 <div className="saved-row" key={name}>
                   <button className="load" disabled={locked} onClick={() => onLoadSave(name)}>{name}</button>
-                  <button className="del" title={`Delete ${name}`} onClick={() => onDeleteSave(name)}>✕</button>
+                  <button className="del" disabled={locked} title={`Delete ${name}`} onClick={() => onDeleteSave(name)}>✕</button>
                 </div>
               ))}
             </div>

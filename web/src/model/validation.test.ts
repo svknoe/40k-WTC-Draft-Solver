@@ -39,6 +39,15 @@ describe('validateMatrix', () => {
     expect(r.cellErrors[1][2]).toBeTruthy();
   });
 
+  test('flags a non-integer map value (a game is played on a single map)', () => {
+    const m = valid4();
+    m.cells[0][0] = { b: '12.5', w: '9' };
+    const r = validateMatrix(m);
+    expect(r.ok).toBe(false);
+    expect(r.cellErrors[0][0]).toMatch(/whole number/i);
+    expect(r.cellErrors[0][1]).toBeNull();
+  });
+
   test('flags a blank (incomplete) cell', () => {
     const m = valid4();
     m.cells[2][2] = { b: '', w: '5' };

@@ -121,6 +121,33 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
     expect(onLiveChange).toHaveBeenLastCalledWith(true);
   });
 
+  test('the attacker-pair "why" list folds into hints — no separate Why toggle', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DraftTrainer
+        matrix={fixtureMatrix(smoke)}
+        myTeam="Us"
+        enemyTeam="Them"
+        neutralWeight={smoke.neutralWeight}
+        solve={engineSolveState()}
+        onSolve={() => {}}
+        onEditMatrix={() => {}}
+      />,
+    );
+    await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
+
+    // The "why" content is no longer behind its own toggle.
+    expect(screen.queryByRole('button', { name: 'Why' })).not.toBeInTheDocument();
+
+    // Advance to the attackers stage.
+    await user.click(await waitFor(() => container.querySelector('.choice') as HTMLElement));
+    await user.click(screen.getByRole('button', { name: 'Lock defender' }));
+    await screen.findByRole('button', { name: 'Lock attackers' });
+
+    // Hints are on by default, so the attacker-pair EV list shows automatically.
+    expect(screen.getByText(/Team EV per attacker pair choice/i)).toBeInTheDocument();
+  });
+
   test('undo steps back a decision', async () => {
     const user = userEvent.setup();
     const { container } = render(

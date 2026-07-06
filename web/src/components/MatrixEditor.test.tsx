@@ -69,7 +69,7 @@ describe('MatrixEditor', () => {
       <MatrixEditor
         matrix={valid4()}
         settings={{ cb: false, simpleMode: false }}
-        saves={{}}
+        saves={{ Scotland: valid4() }}
         onMatrixChange={() => {}}
         onSettingsChange={() => {}}
         onSaveAs={() => {}}
@@ -86,6 +86,9 @@ describe('MatrixEditor', () => {
     // The grid is frozen and Solve is disabled while a draft depends on it.
     expect(screen.getByLabelText('A vs W best')).toHaveAttribute('readonly');
     expect(screen.getByRole('button', { name: /solve/i })).toBeDisabled();
+    // Saved-opponent load AND delete are frozen too — the whole editor is paused.
+    expect(screen.getByRole('button', { name: 'Scotland' })).toBeDisabled();
+    expect(screen.getByTitle('Delete Scotland')).toBeDisabled();
 
     // "Discard draft to edit" discards immediately — no confirmation dialog.
     await user.click(screen.getByRole('button', { name: /discard draft to edit/i }));

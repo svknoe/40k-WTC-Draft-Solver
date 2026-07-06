@@ -65,7 +65,11 @@
 }
 .choice:hover:not(:disabled) { border-color: var(--blue); }
 .choice.selected { border-color: var(--blue); background: var(--card-2); }
-.choice .cname { font-weight: 600; }
+.choice .cname { font-weight: 600; display: flex; align-items: center; gap: 0.4rem; }
+/* attackers stage: the ✓ badge on a selected attacker card */
+.choice .cname .tick { margin-left: auto; width: 1.05rem; height: 1.05rem; border-radius: 50%;
+  background: var(--blue); color: #06101c; font-size: 0.72rem; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; }
 .choice .cstat { color: var(--text-3); font-size: 0.8rem; }
 /* Show the ratings the way the matrix does: banded colour + mono + bold. */
 .choice .cstat .num { font-weight: 600; }
@@ -74,6 +78,17 @@
 .choice .cbar > span { display: block; height: 100%; background: var(--blue); }
 .choice .cprob { color: var(--text-2); font-family: var(--font-mono); font-size: 0.82rem; }
 .choice .cev { color: var(--text-3); font-family: var(--font-mono); font-size: 0.82rem; }
+.choice .csend { color: var(--text-3); font-family: var(--font-mono); font-size: 0.82rem; white-space: nowrap; }
+
+/* attackers stage: the picked-pair equilibrium share + EV, shown once two
+ * attackers are selected (the pair-defined figures the cards can't carry). */
+.pair-summary { display: flex; align-items: center; gap: 0.4rem 0.9rem; flex-wrap: wrap;
+  margin-top: 0.6rem; padding: 0.55rem 0.9rem; background: var(--card);
+  border: 1px solid var(--blue); border-radius: var(--radius-sm); font-size: 0.85rem; }
+.pair-summary .ps-label { color: var(--text-4); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; }
+.pair-summary .ps-names { color: var(--blue); font-weight: 600; }
+.pair-summary .ps-fig { font-family: var(--font-mono); color: var(--text-1); }
+.pair-summary .ps-regret { color: var(--amber); font-family: var(--font-mono); }
 
 .lock-bar { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
 

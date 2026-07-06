@@ -67,10 +67,10 @@ export function teamResult(expected: number, n: number): TeamResult {
  * figures (the trainer's per-choice EV and projected score). */
 export const teamTotal = (margin: number, n: number): number => 10 * n + margin;
 
-/** Format a team total for display: one decimal, trailing ".0" dropped
- * (e.g. 86 or 86.1). Keeps the trainer's EV cards and projected score on the
- * same scale so they read as the same number. */
-export const formatTeamScore = (total: number): string => (Math.round(total * 10) / 10).toString();
+/** Format a team total for display: always one decimal (e.g. 86.0 or 86.1).
+ * Keeps the trainer's EV cards and projected score on the same scale so they
+ * read as the same number. */
+export const formatTeamScore = (total: number): string => total.toFixed(1);
 
 export type ScoreBand = 'worst' | 'bad' | 'okay' | 'good' | 'best';
 

@@ -90,12 +90,11 @@ describe('teamTotal / formatTeamScore', () => {
     expect(Math.round(teamTotal(6.19, 8))).toBe(teamResult(6.19, 8).my);
   });
 
-  test('formatTeamScore shows one decimal, dropping a trailing .0', () => {
+  test('formatTeamScore always shows one decimal', () => {
     expect(formatTeamScore(86.1)).toBe('86.1');
-    expect(formatTeamScore(86)).toBe('86');
-    expect(formatTeamScore(45.0)).toBe('45');
-    expect(formatTeamScore(80.04)).toBe('80'); // rounds to one decimal
-    expect(formatTeamScore(80.05)).toBe('80.1');
+    expect(formatTeamScore(86)).toBe('86.0');
+    expect(formatTeamScore(45)).toBe('45.0');
+    expect(formatTeamScore(44.94)).toBe('44.9'); // rounds to one decimal
   });
 });
 

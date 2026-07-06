@@ -49,14 +49,16 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
     // The draft board renders for the active round.
     expect(await within(container).findByText(/Our defender · our map/i)).toBeInTheDocument();
 
-    // A 4×4 draft is one round: defender → attackers → refusal.
+    // A 4×4 draft is one round: defender → attackers → refusal. The attackers
+    // step needs two cards picked (individual attackers); the others need one.
     for (let step = 0; step < 3; step++) {
-      const choice = await waitFor(() => {
-        const first = container.querySelector('.choice');
-        if (!first) throw new Error('choices not rendered yet');
-        return first as HTMLElement;
+      await waitFor(() => {
+        if (!container.querySelector('.choice')) throw new Error('choices not rendered yet');
       });
-      await user.click(choice);
+      const cards = () => [...container.querySelectorAll('.choice')] as HTMLElement[];
+      await user.click(cards()[0]);
+      const lockBtn = screen.getByRole('button', { name: /^Lock/ });
+      if (/attackers/.test(lockBtn.textContent ?? '')) await user.click(cards()[1]);
       await user.click(screen.getByRole('button', { name: /^Lock/ }));
     }
 

@@ -3,7 +3,7 @@ import type { Matrix, NodeResult } from '../engine/types';
 import { sampleIndex } from '../draft/sampling';
 import type { DraftModel } from '../draft/draftState';
 import { applyStep, initDraft } from '../draft/draftState';
-import { candidateStats, projectedResult } from '../draft/cards';
+import { attackerOptions, candidateStats, pairChoiceIndex, projectedResult } from '../draft/cards';
 import { formatTeamScore, scoreBand, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
 import type { SolveState } from '../worker/useSolve';
@@ -40,6 +40,9 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   const [history, setHistory] = useState<DraftModel[]>([]);
   const [node, setNode] = useState<NodeResult | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
+  // Attackers stage only: the (≤2) individually-picked attacker indices. Other
+  // stages select a single choice via `selected`.
+  const [attackerSel, setAttackerSel] = useState<number[]>([]);
   const [reveal, setReveal] = useState<{ mine: string; enemy: string } | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   const [hints, setHints] = useState(true);
@@ -60,6 +63,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     setModel(initDraft(matrix, neutralWeight));
     setHistory([]);
     setSelected(null);
+    setAttackerSel([]);
     setReveal(null);
     setShowWhy(false);
     solve.node([]).then(setNode).catch(() => {});
@@ -117,15 +121,32 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   const achieved = model.fixed.reduce((sum, g) => sum + g.value, 0);
   const projScore = formatTeamScore(teamTotal(proj.projected, model.n));
 
+  // Attackers select two individual cards (resolved to the pair NodeChoice on
+  // lock); every other stage selects a single choice.
+  const canLock = stage === 'attackers' ? attackerSel.length === 2 : selected !== null;
+
+  const toggleAttacker = (idx: number) => {
+    setAttackerSel((sel) =>
+      sel.includes(idx)
+        ? sel.filter((x) => x !== idx)
+        : sel.length < 2
+          ? [...sel, idx]
+          : [sel[1], idx], // already two picked → drop the earliest, keep the newest
+    );
+  };
+
   const lock = () => {
-    if (selected === null || !node.why) return;
+    const myChoice =
+      stage === 'attackers' ? pairChoiceIndex(node, attackerSel[0], attackerSel[1]) : selected ?? -1;
+    if (myChoice < 0 || !node.why) return;
     const colIndex = sampleIndex(node.why.enStrategy, 'equilibrium', rng.current);
-    const myLabel = joinName(node.choices[selected].name);
+    const myLabel = joinName(node.choices[myChoice].name);
     const enemyLabel = node.why.colLabels[colIndex];
-    const next = applyStep(model, node, selected, colIndex);
+    const next = applyStep(model, node, myChoice, colIndex);
     setHistory([...history, model]);
     setModel(next);
     setSelected(null);
+    setAttackerSel([]);
     setShowWhy(false);
     setReveal(
       stage === 'refusal'
@@ -142,6 +163,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     setHistory(history.slice(0, -1));
     setModel(prev);
     setSelected(null);
+    setAttackerSel([]);
     setReveal(null);
     setShowWhy(false);
     solve.node(prev.path).then(setNode).catch(() => {});
@@ -201,43 +223,92 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
 
       <DraftBoard model={model} myNames={myNames} enemyNames={enemyNames} stage={stage} />
 
-      <div className="choices grid">
-        {node.choices.map((choice, i) => {
-          const stats = candidateStats(model, node, i);
-          return (
-            <button
-              key={i}
-              className={selected === i ? 'choice selected' : 'choice'}
-              onClick={() => setSelected(i)}
-            >
-              <span className="cname">
-                {stage === 'refusal' ? `Refuse ${joinName(choice.name)}` : joinName(choice.name)}
-              </span>
-              <span className="cstat">
-                our map ·{' '}
-                {stats.avg === stats.floor ? (
-                  <>keeps <span className={`num band-${scoreBand(stats.avg)}`}>{stats.avg}</span></>
-                ) : (
-                  <>
-                    avg <span className={`num band-${scoreBand(stats.avg)}`}>{stats.avg}</span>
-                    {' · '}floor <span className={`num band-${scoreBand(stats.floor)}`}>{stats.floor}</span>
-                  </>
-                )}
-              </span>
-              {showHints && (
-                <span className="chint">
-                  <span className="cbar"><span style={{ width: `${Math.min(100, choice.prob * 100)}%` }} /></span>
-                  <span className="cprob">{(choice.prob * 100).toFixed(0)}%</span>
-                  <span className="cev">EV {formatTeamScore(teamTotal(achieved + choice.ev, model.n))}</span>
+      {stage === 'attackers' ? (
+        <>
+          <div className="choices grid">
+            {attackerOptions(model, node).map((opt) => {
+              const sel = attackerSel.includes(opt.index);
+              return (
+                <button
+                  key={opt.index}
+                  className={sel ? 'choice selected' : 'choice'}
+                  aria-pressed={sel}
+                  onClick={() => toggleAttacker(opt.index)}
+                >
+                  <span className="cname">
+                    {myNames[opt.index]}
+                    {sel && <span className="tick" aria-hidden="true">✓</span>}
+                  </span>
+                  <span className="cstat">
+                    their map · <span className={`num band-${scoreBand(opt.rating)}`}>{opt.rating}</span>
+                  </span>
+                  {showHints && (
+                    <span className="chint">
+                      <span className="cbar"><span style={{ width: `${Math.min(100, opt.sendProb * 100)}%` }} /></span>
+                      <span className="csend">sent {(opt.sendProb * 100).toFixed(0)}%</span>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {showHints && attackerSel.length === 2 && (() => {
+            const ci = pairChoiceIndex(node, attackerSel[0], attackerSel[1]);
+            if (ci < 0) return null;
+            const c = node.choices[ci];
+            const bestEv = node.choices.reduce((m, ch) => Math.max(m, ch.ev), -Infinity);
+            const regret = c.ev - bestEv; // ≤ 0; 0 means this pair is an equilibrium best
+            return (
+              <div className="pair-summary">
+                <span className="ps-label">Your pair</span>
+                <span className="ps-names">{joinName(c.name)}</span>
+                <span className="ps-fig">
+                  {(c.prob * 100).toFixed(0)}% of equilibrium · EV {formatTeamScore(teamTotal(achieved + c.ev, model.n))}
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+                {regret < -0.05 && <span className="ps-regret">{regret.toFixed(1)} vs best</span>}
+              </div>
+            );
+          })()}
+        </>
+      ) : (
+        <div className="choices grid">
+          {node.choices.map((choice, i) => {
+            const stats = candidateStats(model, node, i);
+            return (
+              <button
+                key={i}
+                className={selected === i ? 'choice selected' : 'choice'}
+                onClick={() => setSelected(i)}
+              >
+                <span className="cname">
+                  {stage === 'refusal' ? `Refuse ${joinName(choice.name)}` : joinName(choice.name)}
+                </span>
+                <span className="cstat">
+                  our map ·{' '}
+                  {stats.avg === stats.floor ? (
+                    <>keeps <span className={`num band-${scoreBand(stats.avg)}`}>{stats.avg}</span></>
+                  ) : (
+                    <>
+                      avg <span className={`num band-${scoreBand(stats.avg)}`}>{stats.avg}</span>
+                      {' · '}floor <span className={`num band-${scoreBand(stats.floor)}`}>{stats.floor}</span>
+                    </>
+                  )}
+                </span>
+                {showHints && (
+                  <span className="chint">
+                    <span className="cbar"><span style={{ width: `${Math.min(100, choice.prob * 100)}%` }} /></span>
+                    <span className="cprob">{(choice.prob * 100).toFixed(0)}%</span>
+                    <span className="cev">EV {formatTeamScore(teamTotal(achieved + choice.ev, model.n))}</span>
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="lock-bar">
-        <button className="primary" disabled={selected === null} onClick={lock}>Lock {stage}</button>
+        <button className="primary" disabled={!canLock} onClick={lock}>Lock {stage}</button>
         <span className="muted">{enemy} picks simultaneously — revealed after you lock.</span>
       </div>
 

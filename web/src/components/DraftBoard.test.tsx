@@ -11,7 +11,7 @@ describe('DraftBoard', () => {
     const matrix = fixtureMatrix(smoke);
     const model = initDraft(matrix, smoke.neutralWeight);
     const { container } = render(
-      <DraftBoard model={model} myNames={matrix.myNames} enemyNames={matrix.enemyNames} stage="defender" />,
+      <DraftBoard model={model} myNames={matrix.myNames} enemyNames={matrix.enemyNames} />,
     );
     const q = within(container);
 
@@ -33,7 +33,7 @@ describe('DraftBoard', () => {
       enemyPair: [1, 2] as [number, number],
     };
     const { container } = render(
-      <DraftBoard model={model} myNames={matrix.myNames} enemyNames={matrix.enemyNames} stage="refusal" />,
+      <DraftBoard model={model} myNames={matrix.myNames} enemyNames={matrix.enemyNames} />,
     );
     const q = within(container);
 

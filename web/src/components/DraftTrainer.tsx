@@ -131,6 +131,15 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
       : selected !== null
         ? `${defenderName} faces ${enemyNames[model.enemyPair!.find((x) => x !== (node.choices[selected].id as number))!]}`
         : `${defenderName} faces …`;
+  // In-progress picks so the board fills + highlights before the user locks.
+  const pending = {
+    defender: stage === 'defender' && selected !== null ? (node.choices[selected].id as number) : null,
+    attackers: stage === 'attackers' ? attackerSel : [],
+    face:
+      stage === 'refusal' && selected !== null
+        ? model.enemyPair!.find((x) => x !== (node.choices[selected].id as number))!
+        : null,
+  };
   const proj = projectedResult(model, node, expected);
   // EV cards + the projected header share one scale: the 0–20n team total, one
   // decimal. The best card's EV therefore equals the projected figure exactly.
@@ -243,7 +252,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         </div>
       )}
 
-      <DraftBoard model={model} myNames={myNames} enemyNames={enemyNames} stage={stage} />
+      <DraftBoard model={model} myNames={myNames} enemyNames={enemyNames} pending={pending} />
 
       {stage === 'attackers' ? (
         <>

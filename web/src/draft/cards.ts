@@ -101,22 +101,3 @@ export function pairChoiceIndex(node: NodeResult, x: number, y: number): number 
     return Math.min(a, b) === lo && Math.max(a, b) === hi;
   });
 }
-
-export interface Threat {
-  enemyIndex: number;
-  label: string;
-  weight: number;
-}
-
-/** The enemy's biggest threats at the defender stage: their equilibrium defender
- * mix (`node.why.enStrategy`) ranked descending, top-k. At this stage
- * `colLabels[j]` maps 1:1 to `model.enemyRemaining[j]`. Empty for non-defender
- * stages — the threat sub-matrix is defender-specific. */
-export function topThreats(model: DraftModel, node: NodeResult, k = 3): Threat[] {
-  if (node.stage !== 'defender' || !node.why) return [];
-  const why = node.why;
-  return why.colLabels
-    .map((label, j) => ({ enemyIndex: model.enemyRemaining[j], label, weight: why.enStrategy[j] }))
-    .sort((a, b) => b.weight - a.weight)
-    .slice(0, k);
-}

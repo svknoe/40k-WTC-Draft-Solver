@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { DraftEngine } from '../engine/engine';
 import { initDraft } from './draftState';
-import { attackerOptions, candidateStats, pairChoiceIndex, projectedResult, topThreats } from './cards';
+import { attackerOptions, candidateStats, pairChoiceIndex, projectedResult } from './cards';
 
 /** Lock an arbitrary defender move to reach an attackers-stage node. */
 function attackersNode() {
@@ -111,34 +111,5 @@ describe('projectedResult', () => {
     // The best pure response against the equilibrium mix equals the game value.
     expect(projected).toBeCloseTo(expected, 6);
     expect(delta).toBeCloseTo(0, 6);
-  });
-});
-
-describe('topThreats', () => {
-  test('defender stage: top-k enemy remaining by equilibrium weight, descending', () => {
-    const matrix = fixtureMatrix(smoke);
-    const model = initDraft(matrix, smoke.neutralWeight);
-    const engine = new DraftEngine(matrix, null, smoke.neutralWeight);
-    engine.solve();
-    const node = engine.nodeResult([]);
-
-    const threats = topThreats(model, node, 2);
-    expect(threats.length).toBeLessThanOrEqual(2);
-    const weights = threats.map((t) => t.weight);
-    expect([...weights].sort((a, b) => b - a)).toEqual(weights); // already descending
-    expect(model.enemyRemaining).toContain(threats[0].enemyIndex);
-  });
-
-  test('non-defender stages return no threats', () => {
-    const matrix = fixtureMatrix(smoke);
-    const engine = new DraftEngine(matrix, null, smoke.neutralWeight);
-    engine.solve();
-    let model = initDraft(matrix, smoke.neutralWeight);
-    const root = engine.nodeResult([]);
-    const myDef = root.choices[0].id as number;
-    const enDef = model.enemyRemaining[0];
-    model = { ...model, myDefender: myDef, enemyDefender: enDef, path: [{ stage: 'defender', my: myDef, enemy: enDef }] };
-    const node = engine.nodeResult(model.path);
-    expect(topThreats(model, node)).toEqual([]);
   });
 });

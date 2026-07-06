@@ -57,7 +57,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   // Attackers stage only: the (≤2) individually-picked attacker indices. Other
   // stages select a single choice via `selected`.
   const [attackerSel, setAttackerSel] = useState<number[]>([]);
-  const [showWhy, setShowWhy] = useState(false);
   const [hints, setHints] = useState(true);
   // Set by "Start practice draft"; the draft begins once the on-demand solve is
   // ready. Keeps the solve off the tab-open path.
@@ -87,7 +86,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     setHistory([]);
     setSelected(null);
     setAttackerSel([]);
-    setShowWhy(false);
     solve.node([]).then(setNode).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, wantStart]);
@@ -201,7 +199,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     setModel(next);
     setSelected(null);
     setAttackerSel([]);
-    setShowWhy(false);
     if (next.done) setNode(null);
     else solve.node(next.path).then(setNode).catch(() => {});
   };
@@ -213,7 +210,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     setModel(prev);
     setSelected(null);
     setAttackerSel([]);
-    setShowWhy(false);
     solve.node(prev.path).then(setNode).catch(() => {});
   };
 
@@ -229,13 +225,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
             title={hintsAllowed ? undefined : 'Coaching hints are off during official WTC dates'}
           >
             Hints: {showHints ? 'on' : 'off'}
-          </button>
-          <button
-            className={showWhy ? 'tab active' : 'tab'}
-            onClick={() => setShowWhy((w) => !w)}
-            disabled={!node.why || !hintsAllowed}
-          >
-            Why
           </button>
           <button onClick={undo} disabled={history.length === 0}>↩ Undo</button>
         </div>
@@ -358,7 +347,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         <span className="muted">{enemy} picks simultaneously — revealed after you lock.</span>
       </div>
 
-      {showWhy && hintsAllowed && <WhyPanel node={node} model={model} myNames={myNames} enemyNames={enemyNames} />}
+      {showHints && <WhyPanel node={node} model={model} />}
 
       <RemainingMatchups model={model} myNames={myNames} enemyNames={enemyNames} />
 

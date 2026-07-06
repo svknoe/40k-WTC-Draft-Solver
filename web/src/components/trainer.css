@@ -102,8 +102,7 @@
 .lock-bar { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
 
 .why { margin-top: 1.25rem; }
-.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
-.why-ev .section-head, .why-threats .section-head { margin-bottom: 0.6rem; }
+.why-ev .section-head { margin-bottom: 0.6rem; }
 .ev-table { width: 100%; border-collapse: collapse; }
 .ev-table td { padding: 0.22rem 0.35rem; vertical-align: middle; }
 .ev-name { white-space: nowrap; color: var(--text-1); }

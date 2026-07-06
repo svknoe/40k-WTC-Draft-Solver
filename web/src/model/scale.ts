@@ -72,6 +72,12 @@ export const teamTotal = (margin: number, n: number): number => 10 * n + margin;
  * read as the same number. */
 export const formatTeamScore = (total: number): string => total.toFixed(1);
 
+/** Format a single game's 0–20 score. A map-determined game (played on a known
+ * map) is an integer and shows as a whole number; a neutral 50/50 game (refused
+ * / last players) can be a half-step and keeps its one decimal. */
+export const formatMatchupScore = (score: number): string =>
+  Number.isInteger(score) ? String(score) : score.toFixed(1);
+
 export type ScoreBand = 'worst' | 'bad' | 'okay' | 'good' | 'best';
 
 /** Colour band for a 0-20 score, per the editor legend: worst ≤4, bad 5-8,

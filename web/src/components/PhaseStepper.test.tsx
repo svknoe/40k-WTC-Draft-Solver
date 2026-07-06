@@ -9,5 +9,5 @@ test('marks the active stage and not the others', () => {
   const q = within(container);
   expect(q.getByText('Attackers').className).toMatch(/on/);
   expect(q.getByText('Defenders').className).not.toMatch(/on/);
-  expect(q.getByText('Refusal').className).not.toMatch(/on/);
+  expect(q.getByText('Pairing').className).not.toMatch(/on/);
 });

@@ -123,6 +123,14 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
           sub: `Pick which of their two attackers ${defenderName} plays — the other is refused.`,
         }
       : STAGE_COPY[stage];
+  // The pairing (refusal) confirm button states the matchup it locks in
+  // ("X faces Y"); other stages keep the generic "Lock <stage>".
+  const lockLabel =
+    stage !== 'refusal'
+      ? `Lock ${stage}`
+      : selected !== null
+        ? `${defenderName} faces ${enemyNames[model.enemyPair!.find((x) => x !== (node.choices[selected].id as number))!]}`
+        : `${defenderName} faces …`;
   const proj = projectedResult(model, node, expected);
   // EV cards + the projected header share one scale: the 0–20n team total, one
   // decimal. The best card's EV therefore equals the projected figure exactly.
@@ -327,7 +335,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
       )}
 
       <div className="lock-bar">
-        <button className="primary" disabled={!canLock} onClick={lock}>Lock {stage}</button>
+        <button className="primary" disabled={!canLock} onClick={lock}>{lockLabel}</button>
         <span className="muted">{enemy} picks simultaneously — revealed after you lock.</span>
       </div>
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatCell, formatTeamScore, parseRating, scoreBand, teamResult, teamTotal, toInputString, toScore } from './scale';
+import { formatCell, formatMatchupScore, formatTeamScore, parseRating, scoreBand, teamResult, teamTotal, toInputString, toScore } from './scale';
 
 describe('parseRating', () => {
   test('legacy tokens map to internal deviations from an even game', () => {
@@ -95,6 +95,20 @@ describe('teamTotal / formatTeamScore', () => {
     expect(formatTeamScore(86)).toBe('86.0');
     expect(formatTeamScore(45)).toBe('45.0');
     expect(formatTeamScore(44.94)).toBe('44.9'); // rounds to one decimal
+  });
+});
+
+describe('formatMatchupScore', () => {
+  test('a map-determined (integer) game shows as a whole number', () => {
+    expect(formatMatchupScore(10)).toBe('10');
+    expect(formatMatchupScore(7)).toBe('7');
+    expect(formatMatchupScore(0)).toBe('0');
+    expect(formatMatchupScore(20)).toBe('20');
+  });
+
+  test('a neutral 50/50 half-step keeps its one decimal', () => {
+    expect(formatMatchupScore(12.5)).toBe('12.5');
+    expect(formatMatchupScore(7.5)).toBe('7.5');
   });
 });
 

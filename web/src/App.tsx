@@ -58,13 +58,9 @@ export function App() {
     });
 
   const goSolve = () => setScreen('solve');
-  const startTraining = () => {
-    if (!solvable) return;
-    // The trainer runs on the exact equilibrium; re-solve if the current
-    // result is a k-preview (or missing).
-    if (!(solve.status === 'done' && solve.solvedK === null)) solve.solve(matrix, null);
-    setScreen('trainer');
-  };
+  // The Trainer tab just navigates; DraftTrainer's "Start practice draft"
+  // triggers the exact solve on demand, so opening the tab no longer solves.
+  const goTrainer = () => setScreen('trainer');
 
   return (
     <div className={settings.cb ? 'app cb' : 'app'}>
@@ -96,7 +92,7 @@ export function App() {
             className={screen === 'trainer' ? 'tab active' : 'tab'}
             disabled={!solvable}
             title={solvable ? undefined : 'Complete the matrix first'}
-            onClick={startTraining}
+            onClick={goTrainer}
           >
             Trainer
           </button>
@@ -140,7 +136,7 @@ export function App() {
             canRun={solvable}
             solve={solve}
             onRun={() => solve.solve(matrix, null)}
-            onTrain={solvable ? startTraining : undefined}
+            onTrain={solvable ? goTrainer : undefined}
           />
         )}
         {screen === 'trainer' && engineMatrix && (
@@ -150,6 +146,7 @@ export function App() {
             enemyTeam={matrix.enemyTeam}
             neutralWeight={NEUTRAL_WEIGHT}
             solve={solve}
+            onSolve={() => solve.solve(matrix, null)}
             onEditMatrix={() => setScreen('editor')}
           />
         )}

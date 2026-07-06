@@ -22,6 +22,9 @@ function cellError(cell: EditorCell): string | null {
   } catch (error) {
     return `Worst map: ${(error as Error).message}`;
   }
+  // A single game is played on one map, so its score is a whole number.
+  if (!Number.isInteger(best)) return `Best map (${toScore(best)}) must be a whole number.`;
+  if (!Number.isInteger(worst)) return `Worst map (${toScore(worst)}) must be a whole number.`;
   if (best < worst) {
     return `Best map (${toScore(best)}) must be ≥ worst map (${toScore(worst)}).`;
   }

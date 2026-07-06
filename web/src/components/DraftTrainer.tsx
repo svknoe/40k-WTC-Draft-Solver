@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Matrix, NodeResult } from '../engine/types';
 import { sampleIndex } from '../draft/sampling';
-import type { DraftModel } from '../draft/draftState';
+import type { DraftModel, FixedGame } from '../draft/draftState';
 import { applyStep, initDraft } from '../draft/draftState';
 import { attackerOptions, candidateStats, pairChoiceIndex, projectedResult } from '../draft/cards';
-import { formatTeamScore, scoreBand, teamTotal, toScore } from '../model/scale';
+import { formatMatchupScore, formatTeamScore, scoreBand, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
 import type { SolveState } from '../worker/useSolve';
 import { DraftBoard } from './DraftBoard';
@@ -21,6 +21,8 @@ interface DraftTrainerProps {
   enemyTeam: string;
   neutralWeight: number;
   solve: SolveState;
+  /** Trigger an exact solve on demand (from "Start practice draft"). */
+  onSolve: () => void;
   onEditMatrix: () => void;
 }
 
@@ -29,11 +31,21 @@ const STAGE_COPY = {
   attackers: { title: 'Send two attackers', sub: 'You send two — the enemy chooses which one your defender faces.' },
 } as const;
 
+// Which map a resolved game is played on: the defender picks it, so my-defends
+// is my best map and enemy-defends is theirs (my worst); the refused / last
+// games have no defender (a 50/50 best↔worst average), so they're neutral.
+const MAP_LABEL: Record<FixedGame['kind'], string> = {
+  'my-defends': 'your map',
+  'enemy-defends': 'their map',
+  refused: 'neutral',
+  last: 'neutral',
+};
+
 function joinName(name: string | [string, string]): string {
   return typeof name === 'string' ? name : `${name[0]} + ${name[1]}`;
 }
 
-export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onEditMatrix }: DraftTrainerProps) {
+export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onSolve, onEditMatrix }: DraftTrainerProps) {
   const { myNames, enemyNames } = matrix;
   const [model, setModel] = useState<DraftModel | null>(null);
   const [history, setHistory] = useState<DraftModel[]>([]);
@@ -44,6 +56,9 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   const [attackerSel, setAttackerSel] = useState<number[]>([]);
   const [showWhy, setShowWhy] = useState(false);
   const [hints, setHints] = useState(true);
+  // Set by "Start practice draft"; the draft begins once the on-demand solve is
+  // ready. Keeps the solve off the tab-open path.
+  const [wantStart, setWantStart] = useState(false);
   const rng = useRef<() => number>(Math.random);
 
   const ready = solve.status === 'done' && solve.solvedK === null;
@@ -56,15 +71,23 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   const hintsAllowed = wtcLock === null;
   const showHints = hints && hintsAllowed;
 
+  // "Start practice draft" kicks off the exact solve on demand (it no longer
+  // runs when the Trainer tab opens); the draft begins once the values land.
   const start = () => {
-    if (!ready) return;
+    if (!ready) onSolve();
+    setWantStart(true);
+  };
+  useEffect(() => {
+    if (!(ready && wantStart)) return;
+    setWantStart(false);
     setModel(initDraft(matrix, neutralWeight));
     setHistory([]);
     setSelected(null);
     setAttackerSel([]);
     setShowWhy(false);
     solve.node([]).then(setNode).catch(() => {});
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, wantStart]);
 
   // --- intro ---
   if (model === null) {
@@ -81,8 +104,8 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
           <li>Runs entirely on your computer — your matrix and drafts are never uploaded. Hints are training-only and switch off during official WTC dates.</li>
         </ul>
         {solve.status === 'solving' && <ProgressBar frac={solve.progress} label="Solving exactly for training…" />}
-        <button className="primary" disabled={!ready} onClick={start}>Start practice draft</button>
-        {!ready && solve.status !== 'solving' && <span className="muted"> Solve the matrix first.</span>}
+        <button className="primary" disabled={solve.status === 'solving'} onClick={start}>Start practice draft</button>
+        {solve.status === 'error' && <span className="muted"> Solve failed — {solve.error}</span>}
       </div>
     );
   }
@@ -340,8 +363,9 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
               return (
                 <div className="pairing" key={i}>
                   <span className="pmine">{myNames[game.my]}</span>
-                  <span className="pscore">{my.toFixed(1)}–{(20 - my).toFixed(1)}</span>
+                  <span className="pscore">{formatMatchupScore(my)}–{formatMatchupScore(20 - my)}</span>
                   <span className="penemy">{enemyNames[game.enemy]}</span>
+                  <span className="pkind">{MAP_LABEL[game.kind]}</span>
                 </div>
               );
             })}

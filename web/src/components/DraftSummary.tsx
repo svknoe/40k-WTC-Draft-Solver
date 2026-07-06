@@ -1,7 +1,7 @@
 import { achievedTotal } from '../draft/draftState';
 import type { DraftModel, FixedGame } from '../draft/draftState';
 import { decompose, verdict } from '../draft/summary';
-import { teamResult, toScore } from '../model/scale';
+import { formatMatchupScore, teamResult, toScore } from '../model/scale';
 import './trainer.css';
 
 interface DraftSummaryProps {
@@ -81,7 +81,7 @@ export function DraftSummary({ myTeam, enemyTeam, myNames, enemyNames, expected,
             return (
               <div className="pairing" key={i}>
                 <span className="pmine">{myNames[game.my]}</span>
-                <span className="pscore">{my.toFixed(1)}–{(20 - my).toFixed(1)}</span>
+                <span className="pscore">{formatMatchupScore(my)}–{formatMatchupScore(20 - my)}</span>
                 <span className="penemy">{enemyNames[game.enemy]}</span>
                 <span className="pkind">{KIND_LABEL[game.kind]}</span>
               </div>

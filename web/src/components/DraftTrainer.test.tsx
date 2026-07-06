@@ -37,8 +37,6 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         enemyTeam="Them"
         neutralWeight={smoke.neutralWeight}
         solve={engineSolveState()}
-        botStyle="greedy"
-        onBotStyleChange={() => {}}
         onEditMatrix={() => {}}
       />,
     );
@@ -78,8 +76,6 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
           enemyTeam="Them"
           neutralWeight={smoke.neutralWeight}
           solve={engineSolveState()}
-          botStyle="greedy"
-          onBotStyleChange={() => {}}
           onEditMatrix={() => {}}
         />,
       );
@@ -102,8 +98,6 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         enemyTeam="Them"
         neutralWeight={smoke.neutralWeight}
         solve={engineSolveState()}
-        botStyle="greedy"
-        onBotStyleChange={() => {}}
         onEditMatrix={() => {}}
       />,
     );

@@ -3,7 +3,6 @@ import { AboutModal } from './components/AboutModal';
 import { DraftTrainer } from './components/DraftTrainer';
 import { MatrixEditor } from './components/MatrixEditor';
 import { SolveView } from './components/SolveView';
-import type { BotStyle } from './draft/sampling';
 import { blank, toEngineMatrix } from './model/matrix';
 import type { EditorMatrix } from './model/matrix';
 import { loadState, saveState } from './model/storage';
@@ -20,7 +19,6 @@ const NEUTRAL_WEIGHT = 0.5;
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [screen, setScreen] = useState<Screen>('editor');
-  const [botStyle, setBotStyle] = useState<BotStyle>('equilibrium');
   const [showAbout, setShowAbout] = useState(false);
   const solve = useSolve();
 
@@ -152,8 +150,6 @@ export function App() {
             enemyTeam={matrix.enemyTeam}
             neutralWeight={NEUTRAL_WEIGHT}
             solve={solve}
-            botStyle={botStyle}
-            onBotStyleChange={setBotStyle}
             onEditMatrix={() => setScreen('editor')}
           />
         )}

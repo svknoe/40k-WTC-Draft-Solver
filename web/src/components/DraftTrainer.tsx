@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import type { Matrix, NodeResult } from '../engine/types';
-import type { BotStyle } from '../draft/sampling';
 import { sampleIndex } from '../draft/sampling';
 import type { DraftModel } from '../draft/draftState';
 import { applyStep, initDraft } from '../draft/draftState';
@@ -22,8 +21,6 @@ interface DraftTrainerProps {
   enemyTeam: string;
   neutralWeight: number;
   solve: SolveState;
-  botStyle: BotStyle;
-  onBotStyleChange: (style: BotStyle) => void;
   onEditMatrix: () => void;
 }
 
@@ -37,7 +34,7 @@ function joinName(name: string | [string, string]): string {
   return typeof name === 'string' ? name : `${name[0]} + ${name[1]}`;
 }
 
-export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, botStyle, onBotStyleChange, onEditMatrix }: DraftTrainerProps) {
+export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onEditMatrix }: DraftTrainerProps) {
   const { myNames, enemyNames } = matrix;
   const [model, setModel] = useState<DraftModel | null>(null);
   const [history, setHistory] = useState<DraftModel[]>([]);
@@ -122,7 +119,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
 
   const lock = () => {
     if (selected === null || !node.why) return;
-    const colIndex = sampleIndex(node.why.enStrategy, botStyle, rng.current);
+    const colIndex = sampleIndex(node.why.enStrategy, 'equilibrium', rng.current);
     const myLabel = joinName(node.choices[selected].name);
     const enemyLabel = node.why.colLabels[colIndex];
     const next = applyStep(model, node, selected, colIndex);
@@ -152,7 +149,27 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
 
   return (
     <div className="trainer">
-      <PhaseStepper stage={stage} />
+      <div className="trainer-topbar">
+        <PhaseStepper stage={stage} />
+        <div className="trainer-controls">
+          <button
+            className={showHints ? 'tab active' : 'tab'}
+            onClick={() => setHints((h) => !h)}
+            disabled={!hintsAllowed}
+            title={hintsAllowed ? undefined : 'Coaching hints are off during official WTC dates'}
+          >
+            Hints: {showHints ? 'on' : 'off'}
+          </button>
+          <button
+            className={showWhy ? 'tab active' : 'tab'}
+            onClick={() => setShowWhy((w) => !w)}
+            disabled={!node.why || !hintsAllowed}
+          >
+            Why
+          </button>
+          <button onClick={undo} disabled={history.length === 0}>↩ Undo</button>
+        </div>
+      </div>
       <div className="trainer-head">
         <h2>{copy.title}</h2>
         <span className="round-badge">Round {node.round} / {finalRound}</span>
@@ -167,34 +184,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         )}
       </div>
       <p className="trainer-sub">{copy.sub}</p>
-
-      <div className="trainer-controls">
-        <label className="style-select">
-          Bot
-          <select value={botStyle} onChange={(e) => onBotStyleChange(e.target.value as BotStyle)}>
-            <option value="equilibrium">Equilibrium</option>
-            <option value="greedy">Greedy</option>
-            <option value="wildcard">Wildcard</option>
-          </select>
-        </label>
-        <button
-          className={showHints ? 'tab active' : 'tab'}
-          onClick={() => setHints((h) => !h)}
-          disabled={!hintsAllowed}
-          title={hintsAllowed ? undefined : 'Coaching hints are off during official WTC dates'}
-        >
-          Hints: {showHints ? 'on' : 'off'}
-        </button>
-        <button
-          className={showWhy ? 'tab active' : 'tab'}
-          onClick={() => setShowWhy((w) => !w)}
-          disabled={!node.why || !hintsAllowed}
-        >
-          Why
-        </button>
-        <span className="spacer" />
-        <button onClick={undo} disabled={history.length === 0}>↩ Undo</button>
-      </div>
 
       {wtcLock && (
         <div className="wtc-note">

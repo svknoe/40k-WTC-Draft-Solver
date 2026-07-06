@@ -57,6 +57,10 @@
 .slot.def.mine.pending .slot-name { color: var(--text-3); font-weight: 500; }
 .slot.enemy.hidden { background: color-mix(in srgb, var(--enemy) 5%, transparent); border-color: color-mix(in srgb, var(--enemy) 40%, transparent); }
 .slot.enemy.hidden .slot-name { color: var(--enemy); font-weight: 500; }
+
+/* final-round auto-pairing preview: neutral LAST cell (grey tag + muted text) */
+.slot.auto .slot-tag { background: var(--text-4); }
+.slot.auto .slot-name { color: var(--text-2); font-weight: 500; }
 .slot-pair { display: flex; gap: 0.4rem; }
 .slot-pair .slot { flex: 1; justify-content: center; }
 .board-hint { margin-top: 0.4rem; color: var(--text-4); font-size: 0.78rem; }

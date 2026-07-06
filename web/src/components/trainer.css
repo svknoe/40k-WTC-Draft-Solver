@@ -31,7 +31,7 @@
 .reveal .r-enemy { color: var(--enemy); font-weight: 600; }
 @keyframes wtcFlip { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
-/* phase stepper (Defenders | Attackers | Refusal) */
+/* phase stepper (Defenders | Attackers | Pairing) */
 .stepper { margin-bottom: 0.75rem; }
 .stepper span { padding: 0.35rem 0.8rem; border-radius: 6px; color: var(--text-4); font-size: 0.85rem; }
 .stepper span.on { background: var(--blue); color: #06101c; font-weight: 600; }

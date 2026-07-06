@@ -56,10 +56,12 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         if (!container.querySelector('.choice')) throw new Error('choices not rendered yet');
       });
       const cards = () => [...container.querySelectorAll('.choice')] as HTMLElement[];
+      // The pairing step's confirm button reads "X faces Y", not "Lock …", so
+      // grab the lock-bar's primary button by position rather than by name.
+      const lockBtn = () => container.querySelector('.lock-bar button') as HTMLButtonElement;
       await user.click(cards()[0]);
-      const lockBtn = screen.getByRole('button', { name: /^Lock/ });
-      if (/attackers/.test(lockBtn.textContent ?? '')) await user.click(cards()[1]);
-      await user.click(screen.getByRole('button', { name: /^Lock/ }));
+      if (/attackers/.test(lockBtn().textContent ?? '')) await user.click(cards()[1]);
+      await user.click(lockBtn());
     }
 
     // Reaching 'done' renders the summary.

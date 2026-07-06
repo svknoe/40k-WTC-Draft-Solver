@@ -27,7 +27,6 @@ interface DraftTrainerProps {
 const STAGE_COPY = {
   defender: { title: 'Select your defender', sub: 'Both captains put up a defender at the same time.' },
   attackers: { title: 'Send two attackers', sub: 'You send two — the enemy chooses which one your defender faces.' },
-  refusal: { title: 'Refuse an attacker', sub: 'Refuse one of their two attackers; your defender plays the one you keep.' },
 } as const;
 
 function joinName(name: string | [string, string]): string {
@@ -114,7 +113,16 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   // candidateStats would index an unset defender or pair).
   const modelStage = model.myDefender < 0 ? 'defender' : model.myPair === null ? 'attackers' : 'refusal';
   if (stage !== modelStage) return <p className="placeholder">Loading the next decision…</p>;
-  const copy = STAGE_COPY[stage];
+  // The refusal step is framed as selecting who your defender faces (people
+  // think in matchups, not refusals), so its copy needs the defender's name.
+  const defenderName = myNames[model.myDefender];
+  const copy =
+    stage === 'refusal'
+      ? {
+          title: `Choose whom ${defenderName} will face`,
+          sub: `Pick which of their two attackers ${defenderName} plays — the other is refused.`,
+        }
+      : STAGE_COPY[stage];
   const proj = projectedResult(model, node, expected);
   // EV cards + the projected header share one scale: the 0–20n team total, one
   // decimal. The best card's EV therefore equals the projected figure exactly.
@@ -148,11 +156,17 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     setSelected(null);
     setAttackerSel([]);
     setShowWhy(false);
-    setReveal(
-      stage === 'refusal'
-        ? { mine: `refuse ${myLabel}`, enemy: `refuse ${enemyLabel}` }
-        : { mine: myLabel, enemy: enemyLabel },
-    );
+    if (stage === 'refusal') {
+      // Framed as who each defender faces: I keep the enemy attacker I didn't
+      // refuse; the enemy's defender faces the friendly attacker they didn't.
+      const iRefuse = node.choices[myChoice].id as number;
+      const myFaces = model.enemyPair!.find((x) => x !== iRefuse)!;
+      const enemyRefuses = model.myPair![colIndex];
+      const enemyFaces = model.myPair!.find((x) => x !== enemyRefuses)!;
+      setReveal({ mine: `face ${enemyNames[myFaces]}`, enemy: `face ${myNames[enemyFaces]}` });
+    } else {
+      setReveal({ mine: myLabel, enemy: enemyLabel });
+    }
     if (next.done) setNode(null);
     else solve.node(next.path).then(setNode).catch(() => {});
   };
@@ -245,7 +259,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
                   {showHints && (
                     <span className="chint">
                       <span className="cbar"><span style={{ width: `${Math.min(100, opt.sendProb * 100)}%` }} /></span>
-                      <span className="csend">sent {(opt.sendProb * 100).toFixed(0)}%</span>
+                      <span className="csend">{(opt.sendProb * 100).toFixed(0)}%</span>
                     </span>
                   )}
                 </button>
@@ -274,6 +288,9 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         <div className="choices grid">
           {node.choices.map((choice, i) => {
             const stats = candidateStats(model, node, i);
+            // Refusal cards are framed as who my defender faces: show the enemy
+            // attacker I'd keep (i.e. not refuse — choice.id is the refused one).
+            const faced = stage === 'refusal' ? model.enemyPair!.find((x) => x !== (choice.id as number))! : -1;
             return (
               <button
                 key={i}
@@ -281,11 +298,13 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
                 onClick={() => setSelected(i)}
               >
                 <span className="cname">
-                  {stage === 'refusal' ? `Refuse ${joinName(choice.name)}` : joinName(choice.name)}
+                  {stage === 'refusal' ? enemyNames[faced] : joinName(choice.name)}
                 </span>
                 <span className="cstat">
                   our map ·{' '}
-                  {stats.avg === stats.floor ? (
+                  {stage === 'refusal' ? (
+                    <span className={`num band-${scoreBand(stats.avg)}`}>{stats.avg}</span>
+                  ) : stats.avg === stats.floor ? (
                     <>keeps <span className={`num band-${scoreBand(stats.avg)}`}>{stats.avg}</span></>
                   ) : (
                     <>

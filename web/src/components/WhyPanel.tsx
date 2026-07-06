@@ -20,13 +20,19 @@ function joinName(name: string | [string, string]): string {
  * top-weighted defenders). Replaces the raw full payoff matrix. */
 export function WhyPanel({ node, model, myNames, enemyNames }: WhyPanelProps) {
   if (!node.why) return null;
-  const unit = node.stage === 'defender' ? 'defender' : node.stage === 'attackers' ? 'attacker pair' : 'refusal';
+  const unit = node.stage === 'defender' ? 'defender' : node.stage === 'attackers' ? 'attacker pair' : 'matchup';
 
   // Each choice's projected full-draft team score = already-fixed games + this
   // choice's sub-game value (best continuation), converted to the 0–20n scale.
+  // At refusal the cards are framed as who my defender faces (the kept enemy
+  // attacker), so label the rows the same way rather than by the refused one.
   const achieved = model.fixed.reduce((sum, g) => sum + g.value, 0);
+  const label = (c: NodeResult['choices'][number]): string =>
+    node.stage === 'refusal'
+      ? enemyNames[model.enemyPair!.find((x) => x !== (c.id as number))!]
+      : joinName(c.name);
   const ranked = node.choices
-    .map((c) => ({ id: c.id, name: joinName(c.name), score: teamTotal(achieved + c.ev, model.n) }))
+    .map((c) => ({ id: c.id, name: label(c), score: teamTotal(achieved + c.ev, model.n) }))
     .sort((a, b) => b.score - a.score);
   const scores = ranked.map((r) => r.score);
   const maxScore = Math.max(...scores);

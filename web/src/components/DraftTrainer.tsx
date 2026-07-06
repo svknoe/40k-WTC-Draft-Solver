@@ -42,7 +42,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   // Attackers stage only: the (≤2) individually-picked attacker indices. Other
   // stages select a single choice via `selected`.
   const [attackerSel, setAttackerSel] = useState<number[]>([]);
-  const [reveal, setReveal] = useState<{ mine: string; enemy: string } | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   const [hints, setHints] = useState(true);
   const rng = useRef<() => number>(Math.random);
@@ -63,7 +62,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     setHistory([]);
     setSelected(null);
     setAttackerSel([]);
-    setReveal(null);
     setShowWhy(false);
     solve.node([]).then(setNode).catch(() => {});
   };
@@ -165,25 +163,12 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
       stage === 'attackers' ? pairChoiceIndex(node, attackerSel[0], attackerSel[1]) : selected ?? -1;
     if (myChoice < 0 || !node.why) return;
     const colIndex = sampleIndex(node.why.enStrategy, 'equilibrium', rng.current);
-    const myLabel = joinName(node.choices[myChoice].name);
-    const enemyLabel = node.why.colLabels[colIndex];
     const next = applyStep(model, node, myChoice, colIndex);
     setHistory([...history, model]);
     setModel(next);
     setSelected(null);
     setAttackerSel([]);
     setShowWhy(false);
-    if (stage === 'refusal') {
-      // Framed as who each defender faces: I keep the enemy attacker I didn't
-      // refuse; the enemy's defender faces the friendly attacker they didn't.
-      const iRefuse = node.choices[myChoice].id as number;
-      const myFaces = model.enemyPair!.find((x) => x !== iRefuse)!;
-      const enemyRefuses = model.myPair![colIndex];
-      const enemyFaces = model.myPair!.find((x) => x !== enemyRefuses)!;
-      setReveal({ mine: `face ${enemyNames[myFaces]}`, enemy: `face ${myNames[enemyFaces]}` });
-    } else {
-      setReveal({ mine: myLabel, enemy: enemyLabel });
-    }
     if (next.done) setNode(null);
     else solve.node(next.path).then(setNode).catch(() => {});
   };
@@ -195,7 +180,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     setModel(prev);
     setSelected(null);
     setAttackerSel([]);
-    setReveal(null);
     setShowWhy(false);
     solve.node(prev.path).then(setNode).catch(() => {});
   };
@@ -242,13 +226,6 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         <div className="wtc-note">
           Coaching hints are off — <strong>{wtcLock.name}</strong> is under way. They switch back
           on automatically after the event.
-        </div>
-      )}
-
-      {reveal && (
-        <div className="reveal">
-          <span>You: <span className="r-mine">{reveal.mine}</span></span>
-          <span>{enemy}: <span className="r-enemy">{reveal.enemy}</span></span>
         </div>
       )}
 

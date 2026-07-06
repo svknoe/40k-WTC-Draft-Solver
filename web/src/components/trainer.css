@@ -65,6 +65,8 @@
 .choice.selected { border-color: var(--blue); background: var(--card-2); }
 .choice .cname { font-weight: 600; }
 .choice .cstat { color: var(--text-3); font-size: 0.8rem; }
+/* Show the ratings the way the matrix does: banded colour + mono + bold. */
+.choice .cstat .num { font-weight: 600; }
 .choice .chint { display: flex; align-items: center; gap: 0.5rem; width: 100%; margin-top: 0.15rem; }
 .choice .cbar { flex: 1; height: 0.4rem; background: var(--bg-2); border-radius: 3px; overflow: hidden; }
 .choice .cbar > span { display: block; height: 100%; background: var(--blue); }

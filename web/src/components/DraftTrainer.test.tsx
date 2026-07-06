@@ -95,6 +95,32 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
     }
   });
 
+  test('reports draft-live state to onLiveChange', async () => {
+    const user = userEvent.setup();
+    const onLiveChange = vi.fn();
+    const { container } = render(
+      <DraftTrainer
+        matrix={fixtureMatrix(smoke)}
+        myTeam="Us"
+        enemyTeam="Them"
+        neutralWeight={smoke.neutralWeight}
+        solve={engineSolveState()}
+        onSolve={() => {}}
+        onEditMatrix={() => {}}
+        onLiveChange={onLiveChange}
+      />,
+    );
+
+    // Intro screen: no draft in progress yet.
+    expect(onLiveChange).toHaveBeenLastCalledWith(false);
+
+    await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
+    await waitFor(() => expect(container.querySelector('.choice')).toBeTruthy());
+
+    // A draft is now under way.
+    expect(onLiveChange).toHaveBeenLastCalledWith(true);
+  });
+
   test('undo steps back a decision', async () => {
     const user = userEvent.setup();
     const { container } = render(

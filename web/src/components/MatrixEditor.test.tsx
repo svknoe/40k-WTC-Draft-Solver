@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { blank } from '../model/matrix';
 import type { EditorMatrix } from '../model/matrix';
 import type { Settings } from '../model/storage';
@@ -60,6 +60,36 @@ describe('MatrixEditor', () => {
     await user.clear(bestInput); // best now blank -> invalid
     await user.type(bestInput, '5'); // best 5 < worst 9
     expect(screen.getByRole('button', { name: /solve/i })).toBeDisabled();
+  });
+
+  test('locked shows the draft warning, freezes the grid, and discards on demand', async () => {
+    const user = userEvent.setup();
+    const onDiscardDraft = vi.fn();
+    render(
+      <MatrixEditor
+        matrix={valid4()}
+        settings={{ cb: false, simpleMode: false }}
+        saves={{}}
+        onMatrixChange={() => {}}
+        onSettingsChange={() => {}}
+        onSaveAs={() => {}}
+        onLoadSave={() => {}}
+        onDeleteSave={() => {}}
+        onSolve={() => {}}
+        locked
+        onDiscardDraft={onDiscardDraft}
+      />,
+    );
+
+    // Warning banner explaining why editing is paused.
+    expect(screen.getByText(/practice draft is in progress/i)).toBeInTheDocument();
+    // The grid is frozen and Solve is disabled while a draft depends on it.
+    expect(screen.getByLabelText('A vs W best')).toHaveAttribute('readonly');
+    expect(screen.getByRole('button', { name: /solve/i })).toBeDisabled();
+
+    // "Discard draft to edit" discards immediately — no confirmation dialog.
+    await user.click(screen.getByRole('button', { name: /discard draft to edit/i }));
+    expect(onDiscardDraft).toHaveBeenCalledTimes(1);
   });
 
   test('switching to single-rating mode collapses cells to one input', async () => {

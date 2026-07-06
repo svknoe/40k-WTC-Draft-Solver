@@ -21,6 +21,12 @@ interface MatrixEditorProps {
   onDeleteSave: (name: string) => void;
   /** Provided once the solve view exists (#20); undefined disables the CTA. */
   onSolve?: () => void;
+  /** True while a practice draft depends on this matrix: the editor freezes so
+   * its numbers can't drift out from under the running draft/solver. */
+  locked?: boolean;
+  /** Discards the in-progress draft (immediately, no confirm) to re-enable
+   * editing. Only rendered/used while `locked`. */
+  onDiscardDraft?: () => void;
 }
 
 function download(filename: string, text: string): void {
@@ -36,7 +42,7 @@ function download(filename: string, text: string): void {
 
 export function MatrixEditor({
   matrix, settings, saves, onMatrixChange, onSettingsChange,
-  onSaveAs, onLoadSave, onDeleteSave, onSolve,
+  onSaveAs, onLoadSave, onDeleteSave, onSolve, locked = false, onDiscardDraft,
 }: MatrixEditorProps) {
   const [saveName, setSaveName] = useState('');
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -86,7 +92,20 @@ export function MatrixEditor({
   const savedNames = Object.keys(saves);
 
   return (
-    <div className="editor">
+    <>
+      {locked && (
+        <div className="draft-lock">
+          <span className="draft-lock-dot" aria-hidden="true" />
+          <span className="draft-lock-text">
+            A practice draft is in progress — matrix editing is paused so your draft and
+            solver stay consistent with the numbers you drafted on.
+          </span>
+          <button className="draft-lock-discard" onClick={onDiscardDraft}>
+            Discard draft to edit
+          </button>
+        </div>
+      )}
+      <div className="editor">
       <aside className="editor-sidebar">
         <div>
           <div className="section-head">Saved opponents</div>
@@ -96,7 +115,7 @@ export function MatrixEditor({
             <div className="saved-list">
               {savedNames.map((name) => (
                 <div className="saved-row" key={name}>
-                  <button className="load" onClick={() => onLoadSave(name)}>{name}</button>
+                  <button className="load" disabled={locked} onClick={() => onLoadSave(name)}>{name}</button>
                   <button className="del" title={`Delete ${name}`} onClick={() => onDeleteSave(name)}>✕</button>
                 </div>
               ))}
@@ -109,11 +128,12 @@ export function MatrixEditor({
             placeholder="Save as…"
             aria-label="Save matchup as"
             value={saveName}
+            disabled={locked}
             onChange={(e) => setSaveName(e.target.value)}
           />
           <button
             className="primary"
-            disabled={!saveName.trim()}
+            disabled={locked || !saveName.trim()}
             onClick={() => { onSaveAs(saveName.trim()); setSaveName(''); }}
           >
             Save
@@ -122,7 +142,7 @@ export function MatrixEditor({
 
         <div className="row">
           <button onClick={doExport}>Export JSON</button>
-          <button onClick={() => fileRef.current?.click()}>Import JSON</button>
+          <button disabled={locked} onClick={() => fileRef.current?.click()}>Import JSON</button>
           <input
             ref={fileRef}
             type="file"
@@ -133,7 +153,7 @@ export function MatrixEditor({
           />
         </div>
 
-        <button onClick={() => setPasteOpen(true)}>Paste from spreadsheet…</button>
+        <button disabled={locked} onClick={() => setPasteOpen(true)}>Paste from spreadsheet…</button>
         {importError && <div className="errors">{importError}</div>}
 
         <p className="privacy">
@@ -142,13 +162,14 @@ export function MatrixEditor({
         </p>
       </aside>
 
-      <div className="editor-main">
+      <div className={locked ? 'editor-main locked' : 'editor-main'}>
         <div className="matchup">
           <input
             className="team-name mine"
             placeholder="Your team"
             aria-label="Your team name"
             value={matrix.myTeam}
+            readOnly={locked}
             onChange={(e) => update({ myTeam: e.target.value })}
           />
           <label>rows · my team</label>
@@ -158,6 +179,7 @@ export function MatrixEditor({
             placeholder="Opponent"
             aria-label="Opponent team name"
             value={matrix.enemyTeam}
+            readOnly={locked}
             onChange={(e) => update({ enemyTeam: e.target.value })}
           />
           <label>columns · opponent</label>
@@ -169,6 +191,7 @@ export function MatrixEditor({
             <select
               value={matrix.n}
               aria-label="Team size"
+              disabled={locked}
               onChange={(e) => onMatrixChange(resize(matrix, Number(e.target.value) as MatrixSize))}
             >
               <option value={4}>4</option>
@@ -181,6 +204,7 @@ export function MatrixEditor({
             <select
               value=""
               aria-label="Load a sample opponent"
+              disabled={locked}
               onChange={(e) => {
                 const sample = SAMPLES.find((s) => s.key === e.target.value);
                 if (sample) onMatrixChange(sample.matrix);
@@ -192,16 +216,16 @@ export function MatrixEditor({
           </label>
           <span className="spacer" />
           <div className="segmented" role="group" aria-label="Rating mode">
-            <button className={settings.simpleMode ? 'on' : ''} onClick={() => onSettingsChange({ ...settings, simpleMode: true })}>
+            <button className={settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: true })}>
               Single rating
             </button>
-            <button className={!settings.simpleMode ? 'on' : ''} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
+            <button className={!settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
               Best / worst map
             </button>
           </div>
           <button
             onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}
-            disabled={!validation.ok}
+            disabled={locked || !validation.ok}
             title={validation.ok ? 'Swap which side you captain — transposes the matrix and team names' : 'Fix invalid cells before swapping'}
           >
             ⇄ Swap sides
@@ -212,6 +236,7 @@ export function MatrixEditor({
           matrix={matrix}
           simpleMode={settings.simpleMode}
           cellErrors={validation.cellErrors}
+          readOnly={locked}
           onCellChange={setCell}
           onMyName={setMyName}
           onEnemyName={setEnemyName}
@@ -236,7 +261,7 @@ export function MatrixEditor({
         <div className="solve-bar">
           <button
             className="primary"
-            disabled={!validation.ok || !onSolve}
+            disabled={!validation.ok || !onSolve || locked}
             onClick={onSolve}
             title={onSolve ? undefined : 'Solving arrives with issue #20'}
           >
@@ -247,6 +272,7 @@ export function MatrixEditor({
       </div>
 
       {pasteOpen && <PasteModal n={matrix.n} onApply={applyPaste} onCancel={() => setPasteOpen(false)} />}
-    </div>
+      </div>
+    </>
   );
 }

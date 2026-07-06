@@ -62,6 +62,16 @@ export function teamResult(expected: number, n: number): TeamResult {
   return { my, enemy: 2 * even - my, favored: my - even };
 }
 
+/** My team's exact (unrounded) total on the 0–20n scale for an internal margin
+ * — the same baseline teamResult uses, but kept fractional for expected-value
+ * figures (the trainer's per-choice EV and projected score). */
+export const teamTotal = (margin: number, n: number): number => 10 * n + margin;
+
+/** Format a team total for display: one decimal, trailing ".0" dropped
+ * (e.g. 86 or 86.1). Keeps the trainer's EV cards and projected score on the
+ * same scale so they read as the same number. */
+export const formatTeamScore = (total: number): string => (Math.round(total * 10) / 10).toString();
+
 export type ScoreBand = 'worst' | 'bad' | 'okay' | 'good' | 'best';
 
 /** Colour band for a 0-20 score, per the editor legend: worst ≤4, bad 5-8,

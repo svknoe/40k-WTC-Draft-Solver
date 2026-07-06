@@ -5,7 +5,7 @@ import { sampleIndex } from '../draft/sampling';
 import type { DraftModel } from '../draft/draftState';
 import { applyStep, initDraft } from '../draft/draftState';
 import { candidateStats, projectedResult } from '../draft/cards';
-import { teamResult, toScore } from '../model/scale';
+import { formatTeamScore, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
 import type { SolveState } from '../worker/useSolve';
 import { DraftBoard } from './DraftBoard';
@@ -115,7 +115,10 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
   if (stage !== modelStage) return <p className="placeholder">Loading the next decision…</p>;
   const copy = STAGE_COPY[stage];
   const proj = projectedResult(model, node, expected);
-  const projScore = teamResult(proj.projected, model.n).my;
+  // EV cards + the projected header share one scale: the 0–20n team total, one
+  // decimal. The best card's EV therefore equals the projected figure exactly.
+  const achieved = model.fixed.reduce((sum, g) => sum + g.value, 0);
+  const projScore = formatTeamScore(teamTotal(proj.projected, model.n));
 
   const lock = () => {
     if (selected === null || !node.why) return;
@@ -228,7 +231,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
                 <span className="chint">
                   <span className="cbar"><span style={{ width: `${Math.min(100, choice.prob * 100)}%` }} /></span>
                   <span className="cprob">{(choice.prob * 100).toFixed(0)}%</span>
-                  <span className="cev">{choice.ev >= 0 ? '+' : ''}{choice.ev.toFixed(1)}</span>
+                  <span className="cev">EV {formatTeamScore(teamTotal(achieved + choice.ev, model.n))}</span>
                 </span>
               )}
             </button>

@@ -1,7 +1,7 @@
 import type { NodeResult } from '../engine/types';
 import type { DraftModel } from '../draft/draftState';
 import { topThreats } from '../draft/cards';
-import { scoreBand, teamResult, toScore } from '../model/scale';
+import { formatTeamScore, scoreBand, teamTotal, toScore } from '../model/scale';
 
 interface WhyPanelProps {
   node: NodeResult;
@@ -26,7 +26,7 @@ export function WhyPanel({ node, model, myNames, enemyNames }: WhyPanelProps) {
   // choice's sub-game value (best continuation), converted to the 0–20n scale.
   const achieved = model.fixed.reduce((sum, g) => sum + g.value, 0);
   const ranked = node.choices
-    .map((c) => ({ id: c.id, name: joinName(c.name), score: teamResult(achieved + c.ev, model.n).my }))
+    .map((c) => ({ id: c.id, name: joinName(c.name), score: teamTotal(achieved + c.ev, model.n) }))
     .sort((a, b) => b.score - a.score);
   const scores = ranked.map((r) => r.score);
   const maxScore = Math.max(...scores);
@@ -50,7 +50,7 @@ export function WhyPanel({ node, model, myNames, enemyNames }: WhyPanelProps) {
                   <td className="ev-bar">
                     <span className={i === 0 ? 'top' : ''} style={{ width: `${barPct(r.score)}%` }} />
                   </td>
-                  <td className="ev-val num">{r.score}</td>
+                  <td className="ev-val num">{formatTeamScore(r.score)}</td>
                 </tr>
               ))}
             </tbody>

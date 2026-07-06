@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatCell, parseRating, scoreBand, teamResult, toInputString, toScore } from './scale';
+import { formatCell, formatTeamScore, parseRating, scoreBand, teamResult, teamTotal, toInputString, toScore } from './scale';
 
 describe('parseRating', () => {
   test('legacy tokens map to internal deviations from an even game', () => {
@@ -78,6 +78,24 @@ describe('teamResult', () => {
     expect(r.enemy).toBe(74);
     expect(r.my + r.enemy).toBe(160);
     expect(r.favored).toBe(6);
+  });
+});
+
+describe('teamTotal / formatTeamScore', () => {
+  test('teamTotal is the unrounded my-total at the 10n baseline', () => {
+    expect(teamTotal(6.1, 8)).toBeCloseTo(86.1, 6);
+    expect(teamTotal(0, 8)).toBe(80);
+    expect(teamTotal(5, 4)).toBe(45);
+    // matches teamResult.my once rounded
+    expect(Math.round(teamTotal(6.19, 8))).toBe(teamResult(6.19, 8).my);
+  });
+
+  test('formatTeamScore shows one decimal, dropping a trailing .0', () => {
+    expect(formatTeamScore(86.1)).toBe('86.1');
+    expect(formatTeamScore(86)).toBe('86');
+    expect(formatTeamScore(45.0)).toBe('45');
+    expect(formatTeamScore(80.04)).toBe('80'); // rounds to one decimal
+    expect(formatTeamScore(80.05)).toBe('80.1');
   });
 });
 

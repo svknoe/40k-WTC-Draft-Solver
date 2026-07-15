@@ -11,6 +11,14 @@ each stage shows **two choice panels with one Lock**; the opponent panel uses
 the **opponent's own perspective**; the summary scores **both seats**; the mode
 is **fixed per draft**.
 
+Correction after design approval: the brainstorm claimed that with no sampling
+`achieved − expected ≡ opponent regret − your regret`, so the summary could
+drop its luck line. That identity is false — simultaneous pure reveals carry
+outcome luck even when both seats play zero-regret moves (matching pennies:
+both perfect, outcome still ±1). The 2P summary therefore keeps a third
+figure, **reveal luck** `= delta + your regret − opponent regret`, the
+blunder-free residual of how the pure picks landed against each other.
+
 ## Interaction model
 
 - Every draft stage (defender / attackers / refusal) stays one screen with one
@@ -54,9 +62,9 @@ is **fixed per draft**.
   opponent's perspective; names from `colLabels`, with the refusal faced-name
   mirroring).
 - The end-of-draft summary scores both seats: each team's total regret and
-  worst leaks. There is **no variance line** — with no sampling,
-  `achieved − expected ≡ opponent regret − your regret`, which the copy states
-  directly. Bot-mode drafts keep today's summary untouched.
+  worst leaks, plus the **reveal luck** residual (see the correction above) in
+  place of the bot-mode variance line. Bot-mode drafts keep today's summary
+  untouched.
 
 ## Out of scope
 

@@ -42,12 +42,20 @@ export interface DraftModel {
   enemyPair: [number, number] | null;
   fixed: FixedGame[];
   decisions: DraftDecision[];
+  /** Two-player mode only: the opponent seat's decisions, EVs and regret in
+   * the ENEMY's perspective. Always empty in bot mode. */
+  enemyDecisions: DraftDecision[];
+  /** Fixed per draft: false = play vs the bot (enemy sampled from the
+   * equilibrium), true = one human picks for both sides. */
+  twoPlayer: boolean;
   done: boolean;
 }
 
 const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
 
-function combinations(items: number[]): [number, number][] {
+/** Ascending unordered pairs — the engine's column enumeration order for the
+ * attackers stage (also used to map an enemy pair back to its column). */
+export function combinations(items: number[]): [number, number][] {
   const pairs: [number, number][] = [];
   for (let i = 0; i < items.length - 1; i++) {
     for (let j = i + 1; j < items.length; j++) pairs.push([items[i], items[j]]);
@@ -61,7 +69,7 @@ export const endgameNOf = (n: number): number => (n % 2 === 1 ? 3 : 4);
 
 export const finalRoundOf = (n: number): number => (n - endgameNOf(n)) / 2 + 1;
 
-export function initDraft(matrix: Matrix, neutralWeight: number): DraftModel {
+export function initDraft(matrix: Matrix, neutralWeight: number, twoPlayer = false): DraftModel {
   const n = matrix.n;
   return {
     n,
@@ -78,6 +86,8 @@ export function initDraft(matrix: Matrix, neutralWeight: number): DraftModel {
     enemyPair: null,
     fixed: [],
     decisions: [],
+    enemyDecisions: [],
+    twoPlayer,
     done: false,
   };
 }
@@ -92,6 +102,40 @@ export function enemyMoveId(model: DraftModel, stage: NodeResult['stage'], colIn
     return combinations(eligible)[colIndex];
   }
   return model.myPair![colIndex]; // refusal: enemy refuses one of MY attackers
+}
+
+/** The enemy's EV for each column vs my equilibrium mix, in the ENEMY's
+ * perspective: they minimise my value, so column j is worth
+ * −Σᵢ myStrategy[i]·payoff[i][j] to them. */
+export function enemyColEvs(why: NonNullable<NodeResult['why']>): number[] {
+  const { payoff, myStrategy } = why;
+  return payoff[0].map((_, j) => -payoff.reduce((sum, row, i) => sum + myStrategy[i] * row[j], 0));
+}
+
+/** The opponent seat's decision record for a two-player step (mirrors the
+ * friendly DraftDecision, EVs negated to the enemy's perspective). */
+function enemyDecision(model: DraftModel, node: NodeResult, colIndex: number): DraftDecision {
+  const evs = enemyColEvs(node.why!);
+  let best = 0;
+  for (let j = 1; j < evs.length; j++) if (evs[j] > evs[best]) best = j;
+  const { myNames, enemyNames } = model.matrix;
+  // Mirror the friendly framing: a refusal column is the FRIENDLY attacker the
+  // enemy refuses, recorded as whom their defender faces (the kept one).
+  const nameOf = (j: number): string | [string, string] => {
+    const id = enemyMoveId(model, node.stage, j);
+    if (node.stage === 'refusal') return myNames[model.myPair!.find((x) => x !== id)!];
+    return typeof id === 'number' ? enemyNames[id] : [enemyNames[id[0]], enemyNames[id[1]]];
+  };
+  return {
+    stage: node.stage as DraftDecision['stage'],
+    round: model.round,
+    chosenId: enemyMoveId(model, node.stage, colIndex),
+    chosenName: nameOf(colIndex),
+    chosenEv: evs[colIndex],
+    bestEv: evs[best],
+    bestName: nameOf(best),
+    regret: evs[best] - evs[colIndex],
+  };
 }
 
 function matchupValue(model: DraftModel, kind: FixedGame['kind'], my: number, enemy: number): number {
@@ -133,6 +177,10 @@ export function applyStep(model: DraftModel, node: NodeResult, myIndex: number, 
     enemyRemaining: [...model.enemyRemaining],
     fixed: [...model.fixed],
     decisions: [...model.decisions, decision],
+    enemyDecisions:
+      model.twoPlayer && node.why
+        ? [...model.enemyDecisions, enemyDecision(model, node, colIndex)]
+        : model.enemyDecisions,
   };
 
   if (node.stage === 'defender') {

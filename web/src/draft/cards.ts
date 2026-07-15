@@ -1,6 +1,10 @@
 import type { NodeResult } from '../engine/types';
 import type { DraftModel } from './draftState';
+import { combinations, enemyColEvs, enemyMoveId } from './draftState';
 import { toScore } from '../model/scale';
+
+/** A 0–20 score seen from the ENEMY's side: their score = 20 − mine. */
+const toEnemyScore = (internal: number): number => 20 - toScore(internal);
 
 export interface CandidateStats {
   /** Mean expected score (0–20), rounded. */
@@ -88,6 +92,93 @@ export function attackerOptions(model: DraftModel, node: NodeResult): AttackerOp
   return [...sent.keys()]
     .sort((x, y) => x - y)
     .map((index) => ({ index, rating: toScore(cells[index][d].worst), sendProb: sent.get(index)! }));
+}
+
+/** The opponent seat's view of a node (two-player mode), one entry per engine
+ * column — the array index IS the column index applyStep takes. Everything is
+ * in the ENEMY's perspective: prob is their equilibrium weight, ev their value
+ * of the column vs my equilibrium mix. At the refusal stage the id/name is the
+ * FRIENDLY attacker they refuse (the UI frames it as whom their defender
+ * faces, like the friendly side). Empty when the node carries no `why`. */
+export interface EnemyChoice {
+  id: number | [number, number];
+  name: string | [string, string];
+  prob: number;
+  ev: number;
+}
+
+export function enemyChoices(model: DraftModel, node: NodeResult): EnemyChoice[] {
+  if (!node.why) return [];
+  const evs = enemyColEvs(node.why);
+  const { myNames, enemyNames } = model.matrix;
+  return node.why.enStrategy.map((prob, j) => {
+    const id = enemyMoveId(model, node.stage, j);
+    const name =
+      node.stage === 'refusal'
+        ? myNames[id as number]
+        : typeof id === 'number'
+          ? enemyNames[id]
+          : ([enemyNames[id[0]], enemyNames[id[1]]] as [string, string]);
+    return { id, name, prob, ev: evs[j] };
+  });
+}
+
+/** enemy-side candidateStats: the same decision-support stats, from the
+ * opponent's perspective (their score = 20 − mine, maps mirrored).
+ * - defender: candidate enemy defender vs my remaining pool — those games play
+ *   on THEIR best map, which is my worst.
+ * - attackers: their pair vs my defender — my-defends games, my best map.
+ * - refusal: the kept friendly attacker vs their defender (single value). */
+export function enemyCandidateStats(model: DraftModel, node: NodeResult, colIndex: number): CandidateStats {
+  const cells = model.matrix.cells;
+  const id = enemyMoveId(model, node.stage, colIndex);
+
+  if (node.stage === 'defender') {
+    const e = id as number;
+    const vals = model.myRemaining.map((m) => toEnemyScore(cells[m][e].worst));
+    return { avg: mean(vals), floor: Math.min(...vals) };
+  }
+
+  if (node.stage === 'attackers') {
+    const [a, b] = id as [number, number];
+    const d = model.myDefender;
+    const vals = [toEnemyScore(cells[d][a].best), toEnemyScore(cells[d][b].best)];
+    return { avg: mean(vals), floor: Math.min(...vals) };
+  }
+
+  // refusal: they refuse one of MY sent pair; their defender keeps the other.
+  const refuse = id as number;
+  const kept = model.myPair![0] === refuse ? model.myPair![1] : model.myPair![0];
+  const v = toEnemyScore(cells[kept][model.enemyDefender].worst);
+  return { avg: v, floor: v };
+}
+
+/** enemy-side attackerOptions: per eligible enemy attacker, their flipped
+ * rating vs MY defender and their marginal send probability (summed
+ * enStrategy over the columns whose pair contains the attacker). */
+export function enemyAttackerOptions(model: DraftModel, node: NodeResult): AttackerOption[] {
+  if (node.stage !== 'attackers' || !node.why) return [];
+  const d = model.myDefender;
+  const cells = model.matrix.cells;
+  const sent = new Map<number, number>();
+  node.why.enStrategy.forEach((p, j) => {
+    const [a, b] = enemyMoveId(model, 'attackers', j) as [number, number];
+    sent.set(a, (sent.get(a) ?? 0) + p);
+    sent.set(b, (sent.get(b) ?? 0) + p);
+  });
+  return [...sent.keys()]
+    .sort((x, y) => x - y)
+    .map((index) => ({ index, rating: toEnemyScore(cells[d][index].best), sendProb: sent.get(index)! }));
+}
+
+/** Column index of the enemy pair equal to the unordered {x, y} — the mirror
+ * of pairChoiceIndex, over the engine's ascending enemy-pair enumeration. −1
+ * when the pair isn't a column (e.g. it includes their defender). */
+export function enemyPairColIndex(model: DraftModel, x: number, y: number): number {
+  const eligible = model.enemyRemaining.filter((v) => v !== model.enemyDefender);
+  const lo = Math.min(x, y);
+  const hi = Math.max(x, y);
+  return combinations(eligible).findIndex(([a, b]) => a === lo && b === hi);
 }
 
 /** Index into node.choices of the offered pair equal to the unordered {x, y}, or

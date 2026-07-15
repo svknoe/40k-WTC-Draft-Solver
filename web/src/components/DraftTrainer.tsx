@@ -168,6 +168,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         model={model}
         onReplay={start}
         onEditMatrix={onEditMatrix}
+        extraActions={modeToggle}
       />
     );
   }

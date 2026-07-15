@@ -242,6 +242,15 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
     expect(screen.getByText(/Your draft/i)).toBeInTheDocument();
     expect(screen.getByText(/Their draft/i)).toBeInTheDocument();
     expect(screen.getByText(/reveal luck/i)).toBeInTheDocument();
+
+    // No draft is live on the summary, so the mode can be flipped there before
+    // "Draft again" — which then starts a bot-mode draft (single panel).
+    const summaryToggle = screen.getByRole('button', { name: /Opponent: you/ });
+    expect(summaryToggle).toBeEnabled();
+    await user.click(summaryToggle);
+    await user.click(screen.getByRole('button', { name: /Draft again/ }));
+    await waitFor(() => expect(container.querySelector('.choice')).toBeTruthy());
+    expect(container.querySelector('.choice-panel.enemy')).toBeNull();
   });
 
   test('two-player mode: Auto pick fills both panels', async () => {

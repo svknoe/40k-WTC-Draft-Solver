@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { achievedTotal } from '../draft/draftState';
 import type { DraftDecision, DraftModel, FixedGame } from '../draft/draftState';
 import { decompose, decompose2p, verdict, verdict2p } from '../draft/summary';
@@ -13,6 +14,9 @@ interface DraftSummaryProps {
   model: DraftModel;
   onReplay: () => void;
   onEditMatrix: () => void;
+  /** Extra controls in the actions row — the trainer passes its mode toggle
+   * here so the next draft's mode can be flipped (no draft is live). */
+  extraActions?: ReactNode;
 }
 
 // The defender picks the map, so a played game is on that side's map; the
@@ -55,7 +59,7 @@ function HistoryList({ decisions }: { decisions: DraftDecision[] }) {
   );
 }
 
-export function DraftSummary({ myTeam, enemyTeam, myNames, enemyNames, expected, model, onReplay, onEditMatrix }: DraftSummaryProps) {
+export function DraftSummary({ myTeam, enemyTeam, myNames, enemyNames, expected, model, onReplay, onEditMatrix, extraActions }: DraftSummaryProps) {
   const achieved = achievedTotal(model);
   const score = teamResult(achieved, model.n);
   const plan = teamResult(expected, model.n);
@@ -142,6 +146,7 @@ export function DraftSummary({ myTeam, enemyTeam, myNames, enemyNames, expected,
       <div className="summary-actions">
         <button className="primary" onClick={onReplay}>Draft again</button>
         <button onClick={onEditMatrix}>Back to matrix</button>
+        {extraActions}
       </div>
       <p className="muted" style={{ marginTop: '0.75rem' }}>
         {myTeam || 'You'} vs {enemyTeam || 'the opponent'} ·{' '}

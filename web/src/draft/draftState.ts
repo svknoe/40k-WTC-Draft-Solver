@@ -1,6 +1,6 @@
 import type { Matrix, Move, NodeChoice, NodeResult } from '../engine/types';
 
-/** One of the 8 games fixed by the draft, with its value-model value (internal
+/** One of the n games fixed by the draft, with its value-model value (internal
  * scale). `my`/`enemy` are player indices. */
 export interface FixedGame {
   my: number;
@@ -55,6 +55,12 @@ function combinations(items: number[]): [number, number][] {
   return pairs;
 }
 
+/** Terminal-round team size: odd team sizes end at 3 (no last-vs-last game),
+ * even at 4 (spec 2026-07-15-team-sizes-3-8). */
+export const endgameNOf = (n: number): number => (n % 2 === 1 ? 3 : 4);
+
+export const finalRoundOf = (n: number): number => (n - endgameNOf(n)) / 2 + 1;
+
 export function initDraft(matrix: Matrix, neutralWeight: number): DraftModel {
   const n = matrix.n;
   return {
@@ -63,7 +69,7 @@ export function initDraft(matrix: Matrix, neutralWeight: number): DraftModel {
     neutralWeight,
     path: [],
     round: 1,
-    finalRound: (n - 4) / 2 + 1,
+    finalRound: finalRoundOf(n),
     myRemaining: range(n),
     enemyRemaining: range(n),
     myDefender: -1,
@@ -178,18 +184,20 @@ function resolveRound(next: DraftModel, iRefuse: number, enemyRefuses: number): 
   if (round === next.finalRound) {
     const myRefused = enemyRefuses; // my attacker the enemy refused
     const enemyRefused = iRefuse; // enemy attacker I refused
-    const myLast = next.myRemaining.find((x) => x !== myRefused)!;
-    const enemyLast = next.enemyRemaining.find((x) => x !== enemyRefused)!;
-    next.fixed.push(
-      {
-        my: myRefused, enemy: enemyRefused, kind: 'refused', round,
-        value: matchupValue(next, 'refused', myRefused, enemyRefused),
-      },
-      {
+    next.fixed.push({
+      my: myRefused, enemy: enemyRefused, kind: 'refused', round,
+      value: matchupValue(next, 'refused', myRefused, enemyRefused),
+    });
+    // Odd team sizes have no last player: defender + 2 attackers was the
+    // whole remaining team, so the pools now hold only the refused pair.
+    const myLast = next.myRemaining.find((x) => x !== myRefused);
+    const enemyLast = next.enemyRemaining.find((x) => x !== enemyRefused);
+    if (myLast !== undefined && enemyLast !== undefined) {
+      next.fixed.push({
         my: myLast, enemy: enemyLast, kind: 'last', round,
         value: matchupValue(next, 'last', myLast, enemyLast),
-      },
-    );
+      });
+    }
     next.done = true;
   } else {
     next.round = round + 1;

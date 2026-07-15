@@ -41,14 +41,17 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
 
   const matrix = useMemo(() => state.current ?? blank(8), [state.current]);
   const { settings, saves } = state;
-  const solvable = useMemo(() => validateMatrix(matrix).ok, [matrix]);
+  // Validate and convert the layer the active rating mode shows — you solve
+  // what you see (single rating vs best/worst map).
+  const solvable = useMemo(
+    () => validateMatrix(matrix, settings.simpleMode).ok, [matrix, settings.simpleMode]);
   const engineMatrix = useMemo(() => {
     try {
-      return solvable ? toEngineMatrix(matrix) : null;
+      return solvable ? toEngineMatrix(matrix, settings.simpleMode) : null;
     } catch {
       return null;
     }
-  }, [matrix, solvable]);
+  }, [matrix, solvable, settings.simpleMode]);
 
   // A matrix edit invalidates any solved result (§3: reset on matrix change).
   useEffect(() => {
@@ -159,7 +162,7 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
             n={matrix.n}
             canRun={solvable}
             solve={solve}
-            onRun={() => solve.solve(matrix, null)}
+            onRun={() => solve.solve(matrix, null, settings.simpleMode)}
             onTrain={solvable ? goTrainer : undefined}
           />
         )}
@@ -178,7 +181,7 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
               enemyTeam={matrix.enemyTeam}
               neutralWeight={NEUTRAL_WEIGHT}
               solve={solve}
-              onSolve={() => solve.solve(matrix, null)}
+              onSolve={() => solve.solve(matrix, null, settings.simpleMode)}
               onEditMatrix={() => setScreen('editor')}
               onLiveChange={setDraftLive}
             />

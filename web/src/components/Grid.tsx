@@ -62,20 +62,24 @@ export function Grid({
               {cells[i].map((cell, j) => {
                 const err = cellErrors[i][j];
                 // A fully-blank cell is "unfilled", not wrong — don't flag it
-                // red (Solve stays gated by validation either way).
-                const blank = cell.b.trim() === '' && cell.w.trim() === '';
+                // red (Solve stays gated by validation either way). "Blank" is
+                // judged on the active layer, since the inactive one may be
+                // legitimately empty.
+                const blank = simpleMode
+                  ? cell.s.trim() === ''
+                  : cell.b.trim() === '' && cell.w.trim() === '';
                 const showError = err !== null && !blank;
                 const label = `${rowName || `P${i + 1}`} vs ${enemyNames[j] || `E${j + 1}`}`;
                 return (
                   <td key={j} className={showError ? 'cell invalid' : 'cell'} title={showError ? err : undefined}>
                     {simpleMode ? (
                       <input
-                        className={`cell-input ${bandClass(cell.b)}`}
-                        value={cell.b}
+                        className={`cell-input ${bandClass(cell.s)}`}
+                        value={cell.s}
                         aria-label={label}
                         inputMode="decimal"
                         readOnly={readOnly}
-                        onChange={(e) => onCellChange(i, j, { b: e.target.value, w: e.target.value })}
+                        onChange={(e) => onCellChange(i, j, { ...cell, s: e.target.value })}
                       />
                     ) : (
                       <div className="bw">

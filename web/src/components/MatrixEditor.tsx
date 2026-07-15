@@ -48,7 +48,7 @@ export function MatrixEditor({
   const [importError, setImportError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const validation = validateMatrix(matrix);
+  const validation = validateMatrix(matrix, settings.simpleMode);
   const update = (partial: Partial<EditorMatrix>) => onMatrixChange({ ...matrix, ...partial });
 
   const setMyName = (i: number, name: string) => {
@@ -208,7 +208,7 @@ export function MatrixEditor({
           <button
             disabled={locked}
             title="Fill every matchup with random 0-20 scores"
-            onClick={() => onMatrixChange(randomized(matrix, settings.simpleMode))}
+            onClick={() => onMatrixChange(randomized(matrix))}
           >
             Random
           </button>

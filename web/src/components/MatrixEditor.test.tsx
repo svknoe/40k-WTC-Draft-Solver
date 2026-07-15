@@ -17,7 +17,7 @@ function valid4(): EditorMatrix {
     myNames: ['A', 'B', 'C', 'D'],
     enemyNames: ['W', 'X', 'Y', 'Z'],
     cells: Array.from({ length: 4 }, () =>
-      Array.from({ length: 4 }, () => ({ b: '12', w: '9' }))),
+      Array.from({ length: 4 }, () => ({ b: '12', w: '9', s: '10' }))),
   };
 }
 
@@ -140,24 +140,55 @@ describe('MatrixEditor', () => {
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });
 
-  test('Random in single-rating mode stores one averaged value in both map slots', async () => {
+  test('Random writes the best/worst spread AND the single view in one click, regardless of mode', async () => {
     const user = userEvent.setup();
-    render(<Harness initial={valid4()} />);
-    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    render(<Harness initial={valid4()} />); // starts in best/worst mode
     await user.click(screen.getByRole('button', { name: 'Random' }));
-    const single = Number((screen.getByLabelText('A vs W') as HTMLInputElement).value);
-    expect(Number.isInteger(single)).toBe(true);
-    expect(single).toBeGreaterThanOrEqual(0);
-    expect(single).toBeLessThanOrEqual(20);
-    // Flip to best/worst: the stored pair is the same value twice, not a spread.
-    await user.click(screen.getByRole('button', { name: 'Best / worst map' }));
+
+    // Capture the best/worst spread Random produced.
+    const pairs: Record<string, { best: number; worst: number }> = {};
     for (const my of ['A', 'B', 'C', 'D']) {
       for (const enemy of ['W', 'X', 'Y', 'Z']) {
-        const best = (screen.getByLabelText(`${my} vs ${enemy} best`) as HTMLInputElement).value;
-        const worst = (screen.getByLabelText(`${my} vs ${enemy} worst`) as HTMLInputElement).value;
-        expect(best).toBe(worst);
+        const best = Number((screen.getByLabelText(`${my} vs ${enemy} best`) as HTMLInputElement).value);
+        const worst = Number((screen.getByLabelText(`${my} vs ${enemy} worst`) as HTMLInputElement).value);
+        pairs[`${my}-${enemy}`] = { best, worst };
       }
     }
+
+    // Flip to the single-rating view: the SAME Random click must have written a
+    // single equal to the pair's average, rounded either way for a .5 tie.
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    for (const my of ['A', 'B', 'C', 'D']) {
+      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+        const single = Number((screen.getByLabelText(`${my} vs ${enemy}`) as HTMLInputElement).value);
+        const { best, worst } = pairs[`${my}-${enemy}`];
+        const mean = (best + worst) / 2;
+        expect(Number.isInteger(single)).toBe(true);
+        expect([Math.floor(mean), Math.ceil(mean)]).toContain(single);
+      }
+    }
+  });
+
+  test('typing a single rating leaves the best/worst layer untouched (independent layers)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />); // A vs W is 12 / 9 in best/worst
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    const single = screen.getByLabelText('A vs W');
+    await user.clear(single);
+    await user.type(single, '7');
+    await user.click(screen.getByRole('button', { name: 'Best / worst map' }));
+    expect(screen.getByLabelText('A vs W best')).toHaveValue('12');
+    expect(screen.getByLabelText('A vs W worst')).toHaveValue('9');
+  });
+
+  test('typing a best/worst score leaves the single rating untouched (independent layers)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />); // A vs W single is 10
+    const best = screen.getByLabelText('A vs W best');
+    await user.clear(best);
+    await user.type(best, '15');
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    expect(screen.getByLabelText('A vs W')).toHaveValue('10');
   });
 
   test('switching to single-rating mode collapses cells to one input', async () => {

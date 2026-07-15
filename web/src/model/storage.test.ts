@@ -11,7 +11,7 @@ function sample(): EditorMatrix {
     myNames: ['A', 'B', 'C', 'D'],
     enemyNames: ['W', 'X', 'Y', 'Z'],
     cells: Array.from({ length: 4 }, () =>
-      Array.from({ length: 4 }, () => ({ b: '12', w: '9' }))),
+      Array.from({ length: 4 }, () => ({ b: '12', w: '9', s: '10' }))),
   };
 }
 
@@ -38,5 +38,21 @@ describe('storage', () => {
   test('loadState tolerates corrupt storage', () => {
     localStorage.setItem('wtcDraftTrainer', '{ not json');
     expect(loadState().current).toBeNull();
+  });
+
+  test('loadState backfills a missing single rating from a previous build', () => {
+    // A blob written before the single-rating field existed: cells carry only
+    // b/w. Loading must derive a sensible single so simple mode works at once.
+    const old = {
+      cb: false, simpleModeV2: true,
+      saves: {},
+      current: {
+        myTeam: '', enemyTeam: '',
+        myNames: ['A', 'B', 'C', 'D'], enemyNames: ['W', 'X', 'Y', 'Z'],
+        cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ b: '15', w: '9' }))),
+      },
+    };
+    localStorage.setItem('wtcDraftTrainer', JSON.stringify(old));
+    expect(loadState().current?.cells[0][0]).toEqual({ b: '15', w: '9', s: '12' }); // (15+9)/2 = 12
   });
 });

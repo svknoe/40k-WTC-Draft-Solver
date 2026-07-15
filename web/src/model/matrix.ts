@@ -67,7 +67,7 @@ export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
  * single rating flips in place. Flipping is lenient: an unparseable or blank
  * field becomes '' rather than throwing, since Swap is gated only on the active
  * layer (§ independent layers) and the inactive layer may legitimately be
- * blank; tokens normalise to numbers. */
+ * blank. */
 export function transpose(m: EditorMatrix): EditorMatrix {
   const flip = (raw: string): string => {
     try {
@@ -131,7 +131,7 @@ export function cleared(n: MatrixSize): EditorMatrix {
  * number. rng is injectable for tests and must return values in [0, 1). */
 export function randomized(m: EditorMatrix, rng: () => number = Math.random): EditorMatrix {
   const draw = () => Math.floor(rng() * 21);
-  // toInputString keeps a drawn 0 meaning the score 0 ("0.0"), not the even token.
+  // toInputString maps a drawn 0-20 score straight to its plain input string.
   const asInput = (score: number) => toInputString(score - 10);
   const cell = (): EditorCell => {
     const [a, b] = [draw(), draw()];

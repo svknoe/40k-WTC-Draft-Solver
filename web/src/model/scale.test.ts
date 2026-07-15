@@ -2,25 +2,18 @@ import { describe, expect, test } from 'vitest';
 import { formatCell, formatMatchupScore, formatTeamScore, parseRating, scoreBand, teamResult, teamTotal, toInputString, toScore } from './scale';
 
 describe('parseRating', () => {
-  test('legacy tokens map to internal deviations from an even game', () => {
-    expect(parseRating('++')).toBe(8);
-    expect(parseRating('+')).toBe(4);
-    expect(parseRating('0')).toBe(0); // bare 0 = even token, NOT the score 0
-    expect(parseRating('-')).toBe(-4);
-    expect(parseRating('--')).toBe(-8);
-  });
-
   test('0-20 numbers convert as score - 10', () => {
-    expect(parseRating('10')).toBe(0);
+    expect(parseRating('10')).toBe(0); // an even 10-10 game
     expect(parseRating('15')).toBe(5);
     expect(parseRating('20')).toBe(10);
-    expect(parseRating('0.0')).toBe(-10); // explicit score 0 = a 20-0 loss
+    expect(parseRating('0')).toBe(-10); // score 0 = a 20-0 loss
+    expect(parseRating('0.0')).toBe(-10); // same, with an explicit decimal
     expect(parseRating('12.5')).toBe(2.5);
   });
 
   test('trims surrounding whitespace', () => {
     expect(parseRating('  12 ')).toBe(2);
-    expect(parseRating(' 0 ')).toBe(0); // still the even token after trim
+    expect(parseRating(' 0 ')).toBe(-10); // a trimmed 0 is still the score 0
   });
 
   test('rejects empty, non-numeric, and out-of-range values', () => {
@@ -29,6 +22,12 @@ describe('parseRating', () => {
     expect(() => parseRating('x')).toThrow(RangeError);
     expect(() => parseRating('21')).toThrow(RangeError);
     expect(() => parseRating('-1')).toThrow(RangeError);
+  });
+
+  test('rejects the retired legacy relative tokens', () => {
+    for (const token of ['++', '+', '-', '--']) {
+      expect(() => parseRating(token)).toThrow(RangeError);
+    }
   });
 });
 
@@ -52,8 +51,8 @@ describe('toInputString', () => {
     }
   });
 
-  test('serializes score 0 as "0.0", not the "0" even token', () => {
-    expect(toInputString(-10)).toBe('0.0'); // internal -10 = score 0 (a 20-0 loss)
+  test('serializes score 0 as "0" and the even game as "10"', () => {
+    expect(toInputString(-10)).toBe('0'); // internal -10 = score 0 (a 20-0 loss)
     expect(toInputString(0)).toBe('10'); // internal 0 = the even game, score 10
     expect(toInputString(10)).toBe('20');
   });

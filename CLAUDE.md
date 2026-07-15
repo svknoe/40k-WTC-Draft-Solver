@@ -79,13 +79,13 @@ saturates from the bottom up, so k=7 ≡ exact for 8 players.
 
 Matrices are entered in the app (editor, paste, JSON import, samples). Team
 sizes 3–8 are supported (odd sizes end at a 3-player terminal round with no
-last-vs-last game). Cells accept **0–20 scores** (community scale:
-expected score out of 20) or the **legacy tokens** `--, -, 0, +, ++` (-8, -4,
-0, +4, +8 around an even game). Internally everything normalises to the
+last-vs-last game). Cells accept **0–20 scores** (community scale: expected
+score out of 20), where `10` is an even 10-10 game, `0` is a 20-0 blowout
+loss, and `20` is a 20-0 win. Internally everything normalises to the
 deviation from an even 10-10 game (`internal = score - 10`, range -10..+10).
-One deliberate quirk: a bare `0` is the legacy token (an even 10-10 game),
-not the score 0 — write `0.0` for a 20-0 blowout loss. Every cell must
-satisfy best ≥ worst; friendly and enemy names must not overlap.
+Every cell must satisfy best ≥ worst; friendly and enemy names must not
+overlap. (The legacy relative tokens `--, -, 0, +, ++` were retired in favour
+of the plain 0–20 scale — `0` now means the score 0, not an even game.)
 
 ## Running & testing
 

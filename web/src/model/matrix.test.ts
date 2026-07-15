@@ -176,10 +176,10 @@ describe('randomized', () => {
     }
   });
 
-  test('covers the full 0-20 range at the extremes, writing score 0 as "0.0" in every slot', () => {
-    // A bare "0" is the legacy even-game token, so a drawn 0 must serialise as
-    // "0.0" to actually mean a 20-0 blowout — in best, worst AND single.
-    expect(randomized(sample4(), () => 0).cells[0][0]).toEqual({ b: '0.0', w: '0.0', s: '0.0' });
+  test('covers the full 0-20 range at the extremes, writing score 0 as "0" in every slot', () => {
+    // A drawn 0 is the community score 0 (a 20-0 blowout) and serialises as the
+    // plain "0" — in best, worst AND single.
+    expect(randomized(sample4(), () => 0).cells[0][0]).toEqual({ b: '0', w: '0', s: '0' });
     expect(randomized(sample4(), () => 0.999999).cells[0][0]).toEqual({ b: '20', w: '20', s: '20' });
   });
 
@@ -204,14 +204,13 @@ describe('randomized', () => {
     }
   });
 
-  test('always yields a valid matrix in both modes: a drawn 0 stays "0.0"', () => {
+  test('always yields a valid matrix in both modes, including a drawn 0', () => {
     // rng cycles 0, 0.15, 0.4 → draws 0 and 3 (average 1.5), tie-break 0.4 →
-    // single 1. Best 3 / worst "0.0"; if 0 were written as "0" it would parse
-    // as the even token (10) and flunk best ≥ worst.
+    // single 1. Best 3 / worst 0 (a 20-0 loss); both layers stay valid.
     let i = 0;
     const rng = () => [0, 0.15, 0.4][i++ % 3];
     const m = randomized(sample4(), rng);
-    expect(m.cells[0][0]).toEqual({ b: '3', w: '0.0', s: '1' });
+    expect(m.cells[0][0]).toEqual({ b: '3', w: '0', s: '1' });
     expect(validateMatrix(m, false).ok).toBe(true);
     expect(validateMatrix(m, true).ok).toBe(true);
   });
@@ -255,9 +254,9 @@ describe('fromSaved single-rating backfill', () => {
   });
 
   test('an equal pair copies its value into the single rating (lossless)', () => {
-    const m = fromSaved(savedRaw([{ b: '12', w: '12' }, { b: '0.0', w: '0.0' }, { b: '', w: '' }]));
+    const m = fromSaved(savedRaw([{ b: '12', w: '12' }, { b: '0', w: '0' }, { b: '', w: '' }]));
     expect(m.cells[0][0].s).toBe('12');
-    expect(m.cells[0][1].s).toBe('0.0'); // a 20-0 pair round-trips as "0.0"
+    expect(m.cells[0][1].s).toBe('0'); // a 20-0 pair round-trips as "0"
   });
 
   test('a spread pair backfills the half-up rounded average', () => {

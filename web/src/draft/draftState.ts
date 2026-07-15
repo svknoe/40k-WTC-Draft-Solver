@@ -104,8 +104,8 @@ function matchupValue(model: DraftModel, kind: FixedGame['kind'], my: number, en
 /** Apply one simultaneous decision: my choice (index into node.choices) + the
  * bot's sampled enemy column (index into node.why.enStrategy). Returns a new
  * model (the input is not mutated). At the refusal step it resolves the round's
- * fixed games and, on the final round, the refused-vs-refused and last-vs-last
- * games. */
+ * fixed games and, on the final round, the refused-vs-refused game — plus, at
+ * even team sizes only, the last-vs-last game. */
 export function applyStep(model: DraftModel, node: NodeResult, myIndex: number, colIndex: number): DraftModel {
   const choice = node.choices[myIndex];
   const bestChoice = node.choices.reduce((best, c) => (c.ev > best.ev ? c : best), node.choices[0]);
@@ -188,11 +188,17 @@ function resolveRound(next: DraftModel, iRefuse: number, enemyRefuses: number): 
       my: myRefused, enemy: enemyRefused, kind: 'refused', round,
       value: matchupValue(next, 'refused', myRefused, enemyRefused),
     });
-    // Odd team sizes have no last player: defender + 2 attackers was the
-    // whole remaining team, so the pools now hold only the refused pair.
-    const myLast = next.myRemaining.find((x) => x !== myRefused);
-    const enemyLast = next.enemyRemaining.find((x) => x !== enemyRefused);
-    if (myLast !== undefined && enemyLast !== undefined) {
+    // Only even team sizes have last players; at odd sizes defender + 2
+    // attackers was the whole remaining team, so each pool now holds just its
+    // refused attacker. Branch on parity — not on whether a last player
+    // happens to be found — so a corrupted pool throws instead of silently
+    // dropping the game.
+    if (endgameNOf(next.n) === 4) {
+      const myLast = next.myRemaining.find((x) => x !== myRefused);
+      const enemyLast = next.enemyRemaining.find((x) => x !== enemyRefused);
+      if (myLast === undefined || enemyLast === undefined) {
+        throw new Error('Even-size final round is missing its last players.');
+      }
       next.fixed.push({
         my: myLast, enemy: enemyLast, kind: 'last', round,
         value: matchupValue(next, 'last', myLast, enemyLast),

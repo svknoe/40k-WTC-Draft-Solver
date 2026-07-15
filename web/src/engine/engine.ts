@@ -48,7 +48,9 @@ function decodeTeam(code: number): TeamState {
   };
 }
 
-/** Index of the single set bit (the 4-player endgame's last remaining player). */
+/** Index of the single set bit (the even endgame's last remaining player).
+ * Returns -1 for an empty mask — callers must guard, which the odd endgame
+ * (empty remaining mask, no last player) does via its lastTerm ternaries. */
 function singleIndex(mask: number): number {
   return 31 - Math.clz32(mask);
 }
@@ -145,6 +147,12 @@ export class DraftEngine {
 
   constructor(matrix: Matrix, k: number | null, neutralWeight = 0.5) {
     const n = matrix.n;
+    // The engine owns the 8-bit-mask packing constraint but receives n across
+    // the worker boundary as untyped data — an out-of-range n would corrupt
+    // packed keys silently rather than fail, so guard it here.
+    if (!Number.isInteger(n) || n < 3 || n > 8) {
+      throw new Error(`Team size must be 3-8 (got ${n}).`);
+    }
     this.n = n;
     this.myNames = matrix.myNames;
     this.enemyNames = matrix.enemyNames;
@@ -240,7 +248,8 @@ export class DraftEngine {
   // --- enumeration (port of game_state_dictionaries.enumerate_gamestates) ---
 
   private enumerate(onProgress?: ProgressCallback): void {
-    // Levels run (8,none) → (8,sd) → (8,sa) → (6,none) → ... → (4,sa); the
+    // Levels run (n,none) → (n,sd) → (n,sa) → (n−2,none) → ... down to
+    // (endgameN,sa) — e.g. (8,none)…(4,sa) or (5,none)…(3,sa); the
     // discard levels are pass-through (their game is decided at the parent
     // select_attackers state) and are skipped entirely by generating the
     // grandchildren none-states directly.
@@ -665,6 +674,7 @@ export class DraftEngine {
     }
 
     const currentN = teamN(teamCode(friendly));
+    // Sound for every n <= 8, both parities: rounds peak at 3 (8→6→4, 7→5→3).
     const round = (this.n - currentN) / 2 + 1 as 1 | 2 | 3;
     if (done) {
       // `done` is set at the endgame-round refusal, so the states above still

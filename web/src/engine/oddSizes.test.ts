@@ -63,6 +63,27 @@ describe('odd team sizes', () => {
     expect(new DraftEngine(matrix5, null).solve()).toBeCloseTo(referenceValue(matrix5), 9);
   });
 
+  test('7-player root value matches the reference solver (multi-level odd induction)', () => {
+    // Deterministic map-spread values: unlike a constant-sum matrix, a wrong
+    // equilibrium or a packed-key/level-ordering bug changes this number.
+    const cells7 = Array.from({ length: 7 }, (_, i) =>
+      Array.from({ length: 7 }, (_, j) => {
+        const best = ((i * 3 + j * 5) % 13) - 6;
+        return { best, worst: best - ((i + j) % 4) };
+      }));
+    const matrix7: Matrix = { n: 7, myNames: names('F', 7), enemyNames: names('E', 7), cells: cells7 };
+    expect(new DraftEngine(matrix7, null).solve()).toBeCloseTo(referenceValue(matrix7), 9);
+  });
+
+  test('k-restricted solve works at odd sizes (smoke)', () => {
+    expect(Number.isFinite(new DraftEngine(matrix5, 2).solve())).toBe(true);
+  });
+
+  test('rejects out-of-range team sizes', () => {
+    const bad = { ...flatMatrix(V3), n: 9 as Matrix['n'] };
+    expect(() => new DraftEngine(bad, null)).toThrow(/3-8/);
+  });
+
   test('additive matrices give the constant-sum value exactly (n = 3 and 5)', () => {
     const m3 = additiveMatrix([1, 2, 3], [0, -1, 4]);
     expect(new DraftEngine(m3, null).solve()).toBeCloseTo(1 + 2 + 3 + 0 - 1 + 4, 9);

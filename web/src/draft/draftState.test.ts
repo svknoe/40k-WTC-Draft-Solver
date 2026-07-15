@@ -115,4 +115,29 @@ describe('odd team sizes', () => {
     expect(model.fixed).toHaveLength(4);
     expect(model.fixed.filter((g) => g.kind === 'last')).toHaveLength(1);
   });
+
+  test('a 7-player draft runs 3 rounds and returns refused attackers to the pool', () => {
+    const model = playDraft(additiveMatrix([1, 2, 3, 0, -1, 2, -2], [0, -1, 4, 2, -2, 1, 3]));
+    expect(model.fixed).toHaveLength(7);
+    expect(model.fixed.filter((g) => g.kind === 'last')).toHaveLength(0);
+    expect(model.fixed.filter((g) => g.kind === 'refused')).toHaveLength(1);
+    expect(model.fixed.filter((g) => g.kind === 'my-defends')).toHaveLength(3);
+    expect(model.round).toBe(3);
+    expect(achievedTotal(model)).toBeCloseTo(5 + 7, 9); // constant-sum matrix
+  });
+
+  test('a corrupted even-size pool throws instead of silently dropping the last game', () => {
+    const matrix = additiveMatrix([1, 2, 3, 0], [0, -1, 4, 2]);
+    const engine = new DraftEngine(matrix, null);
+    engine.solve();
+    let model = initDraft(matrix, 0.5);
+    model = applyStep(model, engine.nodeResult(model.path), 0, 0); // defenders
+    model = applyStep(model, engine.nodeResult(model.path), 0, 0); // attackers
+    // Remove the would-be last player (not defender, not a sent attacker),
+    // then resolve the final refusal on the corrupted model.
+    const lastPlayer = model.myRemaining.find(
+      (x) => x !== model.myDefender && !model.myPair!.includes(x))!;
+    const corrupted = { ...model, myRemaining: model.myRemaining.filter((x) => x !== lastPlayer) };
+    expect(() => applyStep(corrupted, engine.nodeResult(model.path), 0, 0)).toThrow(/last players/);
+  });
 });

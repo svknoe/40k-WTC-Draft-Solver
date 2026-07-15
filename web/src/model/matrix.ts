@@ -1,7 +1,8 @@
 import type { Matrix } from '../engine/types';
 import { parseRating, toInputString } from './scale';
 
-export type MatrixSize = 3 | 4 | 5 | 6 | 7 | 8;
+/** Derived from the engine's Matrix so the two unions can never drift. */
+export type MatrixSize = Matrix['n'];
 
 /** One editor cell: 0-20 strings AS TYPED (best `b`, worst `w`). Storing raw
  * strings tolerates in-progress/invalid edits and round-trips losslessly;

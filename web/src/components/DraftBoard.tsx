@@ -1,4 +1,5 @@
 import type { DraftModel } from '../draft/draftState';
+import { endgameNOf } from '../draft/draftState';
 
 /** In-progress (pre-lock) picks, so the board can fill + highlight the panels as
  * the user selects — before they lock the choice. */
@@ -59,12 +60,12 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
           : { name: null, cls: 'slot atk mine empty' };
       });
 
-  // Final round only: preview the two games that resolve automatically on lock
-  // — the last players (my leftover player vs theirs) and the refused pair —
-  // filling in as each side becomes known. Shown from the attackers step on.
+  // Final round only: preview the games that resolve automatically on lock —
+  // the refused pair, plus (even team sizes only) the last players — filling
+  // in as each side becomes known. Shown from the attackers step on.
   const stage = model.myDefender < 0 ? 'defender' : model.myPair === null ? 'attackers' : 'refusal';
   const showAutoPaired = model.round === model.finalRound && stage !== 'defender';
-  const hasLast = model.n % 2 === 0;
+  const hasLast = endgameNOf(model.n) === 4;
   let myLast = '?';
   let enLast = '?';
   let refThem = '?';

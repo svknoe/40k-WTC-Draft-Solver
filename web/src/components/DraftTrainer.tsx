@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Matrix, NodeResult } from '../engine/types';
 import { sampleIndex } from '../draft/sampling';
 import type { DraftModel, FixedGame } from '../draft/draftState';
-import { applyStep, finalRoundOf, initDraft } from '../draft/draftState';
+import { applyStep, endgameNOf, finalRoundOf, initDraft } from '../draft/draftState';
 import { attackerOptions, candidateStats, pairChoiceIndex, projectedResult } from '../draft/cards';
 import { formatMatchupScore, formatTeamScore, scoreBand, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
@@ -106,8 +106,8 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
           {finalRound > 1 && (
             <li>Rounds 1–{finalRound - 1} — put up a defender, send two attackers, then refuse one of theirs; two games lock each round.</li>
           )}
-          {matrix.n % 2 === 1 ? (
-            <li>Round {finalRound} — three players: the two non-defenders attack automatically, each side refuses one, and the refused attackers face each other, resolving the remaining games.</li>
+          {endgameNOf(matrix.n) === 3 ? (
+            <li>Round {finalRound} — three players: the two non-defenders are your attackers (no choice to make), each side refuses one, and the refused attackers face each other, resolving the remaining games.</li>
           ) : (
             <li>Round {finalRound} — four players: the two refused attackers face each other and the last players pair automatically, resolving the remaining games.</li>
           )}

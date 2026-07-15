@@ -99,19 +99,29 @@ export function cleared(n: MatrixSize): EditorMatrix {
   };
 }
 
-/** Rewrite every cell with two independent integer draws in 0-20 (larger →
- * best map, smaller → worst), keeping all names. rng is injectable for tests
- * and must return values in [0, 1). */
-export function randomized(m: EditorMatrix, rng: () => number = Math.random): EditorMatrix {
+/** Rewrite every cell from two independent integer draws in 0-20, keeping all
+ * names. Best/worst mode stores the ordered pair (larger → best map, smaller
+ * → worst); simple mode stores their average in both slots, breaking a .5
+ * average up or down with 50/50 probability so scores stay whole numbers.
+ * rng is injectable for tests and must return values in [0, 1). */
+export function randomized(
+  m: EditorMatrix, simple: boolean, rng: () => number = Math.random,
+): EditorMatrix {
   const draw = () => Math.floor(rng() * 21);
+  // toInputString keeps a drawn 0 meaning the score 0 ("0.0"), not the even token.
+  const asInput = (score: number) => toInputString(score - 10);
+  const cell = (): EditorCell => {
+    const [a, b] = [draw(), draw()];
+    if (!simple) return { b: asInput(Math.max(a, b)), w: asInput(Math.min(a, b)) };
+    const mean = (a + b) / 2;
+    const v = Number.isInteger(mean) ? mean : (rng() < 0.5 ? Math.floor(mean) : Math.ceil(mean));
+    return { b: asInput(v), w: asInput(v) };
+  };
   return {
     ...m,
     myNames: [...m.myNames],
     enemyNames: [...m.enemyNames],
-    cells: m.cells.map((row) => row.map(() => {
-      const [a, b] = [draw(), draw()];
-      return { b: String(Math.max(a, b)), w: String(Math.min(a, b)) };
-    })),
+    cells: m.cells.map((row) => row.map(cell)),
   };
 }
 

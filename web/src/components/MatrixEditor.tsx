@@ -208,7 +208,7 @@ export function MatrixEditor({
           <button
             disabled={locked}
             title="Fill every matchup with random 0-20 scores"
-            onClick={() => onMatrixChange(randomized(matrix))}
+            onClick={() => onMatrixChange(randomized(matrix, settings.simpleMode))}
           >
             Random
           </button>

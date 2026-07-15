@@ -140,6 +140,26 @@ describe('MatrixEditor', () => {
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });
 
+  test('Random in single-rating mode stores one averaged value in both map slots', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    await user.click(screen.getByRole('button', { name: 'Random' }));
+    const single = Number((screen.getByLabelText('A vs W') as HTMLInputElement).value);
+    expect(Number.isInteger(single)).toBe(true);
+    expect(single).toBeGreaterThanOrEqual(0);
+    expect(single).toBeLessThanOrEqual(20);
+    // Flip to best/worst: the stored pair is the same value twice, not a spread.
+    await user.click(screen.getByRole('button', { name: 'Best / worst map' }));
+    for (const my of ['A', 'B', 'C', 'D']) {
+      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+        const best = (screen.getByLabelText(`${my} vs ${enemy} best`) as HTMLInputElement).value;
+        const worst = (screen.getByLabelText(`${my} vs ${enemy} worst`) as HTMLInputElement).value;
+        expect(best).toBe(worst);
+      }
+    }
+  });
+
   test('switching to single-rating mode collapses cells to one input', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />);

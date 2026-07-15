@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { blank, cleared, EditorMatrix, fromSaved, randomized, resize, toEngineMatrix, toSaved, transpose } from './matrix';
+import { validateMatrix } from './validation';
 
 function sample4(): EditorMatrix {
   return {
@@ -110,7 +111,7 @@ describe('cleared', () => {
 
 describe('randomized', () => {
   test('rewrites every cell with integers 0-20, best ≥ worst, keeping names', () => {
-    const m = randomized(sample4(), Math.random);
+    const m = randomized(sample4(), false, Math.random);
     expect(m.n).toBe(4);
     expect(m.myTeam).toBe('Norway');
     expect(m.myNames).toEqual(['A', 'B', 'C', 'D']);
@@ -134,15 +135,59 @@ describe('randomized', () => {
     // Deterministic rng cycling 0.1, 0.9 → draws 2 and 18 in alternating order.
     let i = 0;
     const rng = () => [0.1, 0.9][i++ % 2];
-    const m = randomized(sample4(), rng);
+    const m = randomized(sample4(), false, rng);
     for (const row of m.cells) {
       for (const cell of row) expect(cell).toEqual({ b: '18', w: '2' });
     }
   });
 
-  test('covers the full 0-20 range at the extremes', () => {
-    expect(randomized(sample4(), () => 0).cells[0][0]).toEqual({ b: '0', w: '0' });
-    expect(randomized(sample4(), () => 0.999999).cells[0][0]).toEqual({ b: '20', w: '20' });
+  test('covers the full 0-20 range at the extremes, writing score 0 as "0.0"', () => {
+    // A bare "0" is the legacy even-game token, so a drawn 0 must serialise
+    // as "0.0" to actually mean a 20-0 blowout.
+    expect(randomized(sample4(), false, () => 0).cells[0][0]).toEqual({ b: '0.0', w: '0.0' });
+    expect(randomized(sample4(), false, () => 0.999999).cells[0][0]).toEqual({ b: '20', w: '20' });
+    expect(randomized(sample4(), true, () => 0).cells[0][0]).toEqual({ b: '0.0', w: '0.0' });
+  });
+
+  test('always validates: a drawn 0 must not parse as the even token', () => {
+    // rng cycles 0, 0.15 → draws 0 and 3 per cell. If 0 were written as "0",
+    // it would parse as the even token (10) and flunk best ≥ worst vs best 3.
+    let i = 0;
+    const rng = () => [0, 0.15][i++ % 2];
+    const m = randomized(sample4(), false, rng);
+    expect(m.cells[0][0]).toEqual({ b: '3', w: '0.0' });
+    expect(validateMatrix(m).ok).toBe(true);
+  });
+
+  test('simple mode: a whole-number average of the two draws fills both slots', () => {
+    // rng cycles 0.1, 0.9 → draws 2 and 18 per cell; average 10, no rounding
+    // draw consumed.
+    let i = 0;
+    const rng = () => [0.1, 0.9][i++ % 2];
+    const m = randomized(sample4(), true, rng);
+    for (const row of m.cells) {
+      for (const cell of row) expect(cell).toEqual({ b: '10', w: '10' });
+    }
+  });
+
+  test('simple mode: a fractional average rounds down when the extra draw is < 0.5', () => {
+    // Draws 3 and 4 (average 3.5), then 0.4 → round down to 3.
+    let i = 0;
+    const rng = () => [0.15, 0.2, 0.4][i++ % 3];
+    const m = randomized(sample4(), true, rng);
+    for (const row of m.cells) {
+      for (const cell of row) expect(cell).toEqual({ b: '3', w: '3' });
+    }
+  });
+
+  test('simple mode: a fractional average rounds up when the extra draw is ≥ 0.5', () => {
+    // Draws 3 and 4 (average 3.5), then 0.6 → round up to 4.
+    let i = 0;
+    const rng = () => [0.15, 0.2, 0.6][i++ % 3];
+    const m = randomized(sample4(), true, rng);
+    for (const row of m.cells) {
+      for (const cell of row) expect(cell).toEqual({ b: '4', w: '4' });
+    }
   });
 });
 

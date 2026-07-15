@@ -1,15 +1,6 @@
-__pycache__/
-*.py[cod]
-.venv/
-drafter/resources/matches/**/*.json
 todo.txt
 
 */lib
-
-# packaging artifacts (pip install -e . builds these in-tree)
-*.egg-info/
-build/
-dist/
 
 # web app (docs/web-design.md §9)
 web/node_modules/

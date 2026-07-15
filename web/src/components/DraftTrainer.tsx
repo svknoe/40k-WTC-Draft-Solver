@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Matrix, NodeResult } from '../engine/types';
 import { sampleIndex } from '../draft/sampling';
 import type { DraftModel, FixedGame } from '../draft/draftState';
-import { applyStep, initDraft } from '../draft/draftState';
+import { applyStep, finalRoundOf, initDraft } from '../draft/draftState';
 import { attackerOptions, candidateStats, pairChoiceIndex, projectedResult } from '../draft/cards';
 import { formatMatchupScore, formatTeamScore, scoreBand, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
@@ -65,7 +65,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
 
   const ready = solve.status === 'done' && solve.solvedK === null;
   const expected = solve.result?.expected ?? 0;
-  const finalRound = (matrix.n - 4) / 2 + 1;
+  const finalRound = finalRoundOf(matrix.n);
   const enemy = enemyTeam || 'The bot';
   // Coaching hints (per-choice strategy/EV + the Why panel) auto-disable during
   // official WTC dates so the app can't be used at the table (the About copy).
@@ -106,7 +106,11 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
           {finalRound > 1 && (
             <li>Rounds 1–{finalRound - 1} — put up a defender, send two attackers, then refuse one of theirs; two games lock each round.</li>
           )}
-          <li>Round {finalRound} — four players: the two refused attackers face each other and the last players pair automatically, resolving the remaining games.</li>
+          {matrix.n % 2 === 1 ? (
+            <li>Round {finalRound} — three players: the two non-defenders attack automatically, each side refuses one, and the refused attackers face each other, resolving the remaining games.</li>
+          ) : (
+            <li>Round {finalRound} — four players: the two refused attackers face each other and the last players pair automatically, resolving the remaining games.</li>
+          )}
           <li>Both captains pick secretly at every step. The bot's choice is revealed only after you lock yours.</li>
           <li>At the end you're scored against the solver's pre-draft expectation.</li>
           <li>Runs entirely on your computer — your matrix and drafts are never uploaded. Hints are training-only and switch off during official WTC dates.</li>

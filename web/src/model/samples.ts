@@ -15,17 +15,19 @@ const ENEMY_FACTIONS = [
 
 /** A sample from a conformance fixture: keep its real (non-trivial, solvable)
  * cell values but label the players with factions rather than the fixture's
- * own names. */
-function fromFixture(fixture: Fixture): EditorMatrix {
+ * own names. `n` may be smaller than the fixture's size — the top-left block
+ * of a real matrix is itself a real matrix (used for the 5x5 sample; there is
+ * no odd-size fixture and the frozen fixtures are never extended). */
+function fromFixture(fixture: Fixture, n: MatrixSize = fixture.n): EditorMatrix {
   const m = fixtureMatrix(fixture);
-  const n = m.n;
   return {
     n,
     myTeam: 'Your team',
     enemyTeam: 'Opposing team',
     myNames: MY_FACTIONS.slice(0, n),
     enemyNames: ENEMY_FACTIONS.slice(0, n),
-    cells: m.cells.map((row) => row.map((c) => ({ b: toInputString(c.best), w: toInputString(c.worst) }))),
+    cells: m.cells.slice(0, n).map((row) =>
+      row.slice(0, n).map((c) => ({ b: toInputString(c.best), w: toInputString(c.worst) }))),
   };
 }
 
@@ -53,5 +55,6 @@ export const SAMPLES: Sample[] = [
   { key: 'template', label: 'Template', matrix: template(8) },
   { key: 'eight', label: '8v8 example', matrix: fromFixture(scotland) },
   { key: 'six', label: '6v6 example', matrix: fromFixture(six) },
+  { key: 'five', label: '5v5 example', matrix: fromFixture(scotland, 5) },
   { key: 'four', label: '4v4 example', matrix: fromFixture(smoke) },
 ];

@@ -43,4 +43,11 @@ describe('SAMPLES', () => {
     expect(label('six')).toBe('6v6 example');
     expect(label('four')).toBe('4v4 example');
   });
+
+  test('includes a 5x5 sample with distinct names and non-blank cells', () => {
+    const five = SAMPLES.find((s) => s.matrix.n === 5)!;
+    expect(five).toBeDefined();
+    expect(new Set([...five.matrix.myNames, ...five.matrix.enemyNames]).size).toBe(10);
+    expect(five.matrix.cells.every((row) => row.every((c) => c.b !== '' && c.w !== ''))).toBe(true);
+  });
 });

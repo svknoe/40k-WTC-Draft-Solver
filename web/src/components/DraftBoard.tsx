@@ -64,23 +64,26 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
   // filling in as each side becomes known. Shown from the attackers step on.
   const stage = model.myDefender < 0 ? 'defender' : model.myPair === null ? 'attackers' : 'refusal';
   const showAutoPaired = model.round === model.finalRound && stage !== 'defender';
+  const hasLast = model.n % 2 === 0;
   let myLast = '?';
   let enLast = '?';
   let refThem = '?';
   if (showAutoPaired) {
     const { myRemaining, enemyRemaining, myDefender, enemyDefender, myPair, enemyPair } = model;
     if (myPair && enemyPair) {
-      // refusal stage: both leftover players are settled (attackers are locked)
-      const ml = myRemaining.find((x) => x !== myDefender && !myPair.includes(x));
-      if (ml != null) myLast = myNames[ml];
-      const el = enemyRemaining.find((x) => x !== enemyDefender && !enemyPair.includes(x));
-      if (el != null) enLast = enemyNames[el];
+      if (hasLast) {
+        // refusal stage: both leftover players are settled (attackers are locked)
+        const ml = myRemaining.find((x) => x !== myDefender && !myPair.includes(x));
+        if (ml != null) myLast = myNames[ml];
+        const el = enemyRemaining.find((x) => x !== enemyDefender && !enemyPair.includes(x));
+        if (el != null) enLast = enemyNames[el];
+      }
       // the enemy attacker I refuse is the one I'm not facing
       if (pending.face != null) {
         const rt = enemyPair.find((x) => x !== pending.face);
         if (rt != null) refThem = enemyNames[rt];
       }
-    } else if (pending.attackers.length === 2) {
+    } else if (hasLast && pending.attackers.length === 2) {
       // attackers stage: my leftover is whichever of my players I didn't send
       const ml = myRemaining.find((x) => x !== myDefender && !pending.attackers.includes(x));
       if (ml != null) myLast = myNames[ml];
@@ -126,10 +129,12 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
       {showAutoPaired && (
         <div className="board-panel">
           <div className="board-title">Auto-paired this round</div>
-          <div className="slot def auto">
-            <span className="slot-tag">LAST</span>
-            <span className="slot-name">{myLast} vs {enLast}</span>
-          </div>
+          {hasLast && (
+            <div className="slot def auto">
+              <span className="slot-tag">LAST</span>
+              <span className="slot-name">{myLast} vs {enLast}</span>
+            </div>
+          )}
           <div className="slot empty">
             <span className="slot-name">refused: ? vs {refThem}</span>
           </div>

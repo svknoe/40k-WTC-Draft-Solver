@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { blank, EditorMatrix, resize, toEngineMatrix, transpose } from './matrix';
+import { blank, EditorMatrix, fromSaved, resize, toEngineMatrix, toSaved, transpose } from './matrix';
 
 function sample4(): EditorMatrix {
   return {
@@ -78,5 +78,24 @@ describe('resize', () => {
 
     const shrunk = resize(sample4(), 4);
     expect(shrunk).toEqual(sample4());
+  });
+});
+
+describe('fromSaved sizes 3-8', () => {
+  test('accepts a 5x5 saved matrix', () => {
+    const saved = toSaved(blank(5));
+    expect(fromSaved(saved).n).toBe(5);
+  });
+
+  test('accepts 3x3 and 7x7', () => {
+    expect(fromSaved(toSaved(blank(3))).n).toBe(3);
+    expect(fromSaved(toSaved(blank(7))).n).toBe(7);
+  });
+
+  test('rejects sizes outside 3-8', () => {
+    const two = { ...toSaved(blank(4)), myNames: ['a', 'b'] };
+    expect(() => fromSaved(two)).toThrow(/Team size must be 3-8/);
+    const nine = { ...toSaved(blank(4)), myNames: Array.from({ length: 9 }, (_, i) => `p${i}`) };
+    expect(() => fromSaved(nine)).toThrow(/Team size must be 3-8/);
   });
 });

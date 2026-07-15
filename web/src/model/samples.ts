@@ -18,9 +18,7 @@ const ENEMY_FACTIONS = [
  * own names. */
 function fromFixture(fixture: Fixture): EditorMatrix {
   const m = fixtureMatrix(fixture);
-  // The bundled fixtures are all 4/6/8; the engine's Matrix.n is now 3–8
-  // (odd sizes), so narrow back to the model whitelist.
-  const n = m.n as MatrixSize;
+  const n = m.n;
   return {
     n,
     myTeam: 'Your team',

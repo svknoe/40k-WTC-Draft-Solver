@@ -8,7 +8,7 @@ const names = (prefix: string, n: number): string[] =>
 
 /** best = worst = v: no map spread, so the neutral value is v too. */
 function flatMatrix(v: number[][]): Matrix {
-  const n = v.length;
+  const n = v.length as Matrix['n'];
   return {
     n,
     myNames: names('F', n),

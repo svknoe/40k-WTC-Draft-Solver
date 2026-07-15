@@ -90,6 +90,11 @@ export function decompose2p(
   achieved: number,
 ): Decomposition2p {
   const mine = decompose(myDecisions, expected, achieved);
+  // Only `.totalRegret` / `.leaks` are read from `theirs`, and both depend on
+  // the decisions alone — not on expected/achieved — so these negated args are
+  // NOT load-bearing here. They're the enemy-perspective expected/achieved
+  // (their value = −mine), which keeps `theirs` a self-consistent decomposition
+  // should a future caller start reading its totalDelta/variance.
   const theirs = decompose(enemyDecisions, -expected, -achieved);
   const totalDelta = achieved - expected;
   return {

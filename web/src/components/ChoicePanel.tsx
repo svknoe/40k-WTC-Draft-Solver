@@ -18,9 +18,11 @@ interface ChoicePanelProps {
   model: DraftModel;
   node: NodeResult;
   /** Which seat this panel plays. 'my' renders node.choices exactly as the
-   * classic bot-mode panel; 'enemy' renders the engine columns in column
-   * order (the selection index IS the column index applyStep takes), with
-   * every figure flipped to the opponent's own perspective. */
+   * classic bot-mode panel; 'enemy' renders the engine columns in column order,
+   * with every figure flipped to the opponent's own perspective. At the
+   * single-select stages (defender / refusal) the selection index IS the column
+   * index applyStep takes; at the attackers stage the cards are per-attacker and
+   * the column is resolved from the two picks by enemyPairColIndex on lock. */
   side: PanelSide;
   showHints: boolean;
   /** Single-select stages: the selected choice/column index. */

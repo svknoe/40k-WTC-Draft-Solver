@@ -113,9 +113,11 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     onLiveChange?.(isLive);
   }, [isLive, onLiveChange]);
 
-  // The mode toggle renders on the intro (where the mode is chosen) and in the
-  // live topbar (where it shows the fixed mode, disabled — a draft is purely
-  // one mode so the summary decomposition stays well-defined).
+  // One mode toggle, reused wherever the mode is relevant. It's disabled
+  // (`isLive`) only while a draft is running — a draft is purely one mode, so
+  // the summary decomposition stays well-defined — and enabled otherwise
+  // (the intro and the finished-draft summary, where it sets the next draft's
+  // mode). See each render site below for placement.
   const modeToggle = (
     <button
       className={twoPlayer ? 'tab active' : 'tab'}

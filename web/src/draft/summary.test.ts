@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'vitest';
+import { fixtureMatrix, smoke } from '../conformance/fixtures';
+import { DraftEngine } from '../engine/engine';
 import type { DraftDecision } from './draftState';
+import { achievedTotal, applyStep, initDraft } from './draftState';
 import { decompose, decompose2p, verdict, verdict2p } from './summary';
 
 function decision(regret: number): DraftDecision {
@@ -77,6 +80,47 @@ describe('decompose2p (two-player mode)', () => {
     expect(d.myRegret).toBe(0);
     expect(d.myLeaks).toHaveLength(0);
     expect(d.enemyLeaks.map((l) => l.regret)).toEqual([3, 1]);
+  });
+});
+
+// The synthetic tests above pin the arithmetic; these feed a *real* two-player
+// draft's decisions/enemyDecisions in, so the per-seat regret attribution is
+// exercised on genuine equilibrium values rather than hand-built objects.
+describe('decompose2p on a real two-player draft', () => {
+  const argmax = (xs: number[]): number => xs.reduce((b, _, i) => (xs[i] > xs[b] ? i : b), 0);
+  const argmin = (xs: number[]): number => xs.reduce((b, _, i) => (xs[i] < xs[b] ? i : b), 0);
+  const matrix = fixtureMatrix(smoke);
+  const engine = new DraftEngine(matrix, null, smoke.neutralWeight);
+  const expected = engine.solve();
+
+  function drive(pickMy: (node: ReturnType<typeof engine.nodeResult>) => number) {
+    let model = initDraft(matrix, smoke.neutralWeight, true);
+    while (!model.done) {
+      const node = engine.nodeResult(model.path);
+      model = applyStep(model, node, pickMy(node), argmax(node.why!.enStrategy)); // enemy plays equilibrium
+    }
+    return model;
+  }
+
+  test('both seats play the equilibrium: ~zero regret each, all delta is reveal luck', () => {
+    const model = drive((node) => argmax(node.choices.map((c) => c.prob)));
+    const achieved = achievedTotal(model);
+    const d = decompose2p(model.decisions, model.enemyDecisions, expected, achieved);
+    expect(d.myRegret).toBeCloseTo(0, 6);
+    expect(d.enemyRegret).toBeCloseTo(0, 6);
+    // Clean on both sides ⇒ the whole delta-vs-plan is reveal luck, and it's
+    // nonzero in general (the pure reveals landed off the mixed expectation).
+    expect(d.revealLuck).toBeCloseTo(d.totalDelta, 6);
+    expect(d.expected - d.myRegret + d.enemyRegret + d.revealLuck).toBeCloseTo(achieved, 9);
+  });
+
+  test('my seat plays worst-EV: the regret lands on my seat, the enemy stays clean', () => {
+    const model = drive((node) => argmin(node.choices.map((c) => c.ev)));
+    const achieved = achievedTotal(model);
+    const d = decompose2p(model.decisions, model.enemyDecisions, expected, achieved);
+    expect(d.myRegret).toBeGreaterThan(1e-6);
+    expect(d.enemyRegret).toBeCloseTo(0, 6);
+    expect(d.expected - d.myRegret + d.enemyRegret + d.revealLuck).toBeCloseTo(achieved, 9);
   });
 });
 

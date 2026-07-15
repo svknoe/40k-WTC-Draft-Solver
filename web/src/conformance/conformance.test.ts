@@ -1,6 +1,7 @@
 /**
- * Conformance suite: the TS engine against fixtures exported from the Python
- * engine (docs/web-design.md §7.2 — "conformance, not bit-equality").
+ * Conformance suite: the TS engine against frozen fixtures exported from the
+ * retired Python engine (docs/web-design.md §7.2 — "conformance, not
+ * bit-equality"; last exporter source: git tag v-final-pre-python-removal).
  *
  * - Game VALUES are unique per zero-sum game and must agree to ~1e-9.
  * - Gamestate counts per (n, stage) must match exactly (pins the enumeration

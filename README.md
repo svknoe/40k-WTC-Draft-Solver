@@ -1,117 +1,41 @@
 # 40k-WTC-Draft-Solver
 
-Creates optimal strategies for WTC pairing drafts using game theoretic Nash equilibria.
+Computes optimal strategies for Warhammer 40,000 WTC pairing drafts using
+game-theoretic Nash equilibria — and lets you train against them.
 
-#### Solve modes
+**Use it in the browser:** https://svknoe.github.io/40k-WTC-Draft-Solver/
 
-At startup (after picking the opponent) you choose a solve mode:
+The app is fully client-side (React + TypeScript): enter your team's pairing
+matrix, solve the draft to the true equilibrium, then run practice drafts
+against the bot. Nothing leaves the tab.
 
-- **Exact** (default) — the true equilibrium, no heuristic. A full 8-player
-  team takes roughly 3 minutes and under 1 GB of RAM; smaller teams finish in
-  seconds.
-- **Fast preview** — a k=3 attacker-restriction heuristic (~30 s at 8 players)
-  for quick iteration. It approximates: it can miss equilibrium attackers, so
-  use exact for the real draft.
+## How it models the draft
 
-(The mode is the `restrict_attackers` / `restricted_attackers_count` pair in
-`SolverConfig`, `drafter/solver/context.py`, if you drive the solver in code.)
+Both captains rate every friendly-vs-enemy matchup in advance as a **0–20
+expected score** on the pairing's **best** and **worst** map (11th edition:
+the defender picks the map, so only those two ever get played). The draft —
+simultaneous defender reveal, two attackers against the enemy defender, each
+side refuses one, repeat — is treated as nested zero-sum standard-form games
+and solved exactly by backward induction. Every suggestion the trainer makes
+is an equilibrium mixed strategy.
 
-## Input data
+## Repository layout
 
-Each opponent gets a folder under `drafter/resources/matches/<Team>/`
-containing two CSVs — the matchup ratings on each pairing's **best** and
-**worst** map, from your team's perspective (11th edition: the defender picks
-the map, so only those two maps ever get played):
+All code lives in [web/](web/README.md) — the engine, the trainer UI, and
+the test suites. `docs/web-design.md` is the design document.
 
-- `pairing_matrix_best.csv`
-- `pairing_matrix_worst.csv`
+The original Python engine and CLI were retired in 2026-07 once the
+TypeScript port became the sole implementation; they are preserved at the git
+tag `v-final-pre-python-removal`. The conformance fixtures it exported remain
+in `web/src/conformance/fixtures/` as frozen goldens pinning the value model.
 
-Both files: row 1 = your player names, row 2 = enemy player/faction names,
-then one row per friendly player with their rating against each enemy column.
-Ratings are **0–20 expected scores** (e.g. `15` = you expect to win 15–5 on
-that map) or the legacy shorthand `--, -, 0, +, ++`. A bare `0` means an even
-matchup (10–10). Best must be ≥ worst in every cell.
+## Development
 
-Folders in the old single-matrix format can be converted with
-`python scripts/migrate_match_folder.py drafter/resources/matches/<Team>`.
-
-### Where match folders live
-
-The bundled `drafter/resources/matches/<Team>/` folders are **read-only
-samples**. Put your own opponents in a per-user data directory, which is
-searched first (so they survive package upgrades and work with `pipx`
-installs):
-
-- **Windows:** `%APPDATA%\wtc-draft-solver\matches\<Team>\`
-- **macOS:** `~/Library/Application Support/wtc-draft-solver/matches/<Team>/`
-- **Linux:** `~/.local/share/wtc-draft-solver/matches/<Team>/`
-
-Each folder holds the two CSVs above. Solver caches are written to the platform
-cache directory (e.g. `%LOCALAPPDATA%\wtc-draft-solver\Cache\matches\` on
-Windows), never into the installed package.
-
-## Local setup
-
-### Prerequisites
-
-- Have [Python 3.12](https://www.python.org/downloads/) installed
-
-### Installation
-
-You need to have a local environment and install all the needed packages.
-See [Package manager](#package-manager) section for the full setup.
-
-### Run project
-
-In the root of the project, run.
-
-```bash
- python -m drafter
+```powershell
+cd web
+npm ci             # install (Node 22+)
+npm test           # fast conformance + app suite
+npm run dev        # serves the app at http://localhost:5173/
 ```
 
-Once installed (see below), the `drafter` console command runs the same
-entry point:
-
-```bash
-drafter
-```
-
-## Package manager
-
-The project uses `pyproject.toml` (setuptools backend, pinned dependencies)
-to handle packages.
-
-### Setup
-
-To create a local environment, in the root of your project, run:
-
-```bash
-python -m venv ./.venv
-```
-
-Then, if your code editor or terminal is not in updated to the newly created environemnt, run:
-
-```bash
-source ./.venv/bin/activate # MacOS bash/zsh
-source ./.venv/bin/activate.fish # MacOS fish
-./.venv/Scripts/activate.bat # Windows cmd.exe
-./.venv/Scripts/activate.ps1 # Windows PoerShell
-```
-
-### Install
-
-To install the project and its dependencies (editable install, includes
-`pytest` for running tests), run:
-
-```bash
-pip install -e ".[dev]"
-```
-
-This also installs the `drafter` console script, so `pipx install .` or
-`uvx --from . drafter` run the bot without a manual venv/activate step.
-
-### Updating a package
-
-When adding/updating/deleting a dependency, edit the `dependencies` (or
-`[project.optional-dependencies] dev`) list in `pyproject.toml` directly and
-pin the new version with `==`.
+See [web/README.md](web/README.md) for the full command list and module map.

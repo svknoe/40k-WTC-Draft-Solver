@@ -11,16 +11,16 @@ GitHub Pages at https://svknoe.github.io/40k-WTC-Draft-Solver/ (base
 - `src/engine/` — the TypeScript engine core (issue #17): 40-bit packed
   gamestate keys (plain numbers, no BigInt), breadth-first enumeration, the
   k-restriction heuristic, 2×2 closed form + a bespoke dense simplex on
-  `Float64Array`, and value-only backward induction. A port of the Python
-  engine's B1–B3 architecture (`drafter/solver/`), the source of truth until
-  the single-engine end state (PLAN.md).
+  `Float64Array`, and value-only backward induction. Originally a port of the
+  retired Python engine's B1–B3 architecture (preserved at the git tag
+  `v-final-pre-python-removal`); now the sole implementation.
 - `src/worker/` — the §3 worker contract (`worker.ts`) plus a typed
   `WorkerClient` and the `useSolve` React hook the UI talks through.
-- `src/conformance/` — fixtures exported from the Python engine
-  (`scripts/export_conformance_fixtures.py`) + the vitest suite asserting the
-  TS engine agrees: values to ~1e-9, exact gamestate counts, exact payoff
-  matrices/labels at sample nodes, strategies as ε-equilibria. The anti-drift
-  guard between the two engines; runs in web CI on every push.
+- `src/conformance/` — frozen golden fixtures (exported from the retired
+  Python engine) + the vitest suite asserting the TS engine agrees: values to
+  ~1e-9, exact gamestate counts, exact payoff matrices/labels at sample nodes,
+  strategies as ε-equilibria. Pins the 4/6/8-player value model against
+  drift; runs in web CI on every push.
 - `src/model/` — matrix editing: 0-20 ↔ internal scale, validation, paste,
   localStorage, JSON export/import, sample matrices, and the WTC-date lock.
 - `src/draft/` — the trainer's client-side logic: bot styles, the draft loop

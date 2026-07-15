@@ -1,7 +1,7 @@
-/** Typed access to the conformance fixtures exported from the Python engine
- * (scripts/export_conformance_fixtures.py) — the anti-drift guard of
- * docs/web-design.md §7.2. Regenerate the JSONs whenever the value model
- * changes; never edit them by hand. */
+/** Typed access to the conformance fixtures — frozen goldens exported from
+ * the retired Python engine (last source: git tag v-final-pre-python-removal),
+ * the anti-drift guard of docs/web-design.md §7.2. They pin the 4/6/8-player
+ * value model; never edit them by hand. */
 
 import { Matrix } from '../engine/types';
 import smokeJson from './fixtures/smoke.json';

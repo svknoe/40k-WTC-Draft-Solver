@@ -16,6 +16,12 @@
 .trainer-topbar .stepper { margin-bottom: 0; }
 .trainer-controls { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-left: auto; }
 
+/* intro: the mode toggle sits inline, left of the primary start button, and
+ * keeps a full button outline there (the quiet tab look reads as body text). */
+.intro-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.intro-actions .tab { border-color: var(--border-strong); background: var(--card); color: var(--text-1); padding: 0.5rem 0.9rem; }
+.intro-actions .tab.active { border-color: var(--blue); color: var(--blue); }
+
 .wtc-note {
   padding: 0.55rem 0.9rem; margin-bottom: 1rem; font-size: 0.85rem; color: var(--amber);
   background: #e0914b1a; border: 1px solid #e0914b44; border-radius: var(--radius-sm);
@@ -46,8 +52,9 @@
 .slot.mine.filled .slot-name { color: var(--text); }
 .slot.enemy.filled .slot-name { color: var(--enemy); }
 
-/* refused enemy attacker: stays in the panel, de-emphasised */
+/* refused attacker: stays in the panel, de-emphasised (side-tinted) */
 .slot.muted { background: color-mix(in srgb, var(--enemy) 5%, transparent); border-color: color-mix(in srgb, var(--enemy) 30%, transparent); opacity: 0.65; }
+.slot.mine.muted { background: color-mix(in srgb, var(--blue) 5%, transparent); border-color: color-mix(in srgb, var(--blue) 30%, transparent); }
 
 /* placeholders — faint dashed. "—" is neutral; the hidden "?" keeps a side tint */
 .slot.hidden, .slot.empty { border-style: dashed; }
@@ -66,6 +73,19 @@
 .board-hint { margin-top: 0.4rem; color: var(--text-4); font-size: 0.78rem; }
 
 @media (max-width: 640px) { .draft-board { flex-direction: column; } }
+
+/* two-player mode: one labelled choice panel per seat, stacked; the opponent
+ * panel swaps the selection accents to the enemy colour. */
+.choice-panel + .choice-panel { margin-top: 1rem; }
+.choice-panel .panel-label { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-4); margin-bottom: 0.45rem; }
+.choice-panel.mine .panel-label { color: var(--blue); }
+.choice-panel.enemy .panel-label { color: var(--enemy); }
+.choice-panel.enemy .choice:hover:not(:disabled) { border-color: var(--enemy); }
+.choice-panel.enemy .choice.selected { border-color: var(--enemy); background: var(--card-2); }
+.choice-panel.enemy .cname .tick { background: var(--enemy); }
+.choice-panel.enemy .cbar > span { background: var(--enemy); }
+.choice-panel.enemy .pair-summary { border-color: var(--enemy); }
+.choice-panel.enemy .pair-summary .ps-names { color: var(--enemy); }
 
 .choices.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.5rem; }
 .choice {
@@ -148,6 +168,7 @@
 .result-label { font-size: 0.8rem; letter-spacing: 0.1em; color: var(--text-3); text-transform: uppercase; }
 .summary-line { font-size: 1.05rem; color: var(--text-1); margin: 0.5rem 0 0.25rem; }
 .decomp { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+.decomp.three { grid-template-columns: repeat(3, 1fr); }
 .decomp .metric { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; text-align: center; }
 .decomp .metric .mval { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; }
 .decomp .metric .mlabel { color: var(--text-3); font-size: 0.82rem; }
@@ -161,4 +182,4 @@
 .hrow .hval.major { color: var(--red-soft); }
 .summary-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
 
-@media (max-width: 640px) { .decomp { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .decomp, .decomp.three { grid-template-columns: 1fr; } }

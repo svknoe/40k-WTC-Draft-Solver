@@ -60,3 +60,75 @@ function summaryCopy(d: Decomposition): string {
 export function verdict(myScore: number, enemyScore: number, decomposition: Decomposition): Verdict {
   return { result: resultLabel(myScore - enemyScore), summary: summaryCopy(decomposition) };
 }
+
+// --- two-player mode ---
+
+export interface Decomposition2p {
+  expected: number;
+  achieved: number;
+  /** achieved − expected. */
+  totalDelta: number;
+  /** Σ max(0, regret) per seat. */
+  myRegret: number;
+  enemyRegret: number;
+  /** totalDelta + myRegret − enemyRegret — the blunder-free residual of how
+   * the simultaneous pure reveals landed against each other. Nonzero even for
+   * two perfect players (matching pennies: both clean, outcome still ±1);
+   * zero in expectation when both seats sample their equilibrium mixes. */
+  revealLuck: number;
+  /** Each seat's non-zero-regret decisions, worst-first. */
+  myLeaks: DraftDecision[];
+  enemyLeaks: DraftDecision[];
+}
+
+/** Split a two-player draft's delta-vs-plan into each seat's regret plus the
+ * reveal luck: achieved = expected − myRegret + enemyRegret + revealLuck. */
+export function decompose2p(
+  myDecisions: DraftDecision[],
+  enemyDecisions: DraftDecision[],
+  expected: number,
+  achieved: number,
+): Decomposition2p {
+  const mine = decompose(myDecisions, expected, achieved);
+  // Only `.totalRegret` / `.leaks` are read from `theirs`, and both depend on
+  // the decisions alone — not on expected/achieved — so these negated args are
+  // NOT load-bearing here. They're the enemy-perspective expected/achieved
+  // (their value = −mine), which keeps `theirs` a self-consistent decomposition
+  // should a future caller start reading its totalDelta/variance.
+  const theirs = decompose(enemyDecisions, -expected, -achieved);
+  const totalDelta = achieved - expected;
+  return {
+    expected,
+    achieved,
+    totalDelta,
+    myRegret: mine.totalRegret,
+    enemyRegret: theirs.totalRegret,
+    revealLuck: totalDelta + mine.totalRegret - theirs.totalRegret,
+    myLeaks: mine.leaks,
+    enemyLeaks: theirs.leaks,
+  };
+}
+
+function summaryCopy2p(d: Decomposition2p): string {
+  const luck = Math.round(d.revealLuck);
+  const luckPart =
+    luck > 0 ? ` The reveals added +${luck}.` : luck < 0 ? ` The reveals took ${luck}.` : '';
+  const myClean = d.myRegret < CLEAN_THRESHOLD;
+  const enClean = d.enemyRegret < CLEAN_THRESHOLD;
+  if (myClean && enClean) {
+    if (luck > 0) return `Both seats drafted clean — the reveals broke your way, +${luck}.`;
+    if (luck < 0) return `Both seats drafted clean — the reveals went against you, ${luck}.`;
+    return 'Both seats drafted clean — it went to plan.';
+  }
+  if (myClean) {
+    return `The opponent's picks cost ${d.enemyRegret.toFixed(1)} vs the equilibrium; your seat was clean.${luckPart}`;
+  }
+  if (enClean) {
+    return `Your picks cost ${d.myRegret.toFixed(1)} vs the equilibrium; the opponent's seat was clean.${luckPart}`;
+  }
+  return `Your picks cost ${d.myRegret.toFixed(1)} and the opponent's cost ${d.enemyRegret.toFixed(1)} vs the equilibrium.${luckPart}`;
+}
+
+export function verdict2p(myScore: number, enemyScore: number, decomposition: Decomposition2p): Verdict {
+  return { result: resultLabel(myScore - enemyScore), summary: summaryCopy2p(decomposition) };
+}

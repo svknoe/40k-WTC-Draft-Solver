@@ -141,3 +141,78 @@ describe('odd team sizes', () => {
     expect(() => applyStep(corrupted, engine.nodeResult(model.path), 0, 0)).toThrow(/last players/);
   });
 });
+
+describe('two-player mode', () => {
+  const matrix = fixtureMatrix(smoke);
+  const engine = new DraftEngine(matrix, null, smoke.neutralWeight);
+  const expected = engine.solve();
+
+  /** The enemy's per-column EV vs my equilibrium mix, from MY perspective. */
+  const colEvs = (node: ReturnType<typeof engine.nodeResult>): number[] => {
+    const { payoff, myStrategy } = node.why!;
+    return payoff[0].map((_, j) => payoff.reduce((s, row, i) => s + myStrategy[i] * row[j], 0));
+  };
+
+  test('initDraft defaults to bot mode: twoPlayer false, empty enemy decision log', () => {
+    const model = initDraft(matrix, smoke.neutralWeight);
+    expect(model.twoPlayer).toBe(false);
+    expect(model.enemyDecisions).toEqual([]);
+  });
+
+  test('bot mode never logs enemy decisions', () => {
+    let model = initDraft(matrix, smoke.neutralWeight);
+    while (!model.done) model = applyStep(model, engine.nodeResult(model.path), 0, 0);
+    expect(model.enemyDecisions).toEqual([]);
+  });
+
+  test('2P logs one enemy decision per step, EVs in the enemy perspective', () => {
+    let model = initDraft(matrix, smoke.neutralWeight, true);
+    expect(model.twoPlayer).toBe(true);
+    let steps = 0;
+    while (!model.done) {
+      const node = engine.nodeResult(model.path);
+      const evs = colEvs(node);
+      const round = model.round;
+      model = applyStep(model, node, 0, 1); // arbitrary picks: my option 0, enemy column 1
+      steps++;
+      expect(model.enemyDecisions).toHaveLength(steps);
+      const d = model.enemyDecisions[steps - 1];
+      expect(d.stage).toBe(node.stage);
+      expect(d.round).toBe(round);
+      expect(d.chosenEv).toBeCloseTo(-evs[1], 9);
+      expect(d.bestEv).toBeCloseTo(Math.max(...evs.map((v) => -v)), 9);
+      expect(d.regret).toBeCloseTo(d.bestEv - d.chosenEv, 9);
+      expect(d.regret).toBeGreaterThanOrEqual(-1e-9);
+    }
+    expect(model.decisions).toHaveLength(steps); // friendly log unaffected
+  });
+
+  test('an enemy playing argmax(enStrategy) leaves ~zero enemy regret', () => {
+    let model = initDraft(matrix, smoke.neutralWeight, true);
+    while (!model.done) {
+      const node = engine.nodeResult(model.path);
+      model = applyStep(
+        model, node,
+        argmax(node.choices.map((c) => c.prob)),
+        argmax(node.why!.enStrategy),
+      );
+    }
+    const total = model.enemyDecisions.reduce((s, d) => s + d.regret, 0);
+    expect(total).toBeCloseTo(0, 6);
+    expect(Number.isFinite(expected)).toBe(true);
+  });
+
+  test('enemy decision names: defender stage names their player, refusal the kept friendly attacker', () => {
+    let model = initDraft(matrix, smoke.neutralWeight, true);
+    const defenderCol = 1;
+    const expectedDefender = matrix.enemyNames[model.enemyRemaining[defenderCol]];
+    model = applyStep(model, engine.nodeResult(model.path), 0, defenderCol);
+    expect(model.enemyDecisions[0].chosenName).toBe(expectedDefender);
+
+    model = applyStep(model, engine.nodeResult(model.path), 0, 0); // attackers
+    const myPair = model.myPair!;
+    model = applyStep(model, engine.nodeResult(model.path), 0, 0); // they refuse myPair[0]
+    const refusal = model.enemyDecisions[2];
+    expect(refusal.chosenName).toBe(matrix.myNames[myPair[1]]); // faced = the kept one
+  });
+});

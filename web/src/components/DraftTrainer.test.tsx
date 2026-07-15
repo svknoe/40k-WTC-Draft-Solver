@@ -190,6 +190,111 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
     expect(screen.getByText(/Team EV per attacker pair choice/i)).toBeInTheDocument();
   });
 
+  test('two-player mode: toggle on the intro, both panels picked, both seats summarised', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DraftTrainer
+        matrix={fixtureMatrix(smoke)}
+        myTeam="Us"
+        enemyTeam="Them"
+        neutralWeight={smoke.neutralWeight}
+        solve={engineSolveState()}
+        onSolve={() => {}}
+        onEditMatrix={() => {}}
+      />,
+    );
+
+    // The mode toggle is available on the intro screen and flips the copy.
+    const toggle = await screen.findByRole('button', { name: /Opponent: bot/ });
+    expect(toggle).toBeEnabled();
+    await user.click(toggle);
+    expect(screen.getByRole('button', { name: /Opponent: you/ })).toBeInTheDocument();
+    expect(screen.getByText(/both sides/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Start practice draft/ }));
+    await waitFor(() => {
+      if (!container.querySelector('.choice-panel.enemy .choice')) throw new Error('panels not rendered yet');
+    });
+
+    // Fixed per draft: the toggle disables while the draft is live.
+    expect(screen.getByRole('button', { name: /Opponent: you/ })).toBeDisabled();
+
+    for (let step = 0; step < 3; step++) {
+      await waitFor(() => {
+        if (!container.querySelector('.choice-panel.enemy .choice')) throw new Error('choices not rendered yet');
+      });
+      const mine = () => [...container.querySelectorAll('.choice-panel.mine .choice')] as HTMLElement[];
+      const theirs = () => [...container.querySelectorAll('.choice-panel.enemy .choice')] as HTMLElement[];
+      const lockBtn = () => container.querySelector('.lock-bar button.primary') as HTMLButtonElement;
+
+      await user.click(mine()[0]);
+      expect(lockBtn()).toBeDisabled(); // the opponent seat hasn't picked yet
+      await user.click(theirs()[0]);
+      if (/attackers/.test(lockBtn().textContent ?? '')) {
+        await user.click(mine()[1]);
+        await user.click(theirs()[1]);
+      }
+      await user.click(lockBtn());
+    }
+
+    // The summary scores both seats and shows the reveal luck.
+    expect(await screen.findByRole('button', { name: /Draft again/ })).toBeInTheDocument();
+    expect(screen.getByText(/Your draft/i)).toBeInTheDocument();
+    expect(screen.getByText(/Their draft/i)).toBeInTheDocument();
+    expect(screen.getByText(/reveal luck/i)).toBeInTheDocument();
+
+    // No draft is live on the summary, so the mode can be flipped there before
+    // "Draft again" — which then starts a bot-mode draft (single panel).
+    const summaryToggle = screen.getByRole('button', { name: /Opponent: you/ });
+    expect(summaryToggle).toBeEnabled();
+    await user.click(summaryToggle);
+    await user.click(screen.getByRole('button', { name: /Draft again/ }));
+    await waitFor(() => expect(container.querySelector('.choice')).toBeTruthy());
+    expect(container.querySelector('.choice-panel.enemy')).toBeNull();
+  });
+
+  test('two-player mode: Auto pick fills both panels', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DraftTrainer
+        matrix={fixtureMatrix(smoke)}
+        myTeam="Us"
+        enemyTeam="Them"
+        neutralWeight={smoke.neutralWeight}
+        solve={engineSolveState()}
+        onSolve={() => {}}
+        onEditMatrix={() => {}}
+      />,
+    );
+    await user.click(await screen.findByRole('button', { name: /Opponent: bot/ }));
+    await user.click(screen.getByRole('button', { name: /Start practice draft/ }));
+    await waitFor(() => expect(container.querySelector('.choice-panel.enemy .choice')).toBeTruthy());
+
+    await user.click(screen.getByRole('button', { name: 'Auto pick' }));
+    expect(container.querySelectorAll('.choice-panel.mine .choice.selected')).toHaveLength(1);
+    expect(container.querySelectorAll('.choice-panel.enemy .choice.selected')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Lock defender' })).toBeEnabled();
+  });
+
+  test('bot mode renders a single unlabelled panel (no enemy choices)', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DraftTrainer
+        matrix={fixtureMatrix(smoke)}
+        myTeam="Us"
+        enemyTeam="Them"
+        neutralWeight={smoke.neutralWeight}
+        solve={engineSolveState()}
+        onSolve={() => {}}
+        onEditMatrix={() => {}}
+      />,
+    );
+    await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
+    await waitFor(() => expect(container.querySelector('.choice')).toBeTruthy());
+    expect(container.querySelector('.choice-panel.enemy')).toBeNull();
+    expect(container.querySelector('.panel-label')).toBeNull();
+  });
+
   test('undo steps back a decision', async () => {
     const user = userEvent.setup();
     const { container } = render(

@@ -2,7 +2,8 @@ import type { DraftModel } from '../draft/draftState';
 import { endgameNOf } from '../draft/draftState';
 
 /** In-progress (pre-lock) picks, so the board can fill + highlight the panels as
- * the user selects — before they lock the choice. */
+ * the user selects — before they lock the choice. The enemy fields are only
+ * fed in two-player mode (the bot's pick has no preview to show). */
 export interface PendingPicks {
   /** Defender stage: my pending defender index, or null before a pick. */
   defender: number | null;
@@ -12,6 +13,13 @@ export interface PendingPicks {
    * other member of the sent pair is the refused one (dimmed). Null before a
    * pick, in which case both are highlighted. */
   face: number | null;
+  /** Two-player defender stage: the opponent seat's pending defender. */
+  enemyDefender?: number | null;
+  /** Two-player attackers stage: the opponent seat's pending attackers (≤2). */
+  enemyAttackers?: number[];
+  /** Two-player pairing stage: the FRIENDLY attacker their defender will face
+   * (my other sent attacker is the one they refuse, dimmed). */
+  enemyFace?: number | null;
 }
 
 interface DraftBoardProps {
@@ -36,23 +44,35 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
   const myDefIdx = model.myDefender >= 0 ? model.myDefender : pending.defender;
   const myDefCls = myDefIdx != null ? 'slot def mine filled on' : 'slot def mine pending';
 
-  const enDefName = model.enemyDefender >= 0 ? enemyNames[model.enemyDefender] : null;
+  // Their defender: locked → two-player pending pick → hidden "?".
+  const pendingEnemyDef = pending.enemyDefender ?? null;
+  const enDefIdx = model.enemyDefender >= 0 ? model.enemyDefender : pendingEnemyDef;
+  const enDefName = enDefIdx != null ? enemyNames[enDefIdx] : null;
 
-  // Enemy attackers landing on my defender: hidden until the pairing stage, then
-  // the faced one is highlighted and the refused one dimmed.
+  // Enemy attackers landing on my defender: hidden until known (locked pair, or
+  // the two-player pending picks), then the faced one is highlighted and the
+  // refused one dimmed at the pairing stage.
+  const pendingEnemyAtk = pending.enemyAttackers ?? [];
   const enAtkSlots: { name: string | null; cls: string }[] = model.enemyPair
     ? model.enemyPair.map((e) => ({
         name: enemyNames[e],
         cls: `slot atk enemy filled ${pending.face == null || e === pending.face ? 'on' : 'muted'}`,
       }))
-    : [
-        { name: null, cls: 'slot atk enemy hidden' },
-        { name: null, cls: 'slot atk enemy hidden' },
-      ];
+    : [0, 1].map((i) => {
+        const idx = pendingEnemyAtk[i];
+        return idx != null
+          ? { name: enemyNames[idx], cls: 'slot atk enemy filled on' }
+          : { name: null, cls: 'slot atk enemy hidden' };
+      });
 
-  // My attackers landing on their defender: locked pair, else my pending picks.
+  // My attackers landing on their defender: locked pair (with the two-player
+  // pending refusal highlighting whom their defender faces), else my pending
+  // picks.
   const myAtkSlots: { name: string | null; cls: string }[] = model.myPair
-    ? model.myPair.map((a) => ({ name: myNames[a], cls: 'slot atk mine filled on' }))
+    ? model.myPair.map((a) => ({
+        name: myNames[a],
+        cls: `slot atk mine filled ${pending.enemyFace == null || a === pending.enemyFace ? 'on' : 'muted'}`,
+      }))
     : [0, 1].map((i) => {
         const idx = pending.attackers[i];
         return idx != null
@@ -68,6 +88,7 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
   const hasLast = endgameNOf(model.n) === 4;
   let myLast = '?';
   let enLast = '?';
+  let refMine = '?';
   let refThem = '?';
   if (showAutoPaired) {
     const { myRemaining, enemyRemaining, myDefender, enemyDefender, myPair, enemyPair } = model;
@@ -84,10 +105,21 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
         const rt = enemyPair.find((x) => x !== pending.face);
         if (rt != null) refThem = enemyNames[rt];
       }
-    } else if (hasLast && pending.attackers.length === 2) {
-      // attackers stage: my leftover is whichever of my players I didn't send
-      const ml = myRemaining.find((x) => x !== myDefender && !pending.attackers.includes(x));
-      if (ml != null) myLast = myNames[ml];
+      // two-player: my attacker they refuse is the one their defender won't face
+      if (pending.enemyFace != null) {
+        const rm = myPair.find((x) => x !== pending.enemyFace);
+        if (rm != null) refMine = myNames[rm];
+      }
+    } else if (hasLast) {
+      // attackers stage: each leftover is whichever player wasn't sent
+      if (pending.attackers.length === 2) {
+        const ml = myRemaining.find((x) => x !== myDefender && !pending.attackers.includes(x));
+        if (ml != null) myLast = myNames[ml];
+      }
+      if (pendingEnemyAtk.length === 2) {
+        const el = enemyRemaining.find((x) => x !== enemyDefender && !pendingEnemyAtk.includes(x));
+        if (el != null) enLast = enemyNames[el];
+      }
     }
   }
 
@@ -106,7 +138,9 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
             </div>
           ))}
         </div>
-        {!model.enemyPair && <div className="board-hint">Their two attackers will land here</div>}
+        {!model.enemyPair && pendingEnemyAtk.length === 0 && (
+          <div className="board-hint">Their two attackers will land here</div>
+        )}
       </div>
 
       <div className="board-panel">
@@ -137,7 +171,7 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
             </div>
           )}
           <div className="slot empty">
-            <span className="slot-name">refused: ? vs {refThem}</span>
+            <span className="slot-name">refused: {refMine} vs {refThem}</span>
           </div>
           <div className="board-hint">Resolves on lock · scored as avg of both maps</div>
         </div>

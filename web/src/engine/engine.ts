@@ -122,6 +122,10 @@ export class DraftEngine {
   readonly enemyNames: string[];
   readonly k: number | null;
 
+  /** Terminal-round team size: odd team sizes end at 3 (no last-vs-last
+   * game), even at 4 (spec 2026-07-15-team-sizes-3-8). */
+  private readonly endgameN: number;
+
   private readonly best: Float64Array;
   private readonly worst: Float64Array;
   private readonly neutral: Float64Array;
@@ -145,6 +149,7 @@ export class DraftEngine {
     this.myNames = matrix.myNames;
     this.enemyNames = matrix.enemyNames;
     this.k = k;
+    this.endgameN = n % 2 === 1 ? 3 : 4;
 
     this.best = new Float64Array(n * n);
     this.worst = new Float64Array(n * n);
@@ -239,7 +244,7 @@ export class DraftEngine {
     // discard levels are pass-through (their game is decided at the parent
     // select_attackers state) and are skipped entirely by generating the
     // grandchildren none-states directly.
-    const totalLevels = 3 * ((this.n - 4) / 2 + 1);
+    const totalLevels = 3 * ((this.n - this.endgameN) / 2 + 1);
     let level: Float64Array = Float64Array.of(this.rootKey());
     let levelIndex = 0;
 
@@ -253,8 +258,8 @@ export class DraftEngine {
       if (onProgress) onProgress(levelIndex / totalLevels, 'enumerating');
       levelIndex++;
 
-      // The 4-player discard is the closed-form endgame; stop before it.
-      if (levelN === 4 && stage === 'select_attackers') break;
+      // The endgame-round discard is closed-form; stop before it.
+      if (levelN === this.endgameN && stage === 'select_attackers') break;
 
       // Every state on a level has the same child count (same remaining-mask
       // popcount, same eligible-attacker count), so the child buffer can be
@@ -342,7 +347,7 @@ export class DraftEngine {
 
   private induct(onProgress?: ProgressCallback): void {
     const order: [number, StageName][] = [];
-    for (let levelN = 4; levelN <= this.n; levelN += 2) {
+    for (let levelN = this.endgameN; levelN <= this.n; levelN += 2) {
       order.push([levelN, 'select_attackers'], [levelN, 'select_defender'], [levelN, 'none']);
     }
 
@@ -407,12 +412,12 @@ export class DraftEngine {
     const fA_eD = this.worst[fA * n + eDefender];
     const fB_eD = this.worst[fB * n + eDefender];
 
-    if (levelN === 4) {
-      // 4-player endgame: refused-vs-refused and last-vs-last are fixed
-      // neutral-value terms; no child game.
-      const fLast = singleIndex(fMask);
-      const eLast = singleIndex(eMask);
-      const lastTerm = this.neutral[fLast * n + eLast];
+    if (levelN === this.endgameN) {
+      // Endgame: refused-vs-refused (and, at even sizes, last-vs-last) are
+      // fixed neutral-value terms; no child game. At odd sizes the remaining
+      // mask is empty — defender + 2 attackers is the whole team — so there
+      // is no last-vs-last term.
+      const lastTerm = fMask === 0 ? 0 : this.neutral[singleIndex(fMask) * n + singleIndex(eMask)];
       const AA = fD_eB + fB_eD + this.neutral[fA * n + eA] + lastTerm;
       const AB = fD_eB + fA_eD + this.neutral[fB * n + eA] + lastTerm;
       const BA = fD_eA + fB_eD + this.neutral[fA * n + eB] + lastTerm;
@@ -600,10 +605,9 @@ export class DraftEngine {
     const fB_eD = this.worst[fB * n + eDefender];
 
     const a = new Float64Array(4);
-    if (popcount8(friendly.mask) + 3 === 4) {
-      const fLast = singleIndex(friendly.mask);
-      const eLast = singleIndex(enemy.mask);
-      const lastTerm = this.neutral[fLast * n + eLast];
+    if (popcount8(friendly.mask) + 3 === this.endgameN) {
+      const lastTerm = friendly.mask === 0
+        ? 0 : this.neutral[singleIndex(friendly.mask) * n + singleIndex(enemy.mask)];
       a[0] = fD_eB + fB_eD + this.neutral[fA * n + eA] + lastTerm;
       a[1] = fD_eB + fA_eD + this.neutral[fB * n + eA] + lastTerm;
       a[2] = fD_eA + fB_eD + this.neutral[fA * n + eB] + lastTerm;
@@ -651,7 +655,7 @@ export class DraftEngine {
         // FRIENDLY attacker the enemy refuses. Both return to their pools.
         const refusedEnemy = requireAttacker(enemy, move.my, 'my refusal');
         const refusedFriendly = requireAttacker(friendly, move.enemy, "enemy's refusal");
-        if (popcount8(friendly.mask) + 3 === 4) {
+        if (popcount8(friendly.mask) + 3 === this.endgameN) {
           done = true;
         } else {
           friendly = { mask: friendly.mask | (1 << refusedFriendly), defender: ROLE_NONE, attackerA: ROLE_NONE, attackerB: ROLE_NONE };
@@ -663,9 +667,8 @@ export class DraftEngine {
     const currentN = teamN(teamCode(friendly));
     const round = (this.n - currentN) / 2 + 1 as 1 | 2 | 3;
     if (done) {
-      // `done` is set at the 4-player refusal, so the states above still sit
-      // at the 4-player level and `round` is already the final round (1 for a
-      // 4x4 matrix, 3 for 8x8).
+      // `done` is set at the endgame-round refusal, so the states above still
+      // sit at the endgame level and `round` is already the final round.
       return { stage: 'done', side: 'simultaneous', round, choices: [], why: null };
     }
 

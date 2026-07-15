@@ -207,7 +207,7 @@ both sides — i.e. `expected` + `root.choices` (my side) plus the enemy's root 
 
 ```ts
 type Matrix = {
-  n: 4 | 6 | 8,
+  n: 3 | 4 | 5 | 6 | 7 | 8,  // odd sizes: terminal round at 3 players, no last-vs-last game
   myNames: string[], enemyNames: string[],   // length n, disjoint
   cells: { best: number, worst: number }[][] // n×n, INTERNAL scale (score − 10, −10..+10)
 }
@@ -273,7 +273,7 @@ real engine dropped in behind the same contract at Slice 2.
   *even* token (10–10), **not** the score 0 — write `0.0` for a 20–0 blowout loss.
   Numbers outside 0–20 are rejected.
 - Friendly and enemy names disjoint and non-empty.
-- Square matrix; `n ∈ {4, 6, 8}`.
+- Square matrix; `n ∈ {3..8}`.
 - Validation is a UI concern (immediate inline feedback, as the artifact already does);
   the worker assumes a clean `Matrix`.
 

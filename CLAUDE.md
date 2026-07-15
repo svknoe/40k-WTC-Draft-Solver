@@ -78,7 +78,8 @@ saturates from the bottom up, so k=7 ≡ exact for 8 players.
 ## Input format
 
 Matrices are entered in the app (editor, paste, JSON import, samples). Team
-sizes 4/6/8 are supported. Cells accept **0–20 scores** (community scale:
+sizes 3–8 are supported (odd sizes end at a 3-player terminal round with no
+last-vs-last game). Cells accept **0–20 scores** (community scale:
 expected score out of 20) or the **legacy tokens** `--, -, 0, +, ++` (-8, -4,
 0, +4, +8 around an even game). Internally everything normalises to the
 deviation from an even 10-10 game (`internal = score - 10`, range -10..+10).

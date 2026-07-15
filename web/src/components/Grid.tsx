@@ -75,7 +75,7 @@ export function Grid({
       <table className="grid">
         <thead>
           <tr>
-            <th className="corner">{simpleMode ? 'single rating' : 'best / worst map'}</th>
+            <th className="corner">{simpleMode ? 'single rating' : 'by map'}</th>
             {enemyNames.map((name, j) => (
               <th key={j} className="col-head">
                 <FactionSelect

@@ -194,9 +194,9 @@ export function MatrixEditor({
               disabled={locked}
               onChange={(e) => onMatrixChange(resize(matrix, Number(e.target.value) as MatrixSize))}
             >
-              <option value={4}>4</option>
-              <option value={6}>6</option>
-              <option value={8}>8</option>
+              {[3, 4, 5, 6, 7, 8].map((size) => (
+                <option key={size} value={size}>{size}</option>
+              ))}
             </select>
           </label>
           <label>

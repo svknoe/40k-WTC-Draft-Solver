@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { DraftEngine } from '../engine/engine';
-import { achievedTotal, applyStep, initDraft } from './draftState';
+import type { Matrix } from '../engine/types';
+import { achievedTotal, applyStep, finalRoundOf, initDraft } from './draftState';
 
 function argmax(values: number[]): number {
   let best = 0;
@@ -57,5 +58,86 @@ describe('draftState (Smoke 4×4, exact engine)', () => {
     const model = walk((node) => argmax(node.choices.map((c) => -c.ev))); // min-ev pick
     const worstDecision = model.decisions.find((d) => d.regret > 1e-9);
     expect(worstDecision).toBeDefined();
+  });
+});
+
+/** v[i][j] = a[i] + b[j], best = worst: every full pairing totals
+ * sum(a) + sum(b), so achievedTotal is known without solving anything. */
+function additiveMatrix(a: number[], b: number[]): Matrix {
+  const n = a.length as Matrix['n'];
+  return {
+    n,
+    myNames: Array.from({ length: n }, (_, i) => `F${i}`),
+    enemyNames: Array.from({ length: n }, (_, i) => `E${i}`),
+    cells: a.map((ai) => b.map((bj) => ({ best: ai + bj, worst: ai + bj }))),
+  };
+}
+
+/** Drive a full draft against the real engine, always picking option 0. */
+function playDraft(matrix: Matrix) {
+  const engine = new DraftEngine(matrix, null);
+  engine.solve();
+  let model = initDraft(matrix, 0.5);
+  while (!model.done) {
+    model = applyStep(model, engine.nodeResult(model.path), 0, 0);
+  }
+  return model;
+}
+
+describe('odd team sizes', () => {
+  test('finalRoundOf: odd sizes end one round earlier per parity rule', () => {
+    expect(finalRoundOf(8)).toBe(3);
+    expect(finalRoundOf(7)).toBe(3);
+    expect(finalRoundOf(6)).toBe(2);
+    expect(finalRoundOf(5)).toBe(2);
+    expect(finalRoundOf(4)).toBe(1);
+    expect(finalRoundOf(3)).toBe(1);
+  });
+
+  test('a 5-player draft fixes 5 games and no last-players game', () => {
+    const model = playDraft(additiveMatrix([1, 2, 3, 0, -1], [0, -1, 4, 2, -2]));
+    expect(model.fixed).toHaveLength(5);
+    expect(model.fixed.filter((g) => g.kind === 'last')).toHaveLength(0);
+    expect(model.fixed.filter((g) => g.kind === 'refused')).toHaveLength(1);
+    expect(model.fixed.filter((g) => g.kind === 'my-defends')).toHaveLength(2);
+    expect(model.round).toBe(2);
+    expect(achievedTotal(model)).toBeCloseTo(5 + 3, 9); // constant-sum matrix
+  });
+
+  test('a 3-player draft is one round: 3 games, done', () => {
+    const model = playDraft(additiveMatrix([1, 2, 3], [0, -1, 4]));
+    expect(model.fixed.map((g) => g.kind).sort()).toEqual(['enemy-defends', 'my-defends', 'refused']);
+    expect(achievedTotal(model)).toBeCloseTo(6 + 3, 9);
+  });
+
+  test('a 4-player draft still fixes the last-players game', () => {
+    const model = playDraft(additiveMatrix([1, 2, 3, 0], [0, -1, 4, 2]));
+    expect(model.fixed).toHaveLength(4);
+    expect(model.fixed.filter((g) => g.kind === 'last')).toHaveLength(1);
+  });
+
+  test('a 7-player draft runs 3 rounds and returns refused attackers to the pool', () => {
+    const model = playDraft(additiveMatrix([1, 2, 3, 0, -1, 2, -2], [0, -1, 4, 2, -2, 1, 3]));
+    expect(model.fixed).toHaveLength(7);
+    expect(model.fixed.filter((g) => g.kind === 'last')).toHaveLength(0);
+    expect(model.fixed.filter((g) => g.kind === 'refused')).toHaveLength(1);
+    expect(model.fixed.filter((g) => g.kind === 'my-defends')).toHaveLength(3);
+    expect(model.round).toBe(3);
+    expect(achievedTotal(model)).toBeCloseTo(5 + 7, 9); // constant-sum matrix
+  });
+
+  test('a corrupted even-size pool throws instead of silently dropping the last game', () => {
+    const matrix = additiveMatrix([1, 2, 3, 0], [0, -1, 4, 2]);
+    const engine = new DraftEngine(matrix, null);
+    engine.solve();
+    let model = initDraft(matrix, 0.5);
+    model = applyStep(model, engine.nodeResult(model.path), 0, 0); // defenders
+    model = applyStep(model, engine.nodeResult(model.path), 0, 0); // attackers
+    // Remove the would-be last player (not defender, not a sent attacker),
+    // then resolve the final refusal on the corrupted model.
+    const lastPlayer = model.myRemaining.find(
+      (x) => x !== model.myDefender && !model.myPair!.includes(x))!;
+    const corrupted = { ...model, myRemaining: model.myRemaining.filter((x) => x !== lastPlayer) };
+    expect(() => applyStep(corrupted, engine.nodeResult(model.path), 0, 0)).toThrow(/last players/);
   });
 });

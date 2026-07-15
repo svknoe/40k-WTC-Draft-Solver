@@ -1,7 +1,8 @@
 import type { Matrix } from '../engine/types';
 import { parseRating, toInputString } from './scale';
 
-export type MatrixSize = 4 | 6 | 8;
+/** Derived from the engine's Matrix so the two unions can never drift. */
+export type MatrixSize = Matrix['n'];
 
 /** One editor cell: 0-20 strings AS TYPED (best `b`, worst `w`). Storing raw
  * strings tolerates in-progress/invalid edits and round-trips losslessly;
@@ -102,7 +103,7 @@ export function toSaved(m: EditorMatrix): SavedMatrix {
 }
 
 function isSize(n: number): n is MatrixSize {
-  return n === 4 || n === 6 || n === 8;
+  return Number.isInteger(n) && n >= 3 && n <= 8;
 }
 
 /** Rebuild an EditorMatrix from a SavedMatrix, deriving and checking n and the
@@ -111,7 +112,7 @@ function isSize(n: number): n is MatrixSize {
 export function fromSaved(s: SavedMatrix): EditorMatrix {
   const n = s?.myNames?.length;
   if (!isSize(n)) {
-    throw new Error(`Team size must be 4, 6, or 8 (got ${n}).`);
+    throw new Error(`Team size must be 3-8 (got ${n}).`);
   }
   if (s.enemyNames?.length !== n || s.cells?.length !== n) {
     throw new Error(`Expected ${n} rows, got ${s.cells?.length}.`);

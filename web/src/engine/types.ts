@@ -6,7 +6,7 @@
  * fixes the ordering (the conformance fixtures use the Python engine's
  * name-sorted order). */
 export interface Matrix {
-  n: 4 | 6 | 8;
+  n: 3 | 4 | 5 | 6 | 7 | 8;
   myNames: string[];
   enemyNames: string[];
   cells: { best: number; worst: number }[][];

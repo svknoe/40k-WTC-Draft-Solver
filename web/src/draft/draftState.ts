@@ -1,6 +1,6 @@
 import type { Matrix, Move, NodeChoice, NodeResult } from '../engine/types';
 
-/** One of the 8 games fixed by the draft, with its value-model value (internal
+/** One of the n games fixed by the draft, with its value-model value (internal
  * scale). `my`/`enemy` are player indices. */
 export interface FixedGame {
   my: number;
@@ -55,6 +55,12 @@ function combinations(items: number[]): [number, number][] {
   return pairs;
 }
 
+/** Terminal-round team size: odd team sizes end at 3 (no last-vs-last game),
+ * even at 4 (spec 2026-07-15-team-sizes-3-8). */
+export const endgameNOf = (n: number): number => (n % 2 === 1 ? 3 : 4);
+
+export const finalRoundOf = (n: number): number => (n - endgameNOf(n)) / 2 + 1;
+
 export function initDraft(matrix: Matrix, neutralWeight: number): DraftModel {
   const n = matrix.n;
   return {
@@ -63,7 +69,7 @@ export function initDraft(matrix: Matrix, neutralWeight: number): DraftModel {
     neutralWeight,
     path: [],
     round: 1,
-    finalRound: (n - 4) / 2 + 1,
+    finalRound: finalRoundOf(n),
     myRemaining: range(n),
     enemyRemaining: range(n),
     myDefender: -1,
@@ -98,8 +104,8 @@ function matchupValue(model: DraftModel, kind: FixedGame['kind'], my: number, en
 /** Apply one simultaneous decision: my choice (index into node.choices) + the
  * bot's sampled enemy column (index into node.why.enStrategy). Returns a new
  * model (the input is not mutated). At the refusal step it resolves the round's
- * fixed games and, on the final round, the refused-vs-refused and last-vs-last
- * games. */
+ * fixed games and, on the final round, the refused-vs-refused game — plus, at
+ * even team sizes only, the last-vs-last game. */
 export function applyStep(model: DraftModel, node: NodeResult, myIndex: number, colIndex: number): DraftModel {
   const choice = node.choices[myIndex];
   const bestChoice = node.choices.reduce((best, c) => (c.ev > best.ev ? c : best), node.choices[0]);
@@ -178,18 +184,26 @@ function resolveRound(next: DraftModel, iRefuse: number, enemyRefuses: number): 
   if (round === next.finalRound) {
     const myRefused = enemyRefuses; // my attacker the enemy refused
     const enemyRefused = iRefuse; // enemy attacker I refused
-    const myLast = next.myRemaining.find((x) => x !== myRefused)!;
-    const enemyLast = next.enemyRemaining.find((x) => x !== enemyRefused)!;
-    next.fixed.push(
-      {
-        my: myRefused, enemy: enemyRefused, kind: 'refused', round,
-        value: matchupValue(next, 'refused', myRefused, enemyRefused),
-      },
-      {
+    next.fixed.push({
+      my: myRefused, enemy: enemyRefused, kind: 'refused', round,
+      value: matchupValue(next, 'refused', myRefused, enemyRefused),
+    });
+    // Only even team sizes have last players; at odd sizes defender + 2
+    // attackers was the whole remaining team, so each pool now holds just its
+    // refused attacker. Branch on parity — not on whether a last player
+    // happens to be found — so a corrupted pool throws instead of silently
+    // dropping the game.
+    if (endgameNOf(next.n) === 4) {
+      const myLast = next.myRemaining.find((x) => x !== myRefused);
+      const enemyLast = next.enemyRemaining.find((x) => x !== enemyRefused);
+      if (myLast === undefined || enemyLast === undefined) {
+        throw new Error('Even-size final round is missing its last players.');
+      }
+      next.fixed.push({
         my: myLast, enemy: enemyLast, kind: 'last', round,
         value: matchupValue(next, 'last', myLast, enemyLast),
-      },
-    );
+      });
+    }
     next.done = true;
   } else {
     next.round = round + 1;

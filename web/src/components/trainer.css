@@ -19,7 +19,7 @@
 /* intro: the mode toggle sits inline, left of the primary start button, and
  * keeps a full button outline there (the quiet tab look reads as body text). */
 .intro-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-.intro-actions .tab { border-color: var(--border-strong); background: var(--card); color: var(--text-1); }
+.intro-actions .tab { border-color: var(--border-strong); background: var(--card); color: var(--text-1); padding: 0.5rem 0.9rem; }
 .intro-actions .tab.active { border-color: var(--blue); color: var(--blue); }
 
 .wtc-note {

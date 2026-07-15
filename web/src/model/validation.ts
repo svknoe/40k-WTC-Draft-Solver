@@ -1,10 +1,11 @@
 import type { EditorCell, EditorMatrix } from './matrix';
+import { resolveNames } from './matrix';
 import { parseRating, toScore } from './scale';
 
 export interface ValidationResult {
   /** Per-cell error message, or null when the cell is valid. */
   cellErrors: (string | null)[][];
-  /** Matrix-wide errors (names). */
+  /** Matrix-wide errors (duplicate player labels on one team). */
   globalErrors: string[];
   ok: boolean;
 }
@@ -46,31 +47,31 @@ function cellError(cell: EditorCell, simple: boolean): string | null {
   return null;
 }
 
-/** Validate an EditorMatrix against the CLI's rules (docs/web-design.md §6):
- * the active rating layer parseable (best ≥ worst in best/worst mode); names
- * non-empty and all distinct. The worker assumes a clean Matrix, so the UI
- * gates `solve` on `ok`. `simple` selects which layer to validate, defaulting
- * to best/worst. */
+/** Validate an EditorMatrix: the active rating layer parseable (best ≥ worst in
+ * best/worst mode); no two players on the SAME team resolve to the same display
+ * label. A player may be left unset (the Player N / Opponent K dropdown default,
+ * stored as ''), and the same faction may appear on both teams. The worker
+ * assumes a clean Matrix, so the UI gates `solve` on `ok`. `simple` selects
+ * which layer to validate, defaulting to best/worst. */
 export function validateMatrix(m: EditorMatrix, simple = false): ValidationResult {
   const cellErrors = m.cells.map((row) => row.map((cell) => cellError(cell, simple)));
   const globalErrors: string[] = [];
 
-  const checkNames = (names: string[], side: string) => {
-    names.forEach((name, i) => {
-      if (name.trim() === '') globalErrors.push(`${side} player ${i + 1} needs a name.`);
-    });
+  // Check distinctness on the RESOLVED names (unset '' filled with its
+  // positional label) — the exact set toEngineMatrix ships — so the fill can
+  // never manufacture a duplicate the raw-name check would miss. The dropdown
+  // greys out taken factions and positional labels are unique by index, so a
+  // clash only reaches here via imported/legacy/hand-edited data. Cross-team
+  // duplicates stay allowed (each side is checked on its own).
+  const checkDistinct = (resolved: string[], side: string) => {
+    const counts = new Map<string, number>();
+    for (const name of resolved) counts.set(name, (counts.get(name) ?? 0) + 1);
+    for (const [name, count] of counts) {
+      if (count > 1) globalErrors.push(`${side} team has two players labelled “${name}” — give each a distinct faction.`);
+    }
   };
-  checkNames(m.myNames, 'Your');
-  checkNames(m.enemyNames, 'Opponent');
-
-  const counts = new Map<string, number>();
-  for (const name of [...m.myNames, ...m.enemyNames]) {
-    const key = name.trim();
-    if (key !== '') counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  for (const [name, count] of counts) {
-    if (count > 1) globalErrors.push(`Duplicate name: "${name}" (every player must be distinct).`);
-  }
+  checkDistinct(resolveNames(m.myNames, 'my'), 'Your');
+  checkDistinct(resolveNames(m.enemyNames, 'enemy'), 'Opponent');
 
   const ok = globalErrors.length === 0 && cellErrors.every((row) => row.every((e) => e === null));
   return { cellErrors, globalErrors, ok };

@@ -45,6 +45,15 @@ describe('toEngineMatrix', () => {
     expect(toEngineMatrix(sample4()).cells[0][0]).toEqual({ best: 5, worst: -1 });
   });
 
+  test('fills unset (empty) names with the positional Player/Opponent label', () => {
+    const m = sample4();
+    m.myNames = ['Necrons', '', 'Orks', '   '];
+    m.enemyNames = ['', '', '', ''];
+    const e = toEngineMatrix(m, false);
+    expect(e.myNames).toEqual(['Necrons', 'Player 2', 'Orks', 'Player 4']);
+    expect(e.enemyNames).toEqual(['Opponent 1', 'Opponent 2', 'Opponent 3', 'Opponent 4']);
+  });
+
   test('simple mode uses the single rating for both maps, ignoring b/w', () => {
     const e = toEngineMatrix(sample4(), true);
     expect(e.cells[0][0]).toEqual({ best: 2, worst: 2 }); // s = 12 -> +2 on both
@@ -105,27 +114,27 @@ describe('resize', () => {
     expect(shrunk).toEqual(sample4());
   });
 
-  test('growing pre-fills the added name slots with Player/Opponent defaults', () => {
+  test('growing leaves the added name slots unset (the dropdown default)', () => {
     const grown = resize(sample4(), 6);
-    expect(grown.myNames.slice(4)).toEqual(['Player 5', 'Player 6']);
-    expect(grown.enemyNames.slice(4)).toEqual(['Opponent 5', 'Opponent 6']);
+    expect(grown.myNames.slice(4)).toEqual(['', '']);
+    expect(grown.enemyNames.slice(4)).toEqual(['', '']);
   });
 
   test('growing leaves pre-existing blank names blank', () => {
     const grown = resize(blank(4), 5);
-    expect(grown.myNames).toEqual(['', '', '', '', 'Player 5']);
-    expect(grown.enemyNames).toEqual(['', '', '', '', 'Opponent 5']);
+    expect(grown.myNames).toEqual(['', '', '', '', '']);
+    expect(grown.enemyNames).toEqual(['', '', '', '', '']);
   });
 });
 
 describe('cleared', () => {
-  test('resets to default names and an even 10 in all three slots of every cell', () => {
+  test('resets to unset names and an even 10 in all three slots of every cell', () => {
     const m = cleared(5);
     expect(m.n).toBe(5);
     expect(m.myTeam).toBe('');
     expect(m.enemyTeam).toBe('');
-    expect(m.myNames).toEqual(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5']);
-    expect(m.enemyNames).toEqual(['Opponent 1', 'Opponent 2', 'Opponent 3', 'Opponent 4', 'Opponent 5']);
+    expect(m.myNames).toEqual(['', '', '', '', '']);
+    expect(m.enemyNames).toEqual(['', '', '', '', '']);
     expect(m.cells).toHaveLength(5);
     for (const row of m.cells) {
       expect(row).toHaveLength(5);
@@ -232,6 +241,29 @@ describe('fromSaved sizes 3-8', () => {
     expect(() => fromSaved(two)).toThrow(/Team size must be 3-8/);
     const nine = { ...toSaved(blank(4)), myNames: Array.from({ length: 9 }, (_, i) => `p${i}`) };
     expect(() => fromSaved(nine)).toThrow(/Team size must be 3-8/);
+  });
+});
+
+describe('fromSaved default-name migration', () => {
+  test('old literal "Player N" / "Opponent K" defaults become the unset sentinel', () => {
+    const saved: SavedMatrix = {
+      ...toSaved(blank(3)),
+      myNames: ['Player 1', 'Necrons', 'Player 3'],
+      enemyNames: ['Opponent 1', 'Opponent 2', 'Orks'],
+    };
+    const m = fromSaved(saved);
+    expect(m.myNames).toEqual(['', 'Necrons', '']);
+    expect(m.enemyNames).toEqual(['', '', 'Orks']);
+  });
+
+  test('a genuine free-text name that is not its positional default is preserved', () => {
+    const saved: SavedMatrix = {
+      ...toSaved(blank(3)),
+      myNames: ['Player 2', 'Bob', ''], // "Player 2" at index 0 is NOT that slot's default
+      enemyNames: ['x', 'y', 'z'],
+    };
+    const m = fromSaved(saved);
+    expect(m.myNames).toEqual(['Player 2', 'Bob', '']);
   });
 });
 

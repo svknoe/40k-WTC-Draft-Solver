@@ -60,11 +60,13 @@ table.grid .corner { width: 6.5rem; color: var(--text-4); font-size: 0.66rem; te
 table.grid .col-head { background: var(--bg-2); }
 table.grid .row-head { width: 6.5rem; position: sticky; left: 0; background: var(--bg-2); z-index: 1; }
 
-input.name { border: 0; background: transparent; width: 100%; min-width: 0; padding: 0.4rem 0.4rem; font-weight: 600;
-  font-size: 0.85rem; text-overflow: ellipsis; }
-input.name.mine { color: var(--blue); }
-input.name.enemy { color: var(--enemy); text-align: center; }
-input.name:focus { outline: 1px solid var(--blue); border-radius: 4px; }
+input.name, select.name { border: 0; background: transparent; width: 100%; min-width: 0; padding: 0.4rem 0.4rem; font-weight: 600;
+  font-size: 0.85rem; text-overflow: ellipsis; font-family: inherit; }
+select.name { cursor: pointer; }
+select.name:disabled { cursor: default; opacity: 1; }
+input.name.mine, select.name.mine { color: var(--blue); }
+input.name.enemy, select.name.enemy { color: var(--enemy); text-align: center; }
+input.name:focus, select.name:focus { outline: 1px solid var(--blue); border-radius: 4px; }
 
 td.cell { text-align: center; }
 td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }

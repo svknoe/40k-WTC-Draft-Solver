@@ -99,20 +99,42 @@ describe('validateMatrix (single-rating mode)', () => {
   });
 });
 
-describe('validateMatrix (names, mode-independent)', () => {
-  test('flags a name shared across teams', () => {
+describe('validateMatrix (factions, mode-independent)', () => {
+  test('allows the same faction on both teams (cross-team duplicates are fine)', () => {
     const m = valid4();
-    m.enemyNames[0] = 'A'; // also in myNames
+    m.myNames[0] = 'Necrons';
+    m.enemyNames[0] = 'Necrons';
     const r = validateMatrix(m, false);
-    expect(r.ok).toBe(false);
-    expect(r.globalErrors.join(' ')).toMatch(/A/);
+    expect(r.ok).toBe(true);
+    expect(r.globalErrors).toEqual([]);
   });
 
-  test('flags an empty name', () => {
+  test('flags two players on the same team sharing a faction', () => {
     const m = valid4();
-    m.myNames[1] = '   ';
+    m.myNames[0] = 'Orks';
+    m.myNames[1] = 'Orks';
     const r = validateMatrix(m, false);
     expect(r.ok).toBe(false);
-    expect(r.globalErrors.length).toBeGreaterThan(0);
+    expect(r.globalErrors.join(' ')).toMatch(/Orks/);
+  });
+
+  test('allows unset (empty) names — the Player N / Opponent K default', () => {
+    const m = valid4();
+    m.myNames = ['', '', '', ''];
+    m.enemyNames = ['', '   ', '', ''];
+    const r = validateMatrix(m, false);
+    expect(r.ok).toBe(true);
+    expect(r.globalErrors).toEqual([]);
+  });
+
+  test('flags a collision the positional fill would manufacture (validates resolved names)', () => {
+    // Player 1 is explicitly "Player 2"; player 2 is unset and its positional
+    // fill is also "Player 2" — a duplicate the raw-name check (which skips '')
+    // would miss but toEngineMatrix would ship. Only reachable via imported data.
+    const m = valid4();
+    m.myNames = ['Player 2', '', 'C', 'D'];
+    const r = validateMatrix(m, false);
+    expect(r.ok).toBe(false);
+    expect(r.globalErrors.join(' ')).toMatch(/Player 2/);
   });
 });

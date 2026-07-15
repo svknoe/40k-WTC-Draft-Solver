@@ -89,10 +89,55 @@ describe('MatrixEditor', () => {
     // Saved-opponent load AND delete are frozen too — the whole editor is paused.
     expect(screen.getByRole('button', { name: 'Scotland' })).toBeDisabled();
     expect(screen.getByTitle('Delete Scotland')).toBeDisabled();
+    // Clear/Random would rewrite the matrix under the draft — frozen as well.
+    expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Random' })).toBeDisabled();
 
     // "Discard draft to edit" discards immediately — no confirmation dialog.
     await user.click(screen.getByRole('button', { name: /discard draft to edit/i }));
     expect(onDiscardDraft).toHaveBeenCalledTimes(1);
+  });
+
+  test('opponent name slots watermark as "Opponent k", not "Enemy k"', () => {
+    render(<Harness initial={blank(4)} />);
+    expect(screen.getByPlaceholderText('Opponent 3')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Enemy 3')).not.toBeInTheDocument();
+  });
+
+  test('the sample loader is gone', () => {
+    render(<Harness initial={valid4()} />);
+    expect(screen.queryByLabelText(/Load a sample opponent/i)).not.toBeInTheDocument();
+  });
+
+  test('Clear resets names to defaults and every cell to an even 10/10', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(screen.getByDisplayValue('Player 1')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Opponent 4')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Norway')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Player 1 vs Opponent 1 best')).toHaveValue('10');
+    expect(screen.getByLabelText('Player 1 vs Opponent 1 worst')).toHaveValue('10');
+    // Still solvable straight away.
+    expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
+  });
+
+  test('Random fills every cell with integers 0-20, best ≥ worst, keeping names', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.click(screen.getByRole('button', { name: 'Random' }));
+    expect(screen.getByDisplayValue('Norway')).toBeInTheDocument();
+    for (const my of ['A', 'B', 'C', 'D']) {
+      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+        const best = Number((screen.getByLabelText(`${my} vs ${enemy} best`) as HTMLInputElement).value);
+        const worst = Number((screen.getByLabelText(`${my} vs ${enemy} worst`) as HTMLInputElement).value);
+        expect(Number.isInteger(best)).toBe(true);
+        expect(best).toBeGreaterThanOrEqual(worst);
+        expect(best).toBeLessThanOrEqual(20);
+        expect(worst).toBeGreaterThanOrEqual(0);
+      }
+    }
+    expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });
 
   test('switching to single-rating mode collapses cells to one input', async () => {

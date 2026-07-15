@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { blank, EditorMatrix, fromSaved, resize, toEngineMatrix, toSaved, transpose } from './matrix';
+import { blank, cleared, EditorMatrix, fromSaved, randomized, resize, toEngineMatrix, toSaved, transpose } from './matrix';
 
 function sample4(): EditorMatrix {
   return {
@@ -72,12 +72,77 @@ describe('resize', () => {
     const grown = resize(sample4(), 6);
     expect(grown.n).toBe(6);
     expect(grown.myNames.slice(0, 4)).toEqual(['A', 'B', 'C', 'D']);
-    expect(grown.myNames[4]).toBe('');
     expect(grown.cells[0][0]).toEqual({ b: '15', w: '9' });
     expect(grown.cells[5][5]).toEqual({ b: '', w: '' });
 
     const shrunk = resize(sample4(), 4);
     expect(shrunk).toEqual(sample4());
+  });
+
+  test('growing pre-fills the added name slots with Player/Opponent defaults', () => {
+    const grown = resize(sample4(), 6);
+    expect(grown.myNames.slice(4)).toEqual(['Player 5', 'Player 6']);
+    expect(grown.enemyNames.slice(4)).toEqual(['Opponent 5', 'Opponent 6']);
+  });
+
+  test('growing leaves pre-existing blank names blank', () => {
+    const grown = resize(blank(4), 5);
+    expect(grown.myNames).toEqual(['', '', '', '', 'Player 5']);
+    expect(grown.enemyNames).toEqual(['', '', '', '', 'Opponent 5']);
+  });
+});
+
+describe('cleared', () => {
+  test('resets to default names and an even 10/10 in every cell', () => {
+    const m = cleared(5);
+    expect(m.n).toBe(5);
+    expect(m.myTeam).toBe('');
+    expect(m.enemyTeam).toBe('');
+    expect(m.myNames).toEqual(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5']);
+    expect(m.enemyNames).toEqual(['Opponent 1', 'Opponent 2', 'Opponent 3', 'Opponent 4', 'Opponent 5']);
+    expect(m.cells).toHaveLength(5);
+    for (const row of m.cells) {
+      expect(row).toHaveLength(5);
+      for (const cell of row) expect(cell).toEqual({ b: '10', w: '10' });
+    }
+  });
+});
+
+describe('randomized', () => {
+  test('rewrites every cell with integers 0-20, best ≥ worst, keeping names', () => {
+    const m = randomized(sample4(), Math.random);
+    expect(m.n).toBe(4);
+    expect(m.myTeam).toBe('Norway');
+    expect(m.myNames).toEqual(['A', 'B', 'C', 'D']);
+    expect(m.enemyNames).toEqual(['W', 'X', 'Y', 'Z']);
+    for (const row of m.cells) {
+      for (const cell of row) {
+        const b = Number(cell.b);
+        const w = Number(cell.w);
+        expect(Number.isInteger(b)).toBe(true);
+        expect(Number.isInteger(w)).toBe(true);
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThanOrEqual(20);
+        expect(w).toBeGreaterThanOrEqual(0);
+        expect(w).toBeLessThanOrEqual(20);
+        expect(b).toBeGreaterThanOrEqual(w);
+      }
+    }
+  });
+
+  test('orders the two draws per cell: larger → best, smaller → worst', () => {
+    // Deterministic rng cycling 0.1, 0.9 → draws 2 and 18 in alternating order.
+    let i = 0;
+    const rng = () => [0.1, 0.9][i++ % 2];
+    const m = randomized(sample4(), rng);
+    for (const row of m.cells) {
+      for (const cell of row) expect(cell).toEqual({ b: '18', w: '2' });
+    }
+  });
+
+  test('covers the full 0-20 range at the extremes', () => {
+    expect(randomized(sample4(), () => 0).cells[0][0]).toEqual({ b: '0', w: '0' });
+    expect(randomized(sample4(), () => 0.999999).cells[0][0]).toEqual({ b: '20', w: '20' });
   });
 });
 

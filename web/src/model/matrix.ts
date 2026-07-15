@@ -67,17 +67,51 @@ export function transpose(m: EditorMatrix): EditorMatrix {
   };
 }
 
+const defaultMyName = (i: number): string => `Player ${i + 1}`;
+const defaultEnemyName = (j: number): string => `Opponent ${j + 1}`;
+
 /** Change team size, preserving the overlapping top-left block and padding or
- * truncating names/rows/columns. */
+ * truncating names/rows/columns. Added name slots get the default
+ * Player/Opponent labels; slots that already existed keep their text (even
+ * blank). New cells stay blank. */
 export function resize(m: EditorMatrix, n: MatrixSize): EditorMatrix {
   return {
     n,
     myTeam: m.myTeam,
     enemyTeam: m.enemyTeam,
-    myNames: Array.from({ length: n }, (_, i) => m.myNames[i] ?? ''),
-    enemyNames: Array.from({ length: n }, (_, i) => m.enemyNames[i] ?? ''),
+    myNames: Array.from({ length: n }, (_, i) => m.myNames[i] ?? defaultMyName(i)),
+    enemyNames: Array.from({ length: n }, (_, j) => m.enemyNames[j] ?? defaultEnemyName(j)),
     cells: Array.from({ length: n }, (_, i) =>
       Array.from({ length: n }, (_, j) => ({ ...(m.cells[i]?.[j] ?? empty()) }))),
+  };
+}
+
+/** A full reset at size n: default player names, blank team names, and an even
+ * 10-10 game in every cell — immediately valid, ready to overwrite. */
+export function cleared(n: MatrixSize): EditorMatrix {
+  return {
+    n,
+    myTeam: '',
+    enemyTeam: '',
+    myNames: Array.from({ length: n }, (_, i) => defaultMyName(i)),
+    enemyNames: Array.from({ length: n }, (_, j) => defaultEnemyName(j)),
+    cells: Array.from({ length: n }, () => Array.from({ length: n }, () => ({ b: '10', w: '10' }))),
+  };
+}
+
+/** Rewrite every cell with two independent integer draws in 0-20 (larger →
+ * best map, smaller → worst), keeping all names. rng is injectable for tests
+ * and must return values in [0, 1). */
+export function randomized(m: EditorMatrix, rng: () => number = Math.random): EditorMatrix {
+  const draw = () => Math.floor(rng() * 21);
+  return {
+    ...m,
+    myNames: [...m.myNames],
+    enemyNames: [...m.enemyNames],
+    cells: m.cells.map((row) => row.map(() => {
+      const [a, b] = [draw(), draw()];
+      return { b: String(Math.max(a, b)), w: String(Math.min(a, b)) };
+    })),
   };
 }
 

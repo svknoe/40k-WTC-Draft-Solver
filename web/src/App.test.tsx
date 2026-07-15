@@ -40,8 +40,9 @@ describe('App', () => {
     const user = userEvent.setup();
     const { container } = render(<App />);
 
-    // A valid matrix is needed to reach the Trainer; load a sample.
-    await user.selectOptions(screen.getByLabelText(/Load a sample opponent/i), 'four');
+    // A valid matrix is needed to reach the Trainer; Clear at size 4 gives one.
+    await user.selectOptions(screen.getByLabelText('Team size'), '4');
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
     await user.click(screen.getByRole('button', { name: 'Trainer' }));
     expect(container.querySelector('.trainer')).toBeTruthy();
 
@@ -57,8 +58,9 @@ describe('App', () => {
     const solve = doneSolve();
     render(<App solve={solve} />);
 
-    // Load a valid matrix and start a draft so the Matrix tab locks.
-    await user.selectOptions(screen.getByLabelText(/Load a sample opponent/i), 'four');
+    // Build a valid matrix and start a draft so the Matrix tab locks.
+    await user.selectOptions(screen.getByLabelText('Team size'), '4');
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
     await user.click(screen.getByRole('button', { name: 'Trainer' }));
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
     await waitFor(() => expect(document.querySelector('.choice')).toBeTruthy());

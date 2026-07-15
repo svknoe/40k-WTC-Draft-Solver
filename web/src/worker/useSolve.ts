@@ -14,8 +14,9 @@ export interface SolveState {
   error: string | null;
   /** The k of the completed solve (null = exact); undefined before any solve. */
   solvedK: number | null | undefined;
-  /** k = null → exact; k = 3 → fast preview (§7). */
-  solve: (matrix: EditorMatrix, k: number | null) => void;
+  /** k = null → exact; k = 3 → fast preview (§7). `simple` selects the rating
+   * layer to solve (single rating vs best/worst), defaulting to best/worst. */
+  solve: (matrix: EditorMatrix, k: number | null, simple?: boolean) => void;
   /** Query one draft node from the solved values (instant). The trainer uses
    * this; it rejects if nothing is solved. */
   node: (path: Move[]) => Promise<NodeResult>;
@@ -43,10 +44,10 @@ export function useSolve(makeClient: () => WorkerClient = () => new WorkerClient
     return clientRef.current;
   };
 
-  const solve = (matrix: EditorMatrix, k: number | null) => {
+  const solve = (matrix: EditorMatrix, k: number | null, simple = false) => {
     let engineMatrix;
     try {
-      engineMatrix = toEngineMatrix(matrix);
+      engineMatrix = toEngineMatrix(matrix, simple);
     } catch (e) {
       setStatus('error');
       setError((e as Error).message);

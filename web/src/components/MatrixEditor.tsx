@@ -1,9 +1,8 @@
 import { useRef, useState, type ChangeEvent } from 'react';
 import { exportJson, importJson } from '../model/exchange';
 import type { EditorCell, EditorMatrix, MatrixSize } from '../model/matrix';
-import { resize, transpose } from '../model/matrix';
+import { cleared, randomized, resize, transpose } from '../model/matrix';
 import { parsePaste } from '../model/paste';
-import { SAMPLES } from '../model/samples';
 import type { Settings } from '../model/storage';
 import { validateMatrix } from '../model/validation';
 import { Grid } from './Grid';
@@ -49,7 +48,7 @@ export function MatrixEditor({
   const [importError, setImportError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const validation = validateMatrix(matrix);
+  const validation = validateMatrix(matrix, settings.simpleMode);
   const update = (partial: Partial<EditorMatrix>) => onMatrixChange({ ...matrix, ...partial });
 
   const setMyName = (i: number, name: string) => {
@@ -199,21 +198,20 @@ export function MatrixEditor({
               ))}
             </select>
           </label>
-          <label>
-            Load sample{' '}
-            <select
-              value=""
-              aria-label="Load a sample opponent"
-              disabled={locked}
-              onChange={(e) => {
-                const sample = SAMPLES.find((s) => s.key === e.target.value);
-                if (sample) onMatrixChange(sample.matrix);
-              }}
-            >
-              <option value="">Choose an opponent…</option>
-              {SAMPLES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-            </select>
-          </label>
+          <button
+            disabled={locked}
+            title="Reset names and set every matchup to an even 10"
+            onClick={() => onMatrixChange(cleared(matrix.n))}
+          >
+            Clear
+          </button>
+          <button
+            disabled={locked}
+            title="Fill every matchup with random 0-20 scores"
+            onClick={() => onMatrixChange(randomized(matrix))}
+          >
+            Random
+          </button>
           <span className="spacer" />
           <div className="segmented" role="group" aria-label="Rating mode">
             <button className={settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: true })}>

@@ -16,7 +16,7 @@ function editor4(): EditorMatrix {
     enemyTeam: 'B',
     myNames: ['a', 'b', 'c', 'd'],
     enemyNames: ['w', 'x', 'y', 'z'],
-    cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ b: '12', w: '9' }))),
+    cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ b: '12', w: '9', s: '10' }))),
   };
 }
 

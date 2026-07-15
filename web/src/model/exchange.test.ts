@@ -10,7 +10,7 @@ function sample(): EditorMatrix {
     myNames: ['A', 'B', 'C', 'D'],
     enemyNames: ['W', 'X', 'Y', 'Z'],
     cells: Array.from({ length: 4 }, () =>
-      Array.from({ length: 4 }, () => ({ b: '12', w: '9' }))),
+      Array.from({ length: 4 }, () => ({ b: '12', w: '9', s: '10' }))),
   };
 }
 
@@ -23,9 +23,18 @@ describe('exchange', () => {
     expect(data.n).toBeUndefined(); // n is derived, not stored (§4.2)
   });
 
-  test('importJson(exportJson(m)) round-trips', () => {
+  test('importJson(exportJson(m)) round-trips, single rating included', () => {
     const m = sample();
+    const exported = JSON.parse(exportJson(m));
+    expect(exported.cells[0][0]).toEqual({ b: '12', w: '9', s: '10' }); // s is exported
     expect(importJson(exportJson(m))).toEqual(m);
+  });
+
+  test('importing a pre-change export (no single rating) backfills it sensibly', () => {
+    const old = { format: 'wtc-matrix', version: 1, myTeam: '', enemyTeam: '',
+      myNames: ['A', 'B', 'C', 'D'], enemyNames: ['W', 'X', 'Y', 'Z'],
+      cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ b: '15', w: '9' }))) };
+    expect(importJson(JSON.stringify(old)).cells[0][0]).toEqual({ b: '15', w: '9', s: '12' });
   });
 
   test('rejects non-JSON with a friendly message', () => {

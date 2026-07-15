@@ -9,7 +9,23 @@ export interface ValidationResult {
   ok: boolean;
 }
 
-function cellError(cell: EditorCell): string | null {
+/** Validate one cell's ACTIVE layer only — the inactive layer may legitimately
+ * be blank or in-progress (§ independent layers) and must never block Solve.
+ * Simple mode checks the single rating `s`; best/worst mode checks the `b`/`w`
+ * pair with best ≥ worst. A single game is played on one map, so every score
+ * must be a whole number. */
+function cellError(cell: EditorCell, simple: boolean): string | null {
+  if (simple) {
+    let single: number;
+    try {
+      single = parseRating(cell.s);
+    } catch (error) {
+      return `Rating: ${(error as Error).message}`;
+    }
+    if (!Number.isInteger(single)) return `Rating (${toScore(single)}) must be a whole number.`;
+    return null;
+  }
+
   let best: number;
   let worst: number;
   try {
@@ -22,7 +38,6 @@ function cellError(cell: EditorCell): string | null {
   } catch (error) {
     return `Worst map: ${(error as Error).message}`;
   }
-  // A single game is played on one map, so its score is a whole number.
   if (!Number.isInteger(best)) return `Best map (${toScore(best)}) must be a whole number.`;
   if (!Number.isInteger(worst)) return `Worst map (${toScore(worst)}) must be a whole number.`;
   if (best < worst) {
@@ -32,10 +47,12 @@ function cellError(cell: EditorCell): string | null {
 }
 
 /** Validate an EditorMatrix against the CLI's rules (docs/web-design.md §6):
- * every cell parseable with best ≥ worst; names non-empty and all distinct.
- * The worker assumes a clean Matrix, so the UI gates `solve` on `ok`. */
-export function validateMatrix(m: EditorMatrix): ValidationResult {
-  const cellErrors = m.cells.map((row) => row.map(cellError));
+ * the active rating layer parseable (best ≥ worst in best/worst mode); names
+ * non-empty and all distinct. The worker assumes a clean Matrix, so the UI
+ * gates `solve` on `ok`. `simple` selects which layer to validate, defaulting
+ * to best/worst. */
+export function validateMatrix(m: EditorMatrix, simple = false): ValidationResult {
+  const cellErrors = m.cells.map((row) => row.map((cell) => cellError(cell, simple)));
   const globalErrors: string[] = [];
 
   const checkNames = (names: string[], side: string) => {
@@ -44,7 +61,7 @@ export function validateMatrix(m: EditorMatrix): ValidationResult {
     });
   };
   checkNames(m.myNames, 'Your');
-  checkNames(m.enemyNames, 'Enemy');
+  checkNames(m.enemyNames, 'Opponent');
 
   const counts = new Map<string, number>();
   for (const name of [...m.myNames, ...m.enemyNames]) {

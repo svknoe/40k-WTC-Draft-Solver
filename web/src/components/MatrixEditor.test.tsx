@@ -17,7 +17,7 @@ function valid4(): EditorMatrix {
     myNames: ['A', 'B', 'C', 'D'],
     enemyNames: ['W', 'X', 'Y', 'Z'],
     cells: Array.from({ length: 4 }, () =>
-      Array.from({ length: 4 }, () => ({ b: '12', w: '9' }))),
+      Array.from({ length: 4 }, () => ({ b: '12', w: '9', s: '10' }))),
   };
 }
 
@@ -89,10 +89,106 @@ describe('MatrixEditor', () => {
     // Saved-opponent load AND delete are frozen too — the whole editor is paused.
     expect(screen.getByRole('button', { name: 'Scotland' })).toBeDisabled();
     expect(screen.getByTitle('Delete Scotland')).toBeDisabled();
+    // Clear/Random would rewrite the matrix under the draft — frozen as well.
+    expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Random' })).toBeDisabled();
 
     // "Discard draft to edit" discards immediately — no confirmation dialog.
     await user.click(screen.getByRole('button', { name: /discard draft to edit/i }));
     expect(onDiscardDraft).toHaveBeenCalledTimes(1);
+  });
+
+  test('opponent name slots watermark as "Opponent k", not "Enemy k"', () => {
+    render(<Harness initial={blank(4)} />);
+    expect(screen.getByPlaceholderText('Opponent 3')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Enemy 3')).not.toBeInTheDocument();
+  });
+
+  test('the sample loader is gone', () => {
+    render(<Harness initial={valid4()} />);
+    expect(screen.queryByLabelText(/Load a sample opponent/i)).not.toBeInTheDocument();
+  });
+
+  test('Clear resets names to defaults and every cell to an even 10/10', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(screen.getByDisplayValue('Player 1')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Opponent 4')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Norway')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Player 1 vs Opponent 1 best')).toHaveValue('10');
+    expect(screen.getByLabelText('Player 1 vs Opponent 1 worst')).toHaveValue('10');
+    // Still solvable straight away.
+    expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
+  });
+
+  test('Random fills every cell with integers 0-20, best ≥ worst, keeping names', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.click(screen.getByRole('button', { name: 'Random' }));
+    expect(screen.getByDisplayValue('Norway')).toBeInTheDocument();
+    for (const my of ['A', 'B', 'C', 'D']) {
+      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+        const best = Number((screen.getByLabelText(`${my} vs ${enemy} best`) as HTMLInputElement).value);
+        const worst = Number((screen.getByLabelText(`${my} vs ${enemy} worst`) as HTMLInputElement).value);
+        expect(Number.isInteger(best)).toBe(true);
+        expect(best).toBeGreaterThanOrEqual(worst);
+        expect(best).toBeLessThanOrEqual(20);
+        expect(worst).toBeGreaterThanOrEqual(0);
+      }
+    }
+    expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
+  });
+
+  test('Random writes the best/worst spread AND the single view in one click, regardless of mode', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />); // starts in best/worst mode
+    await user.click(screen.getByRole('button', { name: 'Random' }));
+
+    // Capture the best/worst spread Random produced.
+    const pairs: Record<string, { best: number; worst: number }> = {};
+    for (const my of ['A', 'B', 'C', 'D']) {
+      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+        const best = Number((screen.getByLabelText(`${my} vs ${enemy} best`) as HTMLInputElement).value);
+        const worst = Number((screen.getByLabelText(`${my} vs ${enemy} worst`) as HTMLInputElement).value);
+        pairs[`${my}-${enemy}`] = { best, worst };
+      }
+    }
+
+    // Flip to the single-rating view: the SAME Random click must have written a
+    // single equal to the pair's average, rounded either way for a .5 tie.
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    for (const my of ['A', 'B', 'C', 'D']) {
+      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+        const single = Number((screen.getByLabelText(`${my} vs ${enemy}`) as HTMLInputElement).value);
+        const { best, worst } = pairs[`${my}-${enemy}`];
+        const mean = (best + worst) / 2;
+        expect(Number.isInteger(single)).toBe(true);
+        expect([Math.floor(mean), Math.ceil(mean)]).toContain(single);
+      }
+    }
+  });
+
+  test('typing a single rating leaves the best/worst layer untouched (independent layers)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />); // A vs W is 12 / 9 in best/worst
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    const single = screen.getByLabelText('A vs W');
+    await user.clear(single);
+    await user.type(single, '7');
+    await user.click(screen.getByRole('button', { name: 'Best / worst map' }));
+    expect(screen.getByLabelText('A vs W best')).toHaveValue('12');
+    expect(screen.getByLabelText('A vs W worst')).toHaveValue('9');
+  });
+
+  test('typing a best/worst score leaves the single rating untouched (independent layers)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />); // A vs W single is 10
+    const best = screen.getByLabelText('A vs W best');
+    await user.clear(best);
+    await user.type(best, '15');
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    expect(screen.getByLabelText('A vs W')).toHaveValue('10');
   });
 
   test('switching to single-rating mode collapses cells to one input', async () => {

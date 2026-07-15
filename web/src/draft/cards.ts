@@ -111,6 +111,7 @@ export function enemyChoices(model: DraftModel, node: NodeResult): EnemyChoice[]
   if (!node.why) return [];
   const evs = enemyColEvs(node.why);
   const { myNames, enemyNames } = model.matrix;
+  const colLabels = node.why.colLabels;
   return node.why.enStrategy.map((prob, j) => {
     const id = enemyMoveId(model, node.stage, j);
     const name =
@@ -119,6 +120,23 @@ export function enemyChoices(model: DraftModel, node: NodeResult): EnemyChoice[]
         : typeof id === 'number'
           ? enemyNames[id]
           : ([enemyNames[id[0]], enemyNames[id[1]]] as [string, string]);
+    // Tripwire: enemyMoveId rebuilds columns as combinations(ascending eligible),
+    // which equals the engine's enumeration ONLY for an exact solve. Under a
+    // k-restriction the eligible attacker list is *ranked* (engine.ts
+    // attackerPairs), the orderings diverge, and every enemy-seat helper here
+    // and enemyPairColIndex would silently mislabel the opponent's whole draft.
+    // The trainer gates two-player drafts on an exact solve (DraftTrainer's
+    // `solvedK === null`); this render-path check turns a loosened gate into a
+    // loud failure instead of silent corruption. `label` mirrors the engine's
+    // colLabel format (engine.ts joinName), so it must match column-for-column.
+    const label = typeof name === 'string' ? name : `${name[0]} + ${name[1]}`;
+    if (label !== colLabels[j]) {
+      throw new Error(
+        `Enemy column ${j} at the ${node.stage} stage reconstructed as "${label}" but the ` +
+          `engine labelled it "${colLabels[j]}" — two-player mode requires an exact solve (see ` +
+          `DraftTrainer's solvedK === null gate).`,
+      );
+    }
     return { id, name, prob, ev: evs[j] };
   });
 }
@@ -173,7 +191,10 @@ export function enemyAttackerOptions(model: DraftModel, node: NodeResult): Attac
 
 /** Column index of the enemy pair equal to the unordered {x, y} — the mirror
  * of pairChoiceIndex, over the engine's ascending enemy-pair enumeration. −1
- * when the pair isn't a column (e.g. it includes their defender). */
+ * when the pair isn't a column (e.g. it includes their defender). Like
+ * enemyMoveId this assumes the exact-mode ascending enumeration; the divergence
+ * under a k-restriction is caught by the tripwire in enemyChoices (which shares
+ * this reconstruction and renders every step before a lock is possible). */
 export function enemyPairColIndex(model: DraftModel, x: number, y: number): number {
   const eligible = model.enemyRemaining.filter((v) => v !== model.enemyDefender);
   const lo = Math.min(x, y);

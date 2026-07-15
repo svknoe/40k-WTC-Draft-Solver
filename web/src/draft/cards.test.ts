@@ -155,6 +155,33 @@ describe('enemyChoices', () => {
     expect(opts.map((o) => o.id)).toEqual([...model.myPair!]);
     expect(opts.map((o) => o.name)).toEqual(model.myPair!.map((x) => matrix.myNames[x]));
   });
+
+  const joinName = (name: string | [string, string]): string =>
+    typeof name === 'string' ? name : `${name[0]} + ${name[1]}`;
+
+  test('reconstructed column labels match the engine colLabels at every stage', () => {
+    for (const reach of [attackersNode2, refusalNode]) {
+      const { model, node } = reach();
+      expect(enemyChoices(model, node).map((o) => joinName(o.name))).toEqual(node.why!.colLabels);
+    }
+    // defender root too
+    const matrix = fixtureMatrix(smoke);
+    const engine = new DraftEngine(matrix, null, smoke.neutralWeight);
+    engine.solve();
+    const root = engine.nodeResult([]);
+    expect(enemyChoices(initDraft(matrix, smoke.neutralWeight), root).map((o) => joinName(o.name)))
+      .toEqual(root.why!.colLabels);
+  });
+
+  test('tripwire throws if the column enumeration diverges from the engine', () => {
+    const { model, node } = attackersNode2();
+    // Simulate a k-restriction reordering: swap two colLabels so the ascending
+    // reconstruction no longer matches the engine's column order.
+    const labels = [...node.why!.colLabels];
+    [labels[0], labels[1]] = [labels[1], labels[0]];
+    const skewed = { ...node, why: { ...node.why!, colLabels: labels } };
+    expect(() => enemyChoices(model, skewed)).toThrow(/exact solve/i);
+  });
 });
 
 /** attackersNode variant that keeps model/node/matrix together via applyStep. */

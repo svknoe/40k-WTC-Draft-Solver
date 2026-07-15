@@ -1,15 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <title>WTC Draft Trainer</title>
   <rect x="1" y="1" width="98" height="98" rx="21" fill="#0d1116" stroke="#2b333d" stroke-width="2"/>
-  <g fill="#262e37" stroke="#39424d" stroke-width="1">
-    <rect x="18" y="18" width="17.3" height="17.3" rx="3"/>
-    <rect x="41.33" y="18" width="17.3" height="17.3" rx="3"/>
-    <rect x="64.67" y="18" width="17.3" height="17.3" rx="3"/>
-    <rect x="18" y="41.33" width="17.3" height="17.3" rx="3"/>
-    <rect x="64.67" y="41.33" width="17.3" height="17.3" rx="3"/>
-    <rect x="18" y="64.67" width="17.3" height="17.3" rx="3"/>
-    <rect x="41.33" y="64.67" width="17.3" height="17.3" rx="3"/>
-    <rect x="64.67" y="64.67" width="17.3" height="17.3" rx="3"/>
-  </g>
-  <rect x="41.33" y="41.33" width="17.3" height="17.3" rx="3" fill="#3fb8c9"/>
+  <rect x="13" y="13" width="34" height="34" rx="6" fill="#3fb8c9"/>
+  <rect x="53" y="13" width="34" height="34" rx="6" fill="#262e37" stroke="#39424d" stroke-width="1"/>
+  <rect x="13" y="53" width="34" height="34" rx="6" fill="#262e37" stroke="#39424d" stroke-width="1"/>
+  <rect x="53" y="53" width="34" height="34" rx="6" fill="#262e37" stroke="#39424d" stroke-width="1"/>
 </svg>

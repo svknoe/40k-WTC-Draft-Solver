@@ -64,7 +64,9 @@ export function Grid({
   matrix, simpleMode, cellErrors, readOnly = false, onCellChange, onMyName, onEnemyName,
 }: GridProps) {
   const { myNames, enemyNames, cells } = matrix;
-  // Factions in use on each team; a select greys out the others' picks.
+  // Factions in use on each team — including each player's OWN pick, so a
+  // select greys out only the picks it does NOT hold (FactionSelect's
+  // `f !== value` guard keeps a player's own faction selectable).
   const myTaken = new Set(myNames.map((s) => s.trim()).filter(Boolean));
   const enemyTaken = new Set(enemyNames.map((s) => s.trim()).filter(Boolean));
 

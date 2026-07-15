@@ -126,4 +126,15 @@ describe('validateMatrix (factions, mode-independent)', () => {
     expect(r.ok).toBe(true);
     expect(r.globalErrors).toEqual([]);
   });
+
+  test('flags a collision the positional fill would manufacture (validates resolved names)', () => {
+    // Player 1 is explicitly "Player 2"; player 2 is unset and its positional
+    // fill is also "Player 2" — a duplicate the raw-name check (which skips '')
+    // would miss but toEngineMatrix would ship. Only reachable via imported data.
+    const m = valid4();
+    m.myNames = ['Player 2', '', 'C', 'D'];
+    const r = validateMatrix(m, false);
+    expect(r.ok).toBe(false);
+    expect(r.globalErrors.join(' ')).toMatch(/Player 2/);
+  });
 });

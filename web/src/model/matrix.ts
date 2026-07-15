@@ -36,6 +36,17 @@ const empty = (): EditorCell => ({ b: '', w: '', s: '' });
 export const defaultMyName = (i: number): string => `Player ${i + 1}`;
 export const defaultEnemyName = (j: number): string => `Opponent ${j + 1}`;
 
+/** Resolve a team's editor names to the display labels the engine and every
+ * downstream view actually use: an unset slot ('') becomes its positional
+ * Player N / Opponent K label. This is the single source of truth for that
+ * fill — `toEngineMatrix` ships this set and `validateMatrix` checks
+ * distinctness on it, so the fill can never manufacture a duplicate label that
+ * validation didn't see. */
+export function resolveNames(names: readonly string[], kind: 'my' | 'enemy'): string[] {
+  const label = kind === 'my' ? defaultMyName : defaultEnemyName;
+  return names.map((name, i) => name.trim() || label(i));
+}
+
 export function blank(n: MatrixSize): EditorMatrix {
   return {
     n,
@@ -58,8 +69,8 @@ export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
     // Surface the positional label for any unset (empty) name, so the engine
     // and every downstream view (DraftTrainer, DraftSummary) show Player N /
     // Opponent K rather than a blank for players left on the dropdown default.
-    myNames: m.myNames.map((name, i) => name.trim() || defaultMyName(i)),
-    enemyNames: m.enemyNames.map((name, j) => name.trim() || defaultEnemyName(j)),
+    myNames: resolveNames(m.myNames, 'my'),
+    enemyNames: resolveNames(m.enemyNames, 'enemy'),
     cells: m.cells.map((row) =>
       row.map((cell) => {
         if (simple) {
@@ -221,8 +232,9 @@ export function fromSaved(s: SavedMatrix): EditorMatrix {
     // Normalise pre-faction-dropdown data: a name left at the old literal
     // "Player N" / "Opponent K" default becomes the unset sentinel '', so the
     // dropdown shows its default option rather than a duplicate legacy entry.
-    myNames: s.myNames.map((name, i) => (name === defaultMyName(i) ? '' : name)),
-    enemyNames: s.enemyNames.map((name, j) => (name === defaultEnemyName(j) ? '' : name)),
+    // Trimmed match, matching the unset convention used everywhere else.
+    myNames: s.myNames.map((name, i) => (name.trim() === defaultMyName(i) ? '' : name)),
+    enemyNames: s.enemyNames.map((name, j) => (name.trim() === defaultEnemyName(j) ? '' : name)),
     cells: s.cells.map((row) => row.map(withSingle)),
   };
 }

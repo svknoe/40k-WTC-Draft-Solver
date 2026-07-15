@@ -83,9 +83,12 @@ last-vs-last game). Cells accept **0–20 scores** (community scale: expected
 score out of 20), where `10` is an even 10-10 game, `0` is a 20-0 blowout
 loss, and `20` is a 20-0 win. Internally everything normalises to the
 deviation from an even 10-10 game (`internal = score - 10`, range -10..+10).
-Every cell must satisfy best ≥ worst; friendly and enemy names must not
-overlap. (The legacy relative tokens `--, -, 0, +, ++` were retired in favour
-of the plain 0–20 scale — `0` now means the score 0, not an even game.)
+Every cell must satisfy best ≥ worst. Each player's name is a faction picked
+from a dropdown (the 28 WTC factions) or left as the positional `Player N` /
+`Opponent K` default; two players on the **same** team can't share a faction,
+but both teams may field the same one. (The legacy relative tokens
+`--, -, 0, +, ++` were retired in favour of the plain 0–20 scale — `0` now
+means the score 0, not an even game.)
 
 ## Running & testing
 

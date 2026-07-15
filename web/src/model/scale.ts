@@ -1,7 +1,7 @@
 /** Conversion between the community 0-20 score scale (every human-facing
  * surface) and the engine's internal deviation-from-even scale
  * (internal = score - 10, range -10..+10). Mirrors the Python engine's
- * initialise_dictionaries.parse_rating (docs/web-design.md §6, PLAN.md §C). */
+ * initialise_dictionaries.parse_rating (docs/web-design.md §6). */
 
 /** Parse one raw cell string (a 0-20 number) to the internal scale. "0" is the
  * community score 0 (a 20-0 loss) and "10" is an even 10-10 game. Throws
@@ -45,7 +45,7 @@ export interface TeamResult {
 
 /** Convert the engine's internal team margin (sum of n games' deviations) to a
  * displayed team result on the community scale: n games out of 20 → 20n total,
- * even split 10n each, so my = 10n + margin and enemy = 20n − my (§C, PLAN.md).
+ * even split 10n each, so my = 10n + margin and enemy = 20n − my.
  * The two always sum to 20n. */
 export function teamResult(expected: number, n: number): TeamResult {
   const even = 10 * n;

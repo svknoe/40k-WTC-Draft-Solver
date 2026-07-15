@@ -26,8 +26,7 @@ worst to best when neither does (refused-vs-refused and last-players games).
 **History:** the engine began life in Python with a CLI (`python -m
 drafter`). The TypeScript port (issue #17) became the sole implementation in
 2026-07; the Python code was removed and is preserved at the git tag
-`v-final-pre-python-removal`. PLAN.md is the (largely completed) revival
-roadmap from that era — historical context, not current work.
+`v-final-pre-python-removal`.
 
 ## Layout
 

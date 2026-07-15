@@ -1,9 +1,9 @@
-todo.txt
-
-*/lib
-
 # web app (docs/web-design.md §9)
 web/node_modules/
 web/dist/
 # stray vite cache when vitest runs from the repo root
 /node_modules/
+
+# editor project files
+*.sublime-project
+*.sublime-workspace

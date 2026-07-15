@@ -1,6 +1,6 @@
 /**
- * Direct zero-sum game solving — the TS port of drafter/common/utilities.py
- * (PLAN.md B1): a pure saddle point when one exists, else the 2×2 closed form,
+ * Direct zero-sum game solving — the TS port of drafter/common/utilities.py:
+ * a pure saddle point when one exists, else the 2×2 closed form,
  * else one small dense simplex on Float64Array. No LP library — scipy's
  * per-call overhead is the thing being escaped (§7.2), and the games here are
  * at most 21×21.

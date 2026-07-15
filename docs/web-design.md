@@ -44,7 +44,7 @@ What the artifact *does* correctly encode, and we keep:
 - Four screens: **Matrix editor → Solve view → Draft trainer → Draft summary**.
 - Draft state machine: `defender → attackers → refusal → done`, over rounds at
   8/6/4 players, last 4 games auto-resolving.
-- The **value model** (matches PLAN.md workstream C): `best` map value when the friendly
+- The **value model**: `best` map value when the friendly
   side defends, `worst` when the enemy defends, and `worst + w·(best − worst)` for neutral
   games (refused-vs-refused, last players), where `w = neutral_map_weight` (default
   **0.5**, i.e. the midpoint — see `drafter/solver/context.py`). Midpoint is the default,
@@ -308,7 +308,7 @@ reproduced):
 | 4 | ~70 s | ~300 MB |
 | 7 (= exact) | ~190 s | ~840 MB |
 
-B5 decision (PLAN.md): the *CLI* defaults to exact; k=3 stays as fast preview.
+The *CLI* defaults to exact; k=3 stays as fast preview.
 
 #### Measured (2026-07-05, issue #17 spike): TypeScript wins every rung by ~two orders of magnitude
 

@@ -207,6 +207,21 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
     else solve.node(next.path).then(setNode).catch(() => {});
   };
 
+  // Fill in the pending selection with a choice sampled from the equilibrium
+  // (weighted by node.choices[].prob, the human side's row mix) — the same
+  // distribution the bot samples. Doesn't lock; each click re-samples.
+  const autoPick = () => {
+    const i = sampleIndex(node.choices.map((c) => c.prob), 'equilibrium', rng.current);
+    if (stage === 'attackers') {
+      // node.choices are *pairs*; the pending state holds the two individual
+      // attacker player-indices, so unpack the sampled pair's id into attackerSel.
+      const [a, b] = node.choices[i].id as [number, number];
+      setAttackerSel([a, b]);
+    } else {
+      setSelected(i); // defender / refusal are single-select: index into node.choices
+    }
+  };
+
   const undo = () => {
     if (history.length === 0) return;
     const prev = history[history.length - 1];
@@ -347,6 +362,11 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
       )}
 
       <div className="lock-bar">
+        {showHints && (
+          <button onClick={autoPick} title="Fill in a choice at random, weighted by the equilibrium strategy">
+            Auto pick
+          </button>
+        )}
         <button className="primary" disabled={!canLock} onClick={lock}>{lockLabel}</button>
         <span className="muted">{enemy} picks simultaneously — revealed after you lock.</span>
       </div>

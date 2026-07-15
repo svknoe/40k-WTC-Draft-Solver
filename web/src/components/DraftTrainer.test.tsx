@@ -57,9 +57,10 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         if (!container.querySelector('.choice')) throw new Error('choices not rendered yet');
       });
       const cards = () => [...container.querySelectorAll('.choice')] as HTMLElement[];
-      // The pairing step's confirm button reads "X faces Y", not "Lock …", so
-      // grab the lock-bar's primary button by position rather than by name.
-      const lockBtn = () => container.querySelector('.lock-bar button') as HTMLButtonElement;
+      // The pairing step's confirm button reads "X faces Y", not "Lock …", and
+      // an "Auto pick" button may precede it in the bar, so grab the lock-bar's
+      // primary (Lock/confirm) button by its class rather than name or position.
+      const lockBtn = () => container.querySelector('.lock-bar button.primary') as HTMLButtonElement;
       await user.click(cards()[0]);
       if (/attackers/.test(lockBtn().textContent ?? '')) await user.click(cards()[1]);
       await user.click(lockBtn());
@@ -68,6 +69,47 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
     // Reaching 'done' renders the summary.
     expect(await screen.findByRole('button', { name: /Draft again/ })).toBeInTheDocument();
     expect(screen.getByText(/Final pairings/i)).toBeInTheDocument();
+  });
+
+  test('Auto pick fills an equilibrium selection without locking (hints only)', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DraftTrainer
+        matrix={fixtureMatrix(smoke)}
+        myTeam="Us"
+        enemyTeam="Them"
+        neutralWeight={smoke.neutralWeight}
+        solve={engineSolveState()}
+        onSolve={() => {}}
+        onEditMatrix={() => {}}
+      />,
+    );
+    await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
+    await waitFor(() => expect(container.querySelector('.choice')).toBeTruthy());
+
+    // Hints are on by default, so Auto pick is offered to the LEFT of the
+    // primary Lock button.
+    const barButtons = () => [...container.querySelectorAll('.lock-bar button')] as HTMLButtonElement[];
+    expect(barButtons()[0]).toHaveTextContent('Auto pick');
+    expect(barButtons()[1]).toHaveClass('primary');
+
+    // Defender stage: Auto pick sets exactly one selection and does NOT advance.
+    expect(container.querySelector('.choice.selected')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Auto pick' }));
+    expect(container.querySelectorAll('.choice.selected')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Lock defender' })).toBeInTheDocument();
+
+    // Advance to the attackers stage; Auto pick fills BOTH attacker cards
+    // (it samples a whole pair), still without locking.
+    await user.click(screen.getByRole('button', { name: 'Lock defender' }));
+    await screen.findByRole('button', { name: 'Lock attackers' });
+    await user.click(screen.getByRole('button', { name: 'Auto pick' }));
+    expect(container.querySelectorAll('.choice.selected')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Lock attackers' })).toBeInTheDocument();
+
+    // Turning hints off removes the button.
+    await user.click(screen.getByRole('button', { name: /^Hints:/ }));
+    expect(screen.queryByRole('button', { name: 'Auto pick' })).not.toBeInTheDocument();
   });
 
   test('coaching hints lock off during an official WTC window', async () => {

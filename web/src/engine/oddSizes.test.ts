@@ -70,6 +70,11 @@ describe('odd team sizes', () => {
     expect(new DraftEngine(m5, null).solve()).toBeCloseTo(5 + 3, 9);
   });
 
+  test('a 7-player draft gives the constant-sum value exactly (3 rounds, odd endgame)', () => {
+    const m7 = additiveMatrix([1, 2, 3, 0, -1, 2, -2], [0, -1, 4, 2, -2, 1, 3]);
+    expect(new DraftEngine(m7, null).solve()).toBeCloseTo(5 + 7, 9);
+  });
+
   test('3-player refusal node: hand-computed payoff, no last-vs-last term', () => {
     const engine = new DraftEngine(flatMatrix(V3), null);
     engine.solve();

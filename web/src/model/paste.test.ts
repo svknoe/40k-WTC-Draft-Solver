@@ -33,4 +33,13 @@ describe('parsePaste', () => {
       [{ b: '', w: '' }, { b: '', w: '' }],
     ]);
   });
+
+  test('parses a full 5x5 best/worst grid', () => {
+    const row = '15/12\t11/8\t9/7\t13/10\t10/10';
+    const grid = parsePaste(Array.from({ length: 5 }, () => row).join('\n'), 5);
+    expect(grid).toHaveLength(5);
+    expect(grid.every((r) => r.length === 5)).toBe(true);
+    expect(grid[4][0]).toEqual({ b: '15', w: '12' });
+    expect(grid[0][4]).toEqual({ b: '10', w: '10' });
+  });
 });

@@ -29,6 +29,13 @@ export interface EditorMatrix {
 
 const empty = (): EditorCell => ({ b: '', w: '', s: '' });
 
+/** The positional label a player falls back to when no faction is chosen (the
+ * stored name is ''). Presentation only: the editor stores '' for "unset", and
+ * these labels surface it as Player N / Opponent K in the dropdown top option
+ * (Grid) and in the solved/drafted model (toEngineMatrix). */
+export const defaultMyName = (i: number): string => `Player ${i + 1}`;
+export const defaultEnemyName = (j: number): string => `Opponent ${j + 1}`;
+
 export function blank(n: MatrixSize): EditorMatrix {
   return {
     n,
@@ -48,8 +55,11 @@ export function blank(n: MatrixSize): EditorMatrix {
 export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
   return {
     n: m.n,
-    myNames: [...m.myNames],
-    enemyNames: [...m.enemyNames],
+    // Surface the positional label for any unset (empty) name, so the engine
+    // and every downstream view (DraftTrainer, DraftSummary) show Player N /
+    // Opponent K rather than a blank for players left on the dropdown default.
+    myNames: m.myNames.map((name, i) => name.trim() || defaultMyName(i)),
+    enemyNames: m.enemyNames.map((name, j) => name.trim() || defaultEnemyName(j)),
     cells: m.cells.map((row) =>
       row.map((cell) => {
         if (simple) {
@@ -91,34 +101,32 @@ export function transpose(m: EditorMatrix): EditorMatrix {
   };
 }
 
-const defaultMyName = (i: number): string => `Player ${i + 1}`;
-const defaultEnemyName = (j: number): string => `Opponent ${j + 1}`;
-
 /** Change team size, preserving the overlapping top-left block and padding or
- * truncating names/rows/columns. Added name slots get the default
- * Player/Opponent labels; slots that already existed keep their text (even
- * blank). New cells stay blank. */
+ * truncating names/rows/columns. Added name slots start unset ('' — the
+ * Player N / Opponent K dropdown default); slots that already existed keep
+ * their faction (even blank). New cells stay blank. */
 export function resize(m: EditorMatrix, n: MatrixSize): EditorMatrix {
   return {
     n,
     myTeam: m.myTeam,
     enemyTeam: m.enemyTeam,
-    myNames: Array.from({ length: n }, (_, i) => m.myNames[i] ?? defaultMyName(i)),
-    enemyNames: Array.from({ length: n }, (_, j) => m.enemyNames[j] ?? defaultEnemyName(j)),
+    myNames: Array.from({ length: n }, (_, i) => m.myNames[i] ?? ''),
+    enemyNames: Array.from({ length: n }, (_, j) => m.enemyNames[j] ?? ''),
     cells: Array.from({ length: n }, (_, i) =>
       Array.from({ length: n }, (_, j) => ({ ...(m.cells[i]?.[j] ?? empty()) }))),
   };
 }
 
-/** A full reset at size n: default player names, blank team names, and an even
- * 10-10 game in every cell — immediately valid, ready to overwrite. */
+/** A full reset at size n: unset player names ('' — the Player N / Opponent K
+ * dropdown default), blank team names, and an even 10-10 game in every cell —
+ * immediately valid, ready to overwrite. */
 export function cleared(n: MatrixSize): EditorMatrix {
   return {
     n,
     myTeam: '',
     enemyTeam: '',
-    myNames: Array.from({ length: n }, (_, i) => defaultMyName(i)),
-    enemyNames: Array.from({ length: n }, (_, j) => defaultEnemyName(j)),
+    myNames: Array.from({ length: n }, () => ''),
+    enemyNames: Array.from({ length: n }, () => ''),
     cells: Array.from({ length: n }, () => Array.from({ length: n }, () => ({ b: '10', w: '10', s: '10' }))),
   };
 }
@@ -210,8 +218,11 @@ export function fromSaved(s: SavedMatrix): EditorMatrix {
     n,
     myTeam: s.myTeam ?? '',
     enemyTeam: s.enemyTeam ?? '',
-    myNames: [...s.myNames],
-    enemyNames: [...s.enemyNames],
+    // Normalise pre-faction-dropdown data: a name left at the old literal
+    // "Player N" / "Opponent K" default becomes the unset sentinel '', so the
+    // dropdown shows its default option rather than a duplicate legacy entry.
+    myNames: s.myNames.map((name, i) => (name === defaultMyName(i) ? '' : name)),
+    enemyNames: s.enemyNames.map((name, j) => (name === defaultEnemyName(j) ? '' : name)),
     cells: s.cells.map((row) => row.map(withSingle)),
   };
 }

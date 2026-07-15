@@ -1,4 +1,6 @@
 import type { EditorCell, EditorMatrix } from '../model/matrix';
+import { defaultEnemyName, defaultMyName } from '../model/matrix';
+import { FACTIONS, FACTION_SET } from '../model/factions';
 import { parseRating, scoreBand, toScore } from '../model/scale';
 
 interface GridProps {
@@ -21,10 +23,50 @@ function bandClass(raw: string): string {
   }
 }
 
+interface FactionSelectProps {
+  /** The stored faction name, or '' for the Player N / Opponent K default. */
+  value: string;
+  side: 'mine' | 'enemy';
+  /** The positional label shown as the top (unset) option. */
+  defaultLabel: string;
+  /** Factions already taken on THIS team (non-empty names); a faction other
+   * than the player's own current pick is greyed out when it's in this set. */
+  taken: ReadonlySet<string>;
+  ariaLabel: string;
+  readOnly: boolean;
+  onChange: (value: string) => void;
+}
+
+/** A faction picker: the positional default on top, then every faction
+ * alphabetically with same-team duplicates disabled. A non-faction current
+ * value (imported/legacy free-text) gets its own option so it still displays
+ * and round-trips. `<select>` has no readOnly, so a locked draft disables it. */
+function FactionSelect({ value, side, defaultLabel, taken, ariaLabel, readOnly, onChange }: FactionSelectProps) {
+  const legacy = value.trim() !== '' && !FACTION_SET.has(value);
+  return (
+    <select
+      className={`name ${side}`}
+      value={value}
+      aria-label={ariaLabel}
+      disabled={readOnly}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      <option value="">{defaultLabel}</option>
+      {legacy && <option value={value}>{value}</option>}
+      {FACTIONS.map((f) => (
+        <option key={f} value={f} disabled={taken.has(f) && f !== value}>{f}</option>
+      ))}
+    </select>
+  );
+}
+
 export function Grid({
   matrix, simpleMode, cellErrors, readOnly = false, onCellChange, onMyName, onEnemyName,
 }: GridProps) {
   const { myNames, enemyNames, cells } = matrix;
+  // Factions in use on each team; a select greys out the others' picks.
+  const myTaken = new Set(myNames.map((s) => s.trim()).filter(Boolean));
+  const enemyTaken = new Set(enemyNames.map((s) => s.trim()).filter(Boolean));
 
   return (
     <div className="grid-scroll">
@@ -34,13 +76,14 @@ export function Grid({
             <th className="corner">{simpleMode ? 'single rating' : 'best / worst map'}</th>
             {enemyNames.map((name, j) => (
               <th key={j} className="col-head">
-                <input
-                  className="name enemy"
+                <FactionSelect
+                  side="enemy"
                   value={name}
-                  placeholder={`Opponent ${j + 1}`}
-                  aria-label={`Opponent player ${j + 1} name`}
+                  defaultLabel={defaultEnemyName(j)}
+                  taken={enemyTaken}
+                  ariaLabel={`Opponent player ${j + 1} faction`}
                   readOnly={readOnly}
-                  onChange={(e) => onEnemyName(j, e.target.value)}
+                  onChange={(v) => onEnemyName(j, v)}
                 />
               </th>
             ))}
@@ -50,13 +93,14 @@ export function Grid({
           {myNames.map((rowName, i) => (
             <tr key={i}>
               <th className="row-head">
-                <input
-                  className="name mine"
+                <FactionSelect
+                  side="mine"
                   value={rowName}
-                  placeholder={`Player ${i + 1}`}
-                  aria-label={`Your player ${i + 1} name`}
+                  defaultLabel={defaultMyName(i)}
+                  taken={myTaken}
+                  ariaLabel={`Your player ${i + 1} faction`}
                   readOnly={readOnly}
-                  onChange={(e) => onMyName(i, e.target.value)}
+                  onChange={(v) => onMyName(i, v)}
                 />
               </th>
               {cells[i].map((cell, j) => {

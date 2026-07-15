@@ -47,10 +47,12 @@ describe('MatrixEditor', () => {
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });
 
-  test('a blank matrix disables Solve and reports missing names', () => {
+  test('a blank matrix disables Solve on empty cells, with no name error', () => {
     render(<Harness initial={blank(8)} />);
     expect(screen.getByRole('button', { name: /solve/i })).toBeDisabled();
-    expect(screen.getAllByText(/needs a name/i).length).toBeGreaterThan(0);
+    // Factions are optional now (the Player N / Opponent K dropdown default), so
+    // a blank matrix reports no name error — only its cells are incomplete.
+    expect(screen.queryByText(/needs a name/i)).not.toBeInTheDocument();
   });
 
   test('making best < worst flags the cell and disables Solve', async () => {
@@ -98,10 +100,11 @@ describe('MatrixEditor', () => {
     expect(onDiscardDraft).toHaveBeenCalledTimes(1);
   });
 
-  test('opponent name slots watermark as "Opponent k", not "Enemy k"', () => {
+  test('opponent name slots default to "Opponent k", not "Enemy k"', () => {
     render(<Harness initial={blank(4)} />);
-    expect(screen.getByPlaceholderText('Opponent 3')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Enemy 3')).not.toBeInTheDocument();
+    // The unset dropdown default shows as the selected option's text.
+    expect(screen.getByDisplayValue('Opponent 3')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Enemy 3')).not.toBeInTheDocument();
   });
 
   test('the sample loader is gone', () => {
@@ -109,15 +112,17 @@ describe('MatrixEditor', () => {
     expect(screen.queryByLabelText(/Load a sample opponent/i)).not.toBeInTheDocument();
   });
 
-  test('Clear resets names to defaults and every cell to an even 10/10', async () => {
+  test('Clear resets names to the unset default and every cell to an even 10/10', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />);
     await user.click(screen.getByRole('button', { name: 'Clear' }));
+    // Names reset to '' — the dropdowns show the positional default option.
     expect(screen.getByDisplayValue('Player 1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Opponent 4')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Norway')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Player 1 vs Opponent 1 best')).toHaveValue('10');
-    expect(screen.getByLabelText('Player 1 vs Opponent 1 worst')).toHaveValue('10');
+    // Unset names fall back to the terse P/E cell aria-label.
+    expect(screen.getByLabelText('P1 vs E1 best')).toHaveValue('10');
+    expect(screen.getByLabelText('P1 vs E1 worst')).toHaveValue('10');
     // Still solvable straight away.
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });

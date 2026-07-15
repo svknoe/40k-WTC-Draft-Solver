@@ -99,20 +99,31 @@ describe('validateMatrix (single-rating mode)', () => {
   });
 });
 
-describe('validateMatrix (names, mode-independent)', () => {
-  test('flags a name shared across teams', () => {
+describe('validateMatrix (factions, mode-independent)', () => {
+  test('allows the same faction on both teams (cross-team duplicates are fine)', () => {
     const m = valid4();
-    m.enemyNames[0] = 'A'; // also in myNames
+    m.myNames[0] = 'Necrons';
+    m.enemyNames[0] = 'Necrons';
     const r = validateMatrix(m, false);
-    expect(r.ok).toBe(false);
-    expect(r.globalErrors.join(' ')).toMatch(/A/);
+    expect(r.ok).toBe(true);
+    expect(r.globalErrors).toEqual([]);
   });
 
-  test('flags an empty name', () => {
+  test('flags two players on the same team sharing a faction', () => {
     const m = valid4();
-    m.myNames[1] = '   ';
+    m.myNames[0] = 'Orks';
+    m.myNames[1] = 'Orks';
     const r = validateMatrix(m, false);
     expect(r.ok).toBe(false);
-    expect(r.globalErrors.length).toBeGreaterThan(0);
+    expect(r.globalErrors.join(' ')).toMatch(/Orks/);
+  });
+
+  test('allows unset (empty) names — the Player N / Opponent K default', () => {
+    const m = valid4();
+    m.myNames = ['', '', '', ''];
+    m.enemyNames = ['', '   ', '', ''];
+    const r = validateMatrix(m, false);
+    expect(r.ok).toBe(true);
+    expect(r.globalErrors).toEqual([]);
   });
 });

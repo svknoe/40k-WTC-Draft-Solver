@@ -47,30 +47,31 @@ function cellError(cell: EditorCell, simple: boolean): string | null {
 }
 
 /** Validate an EditorMatrix against the CLI's rules (docs/web-design.md §6):
- * the active rating layer parseable (best ≥ worst in best/worst mode); names
- * non-empty and all distinct. The worker assumes a clean Matrix, so the UI
- * gates `solve` on `ok`. `simple` selects which layer to validate, defaulting
- * to best/worst. */
+ * the active rating layer parseable (best ≥ worst in best/worst mode); no two
+ * players on the SAME team share a faction. A player may be left unset (the
+ * Player N / Opponent K dropdown default, stored as ''), and the same faction
+ * may appear on both teams. The worker assumes a clean Matrix, so the UI gates
+ * `solve` on `ok`. `simple` selects which layer to validate, defaulting to
+ * best/worst. */
 export function validateMatrix(m: EditorMatrix, simple = false): ValidationResult {
   const cellErrors = m.cells.map((row) => row.map((cell) => cellError(cell, simple)));
   const globalErrors: string[] = [];
 
-  const checkNames = (names: string[], side: string) => {
-    names.forEach((name, i) => {
-      if (name.trim() === '') globalErrors.push(`${side} player ${i + 1} needs a name.`);
-    });
+  // The dropdown greys out taken factions, so a same-team clash only reaches
+  // here via imported/legacy data — flag it as a safety net (empty = unset is
+  // never a clash, and cross-team duplicates are allowed).
+  const checkDistinct = (names: string[], side: string) => {
+    const counts = new Map<string, number>();
+    for (const name of names) {
+      const key = name.trim();
+      if (key !== '') counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    for (const [name, count] of counts) {
+      if (count > 1) globalErrors.push(`${side} team has two players on ${name} — each player needs a distinct faction.`);
+    }
   };
-  checkNames(m.myNames, 'Your');
-  checkNames(m.enemyNames, 'Opponent');
-
-  const counts = new Map<string, number>();
-  for (const name of [...m.myNames, ...m.enemyNames]) {
-    const key = name.trim();
-    if (key !== '') counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  for (const [name, count] of counts) {
-    if (count > 1) globalErrors.push(`Duplicate name: "${name}" (every player must be distinct).`);
-  }
+  checkDistinct(m.myNames, 'Your');
+  checkDistinct(m.enemyNames, 'Opponent');
 
   const ok = globalErrors.length === 0 && cellErrors.every((row) => row.every((e) => e === null));
   return { cellErrors, globalErrors, ok };

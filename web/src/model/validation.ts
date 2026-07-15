@@ -44,7 +44,7 @@ export function validateMatrix(m: EditorMatrix): ValidationResult {
     });
   };
   checkNames(m.myNames, 'Your');
-  checkNames(m.enemyNames, 'Enemy');
+  checkNames(m.enemyNames, 'Opponent');
 
   const counts = new Map<string, number>();
   for (const name of [...m.myNames, ...m.enemyNames]) {

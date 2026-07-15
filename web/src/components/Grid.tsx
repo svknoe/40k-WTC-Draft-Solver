@@ -37,8 +37,8 @@ export function Grid({
                 <input
                   className="name enemy"
                   value={name}
-                  placeholder={`Enemy ${j + 1}`}
-                  aria-label={`Enemy player ${j + 1} name`}
+                  placeholder={`Opponent ${j + 1}`}
+                  aria-label={`Opponent player ${j + 1} name`}
                   readOnly={readOnly}
                   onChange={(e) => onEnemyName(j, e.target.value)}
                 />

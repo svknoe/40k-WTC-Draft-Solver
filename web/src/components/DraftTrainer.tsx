@@ -149,10 +149,12 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
           <li>At the end you're scored against the solver's pre-draft expectation.</li>
           <li>Runs entirely on your computer — your matrix and drafts are never uploaded. Hints are training-only and switch off during official WTC dates.</li>
         </ul>
-        <div className="trainer-controls" style={{ marginLeft: 0, marginBottom: '0.75rem' }}>{modeToggle}</div>
         {solve.status === 'solving' && <ProgressBar frac={solve.progress} label="Solving exactly for training…" />}
-        <button className="primary" disabled={solve.status === 'solving'} onClick={start}>Start practice draft</button>
-        {solve.status === 'error' && <span className="muted"> Solve failed — {solve.error}</span>}
+        <div className="intro-actions">
+          {modeToggle}
+          <button className="primary" disabled={solve.status === 'solving'} onClick={start}>Start practice draft</button>
+          {solve.status === 'error' && <span className="muted">Solve failed — {solve.error}</span>}
+        </div>
       </div>
     );
   }

@@ -26,13 +26,18 @@ const noErrors = (n: number) => Array.from({ length: n }, () => Array.from({ len
 
 function renderGrid(
   m: EditorMatrix,
-  opts: { readOnly?: boolean; simpleMode?: boolean; onCellChange?: (i: number, j: number, cell: EditorCell) => void } = {},
+  opts: {
+    readOnly?: boolean;
+    simpleMode?: boolean;
+    cellErrors?: (string | null)[][];
+    onCellChange?: (i: number, j: number, cell: EditorCell) => void;
+  } = {},
 ) {
   render(
     <Grid
       matrix={m}
       simpleMode={opts.simpleMode ?? false}
-      cellErrors={noErrors(m.n)}
+      cellErrors={opts.cellErrors ?? noErrors(m.n)}
       readOnly={opts.readOnly}
       onCellChange={opts.onCellChange ?? vi.fn()}
       onMyName={vi.fn()}
@@ -129,5 +134,21 @@ describe('Grid tiles', () => {
   test('readOnly makes every tile input read-only', () => {
     renderGrid(matrix(), { readOnly: true });
     expect(screen.getByLabelText('P1 vs E1 map A')).toHaveAttribute('readonly');
+  });
+
+  test('an invalid cell is outlined with its error as a tooltip, but a blank one is not flagged', () => {
+    const m = matrix();
+    m.cells[0][0] = { maps: ['25', '', ''], s: '10' };
+    m.cells[0][1] = { maps: ['', '', ''], s: '' };
+    const errors = noErrors(m.n) as (string | null)[][];
+    errors[0][0] = 'Map A: out of range';
+    errors[0][1] = 'Enter at least one map rating.';
+    renderGrid(m, { cellErrors: errors });
+    const bad = screen.getByLabelText('P1 vs E1 map A').closest('td');
+    expect(bad).toHaveClass('invalid');
+    expect(bad).toHaveAttribute('title', 'Map A: out of range');
+    const blank = screen.getByLabelText('P1 vs E2 map A').closest('td');
+    expect(blank).not.toHaveClass('invalid');
+    expect(blank).not.toHaveAttribute('title');
   });
 });

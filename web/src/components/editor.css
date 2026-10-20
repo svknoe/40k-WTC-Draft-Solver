@@ -75,8 +75,9 @@ input.name:focus, select.name:focus { outline: 1px solid var(--blue); border-rad
 
 /* matchup tile: the value centred, map A/B/C inputs in a darker strip below */
 td.cell { vertical-align: top; }
-.tile { aspect-ratio: 1; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden;
-  background: var(--card-2); color: var(--text-4); }
+.tile { aspect-ratio: 1; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; }
+/* blank cells only: the palette .pt-k classes own the fill of scored tiles */
+.tile.empty { background: var(--card-2); color: var(--text-4); }
 .tile-value { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center;
   font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.15rem; color: inherit; }
 input.tile-value { display: block; border: 0; background: transparent; text-align: center; padding: 0; border-radius: 6px; }

@@ -29,11 +29,6 @@ export function toInputString(internal: number): string {
   return String(toScore(internal));
 }
 
-/** Render a cell's best/worst internal values as "best / worst" on the 0-20
- * scale (e.g. "15 / 12"). */
-export const formatCell = (cell: { best: number; worst: number }): string =>
-  `${toScore(cell.best)} / ${toScore(cell.worst)}`;
-
 export interface TeamResult {
   /** My team's total out of 20n. */
   my: number;

@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import type { Matrix, NodeResult } from '../engine/types';
 import { sampleIndex } from '../draft/sampling';
 import type { DraftModel, FixedGame } from '../draft/draftState';
-import { applyStep, endgameNOf, enemyMoveId, finalRoundOf, initDraft } from '../draft/draftState';
+import { applyStep, endgameNOf, enemyMoveId, finalRoundOf, initDraft, pairingLabel } from '../draft/draftState';
 import { enemyPairColIndex, pairChoiceIndex, projectedResult } from '../draft/cards';
 import { formatMatchupScore, formatTeamScore, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
@@ -410,7 +410,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
                   <span className="pmine">{myNames[game.my]}</span>
                   <span className="pscore">{formatMatchupScore(my)}–{formatMatchupScore(20 - my)}</span>
                   <span className="penemy">{enemyNames[game.enemy]}</span>
-                  <span className="pkind">{MAP_LABEL[game.kind]}{game.map ? ` · ${game.map}` : ''}</span>
+                  <span className="pkind">{pairingLabel(MAP_LABEL[game.kind], game.map)}</span>
                 </div>
               );
             })}

@@ -1,10 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { DraftEngine } from '../engine/engine';
-import { bestMapIndex, bestOf, cellFromBestWorst, worstMapIndex, worstOf } from '../engine/maps';
+import { bestOf, cellFromBestWorst, worstOf } from '../engine/maps';
 import type { Matrix } from '../engine/types';
-import { MAP_LETTERS } from '../engine/types';
-import { achievedTotal, applyStep, finalRoundOf, initDraft } from './draftState';
+import { achievedTotal, applyStep, finalRoundOf, initDraft, pairingLabel } from './draftState';
 
 function argmax(values: number[]): number {
   let best = 0;
@@ -90,12 +89,15 @@ describe('draftState (Smoke 4×4, exact engine)', () => {
   });
 
   test('each locked game records the map it is played on', () => {
+    // Distinct A/B/C values per cell (no ties), in a cell-dependent order.
     const withMaps: Matrix = {
       ...matrix,
       neutralMap: 'C',
-      cells: matrix.cells.map((row) => row.map((c) => ({
-        maps: [bestOf(c), worstOf(c), worstOf(c) + 0.25 * (bestOf(c) - worstOf(c))],
-      }))),
+      cells: matrix.cells.map((row, i) => row.map((_, j) => {
+        const base = (i * 7 + j * 3) % 5;
+        const order = [[0, 1, 2], [2, 0, 1], [1, 2, 0], [0, 2, 1], [1, 0, 2]][(i + j) % 5];
+        return { maps: order.map((rank) => base + rank * 1.5 + 0.1 * (i + j)) as [number, number, number] };
+      })),
     };
     const mapsEngine = new DraftEngine(withMaps, null, smoke.neutralWeight);
     mapsEngine.solve();
@@ -107,12 +109,19 @@ describe('draftState (Smoke 4×4, exact engine)', () => {
     expect(model.fixed).toHaveLength(4);
     for (const g of model.fixed) {
       const { maps } = withMaps.cells[g.my][g.enemy];
+      expect(new Set(maps).size).toBe(3);
+      const letters = ['A', 'B', 'C'];
       const expectedMap =
-        g.kind === 'my-defends' ? MAP_LETTERS[bestMapIndex(maps)]
-        : g.kind === 'enemy-defends' ? MAP_LETTERS[worstMapIndex(maps)]
+        g.kind === 'my-defends' ? letters[maps.indexOf(Math.max(...(maps as number[])))]
+        : g.kind === 'enemy-defends' ? letters[maps.indexOf(Math.min(...(maps as number[])))]
         : 'C';
       expect(g.map).toBe(expectedMap);
     }
+  });
+
+  test('pairingLabel appends the map only when it is known', () => {
+    expect(pairingLabel('Defender', 'B')).toBe('Defender · B');
+    expect(pairingLabel('Defender', null)).toBe('Defender');
   });
 
   test('without a neutral map (map identity unknown) every game has no map', () => {

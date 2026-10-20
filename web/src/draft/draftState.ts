@@ -1,13 +1,13 @@
 import type { MapLetter, Matrix, Move, NodeChoice, NodeResult } from '../engine/types';
-import { MAP_LETTERS } from '../engine/types';
-import { bestMapIndex, bestOf, neutralOf, worstMapIndex, worstOf } from '../engine/maps';
+import type { GameKind } from '../engine/maps';
+import { bestOf, neutralOf, playedMap, worstOf } from '../engine/maps';
 
 /** One of the n games fixed by the draft, with its value-model value (internal
  * scale). `my`/`enemy` are player indices. */
 export interface FixedGame {
   my: number;
   enemy: number;
-  kind: 'my-defends' | 'enemy-defends' | 'refused' | 'last';
+  kind: GameKind;
   value: number;
   round: number;
   /** The map the game is played on: the defender's pick for defender games,
@@ -149,15 +149,20 @@ function enemyDecision(model: DraftModel, node: NodeResult, colIndex: number): D
  * are scored on the matrix's neutral map (or the weighted midpoint when the
  * maps carry no identity, in which case no map is recorded). */
 function matchupGame(
-  model: DraftModel, kind: FixedGame['kind'], my: number, enemy: number,
+  model: DraftModel, kind: GameKind, my: number, enemy: number,
 ): { value: number; map: MapLetter | null } {
   const { matrix } = model;
   const cell = matrix.cells[my][enemy];
-  const letter = (k: number): MapLetter | null => (matrix.neutralMap === null ? null : MAP_LETTERS[k]);
-  if (kind === 'my-defends') return { value: bestOf(cell), map: letter(bestMapIndex(cell.maps)) };
-  if (kind === 'enemy-defends') return { value: worstOf(cell), map: letter(worstMapIndex(cell.maps)) };
-  return { value: neutralOf(matrix, my, enemy, model.neutralWeight), map: matrix.neutralMap };
+  const map = playedMap(matrix, my, enemy, kind);
+  if (kind === 'my-defends') return { value: bestOf(cell), map };
+  if (kind === 'enemy-defends') return { value: worstOf(cell), map };
+  return { value: neutralOf(matrix, my, enemy, model.neutralWeight), map };
 }
+
+/** The pairing-row label: the kind label plus " · <map>" when the game's map is
+ * known. */
+export const pairingLabel = (label: string, map: MapLetter | null): string =>
+  map ? `${label} · ${map}` : label;
 
 /** Apply one simultaneous decision: my choice (index into node.choices) + the
  * bot's sampled enemy column (index into node.why.enStrategy). Returns a new

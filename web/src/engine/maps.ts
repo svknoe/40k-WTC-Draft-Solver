@@ -40,4 +40,21 @@ export function neutralOf(matrix: Matrix, i: number, j: number, neutralWeight: n
  * best >= worst, so that bestOf / worstOf (the max and min) return them back. */
 export const cellFromBestWorst = (best: number, worst: number): MatchupCell => ({ maps: [best, worst, null] });
 
-export type { MapLetter };
+/** The kinds of game a matchup can be played as (draftState.FixedGame['kind']). */
+export type GameKind = 'my-defends' | 'enemy-defends' | 'refused' | 'last';
+
+/** Whether the matrix's maps carry identity (A/B/C are real layouts). False in
+ * single-rating mode and for the conformance fixtures, whose "maps" are just
+ * best/worst numbers. */
+export const hasMapIdentity = (matrix: Matrix): boolean => matrix.neutralMap !== null;
+
+/** The map a game between my player i and enemy j is played on: my best map
+ * when I defend (I pick), my worst when they defend (their best), the neutral
+ * map otherwise — or null when the maps carry no identity. */
+export function playedMap(matrix: Matrix, i: number, j: number, kind: GameKind): MapLetter | null {
+  if (!hasMapIdentity(matrix)) return null;
+  const { maps } = matrix.cells[i][j];
+  if (kind === 'my-defends') return MAP_LETTERS[bestMapIndex(maps)];
+  if (kind === 'enemy-defends') return MAP_LETTERS[worstMapIndex(maps)];
+  return matrix.neutralMap;
+}

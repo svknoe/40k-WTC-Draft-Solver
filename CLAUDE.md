@@ -17,13 +17,15 @@ induction. The app then acts as a **draft trainer**: it suggests each side's
 equilibrium strategy, samples bot moves, and lets a human train against it.
 
 Map choice follows the 11th-edition rule: the defender picks the map, and
-because that choice is zero-sum each matchup is rated on exactly two maps —
-its best and its worst from the friendly side's perspective. Values are read
-as: best-map value when the friendly player defends, worst-map value when the
-enemy defends. Neutral games (refused-vs-refused and last-players) are played
+because that choice is zero-sum each matchup is rated on up to three maps (A, B,
+C). The engine receives those ratings plus the neutral map and derives the best
+map (the friendly defender's pick), the worst (the enemy defender's pick) and
+the neutral-game value. Values are read as: best-map value when the friendly
+player defends, worst-map value when the enemy defends. Neutral games (refused-vs-refused and last-players) are played
 on a map the captain picks per matrix (A, B or C); the engine's weighted-midpoint
-formula (`worst + w·(best − worst)`, w = 0.5) survives only as the fallback the
-frozen conformance fixtures use.
+formula (`worst + w·(best − worst)`, w = 0.5) survives only as the fallback used
+when the maps carry no identity (single-rating mode, where it is trivially the
+rating, and the frozen conformance fixtures).
 
 **History:** the engine began life in Python with a CLI (`python -m
 drafter`). The TypeScript port (issue #17) became the sole implementation in
@@ -39,7 +41,8 @@ web/src/
   engine/        the solver core: packing.ts (40-bit gamestate keys),
                  engine.ts (enumeration + value-only backward induction +
                  on-demand node strategies), zeroSum.ts (2x2 closed form +
-                 dense simplex LP), restriction.ts (k-restriction heuristic)
+                 dense simplex LP), restriction.ts (k-restriction heuristic),
+                 maps.ts (map ratings -> best/worst/neutral and which map is played)
   worker/        web-worker contract + typed client + useSolve React hook
   conformance/   frozen golden fixtures (exported from the retired Python
                  engine) + the vitest suite pinning values/counts/strategies

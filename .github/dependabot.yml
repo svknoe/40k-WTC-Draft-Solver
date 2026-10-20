@@ -1,0 +1,31 @@
+# Dependabot: security fixes for web/ npm deps, plus routine GitHub Actions
+# bumps. Security updates (repo setting) open PRs as alerts appear; Web CI
+# (typecheck + full conformance suite) gates every one of them.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: monthly
+    # Security updates only: 0 disables routine npm version-bump PRs but
+    # does not limit security-update PRs.
+    open-pull-requests-limit: 0
+    groups:
+      # Bundle simultaneous npm security fixes into one PR, not one per package.
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: chore
+      include: scope

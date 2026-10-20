@@ -167,7 +167,7 @@ export class DraftEngine {
         const cell = matrix.cells[i][j];
         this.best[i * n + j] = cell.best;
         this.worst[i * n + j] = cell.worst;
-        this.neutral[i * n + j] = cell.worst + neutralWeight * (cell.best - cell.worst);
+        this.neutral[i * n + j] = cell.neutral ?? cell.worst + neutralWeight * (cell.best - cell.worst);
       }
     }
 

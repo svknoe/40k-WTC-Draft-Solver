@@ -142,7 +142,9 @@ function matchupValue(model: DraftModel, kind: FixedGame['kind'], my: number, en
   const cell = model.matrix.cells[my][enemy];
   if (kind === 'my-defends') return cell.best; // I defend → my best map
   if (kind === 'enemy-defends') return cell.worst; // enemy defends → my worst map
-  return cell.worst + model.neutralWeight * (cell.best - cell.worst); // refused / last → neutral
+  // refused / last → neutral: the cell's own neutral map value when the matrix
+  // carries one, else the engine's weighted-midpoint fallback.
+  return cell.neutral ?? cell.worst + model.neutralWeight * (cell.best - cell.worst);
 }
 
 /** Apply one simultaneous decision: my choice (index into node.choices) + the

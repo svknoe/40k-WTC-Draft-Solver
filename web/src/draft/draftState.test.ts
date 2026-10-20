@@ -59,6 +59,23 @@ describe('draftState (Smoke 4×4, exact engine)', () => {
     const worstDecision = model.decisions.find((d) => d.regret > 1e-9);
     expect(worstDecision).toBeDefined();
   });
+
+  test('refused and last games score the cell neutral value when present', () => {
+    const withNeutral: Matrix = {
+      ...matrix,
+      cells: matrix.cells.map((row) => row.map((cell) => ({ ...cell, neutral: cell.best + 7 }))),
+    };
+    const neutralEngine = new DraftEngine(withNeutral, null, smoke.neutralWeight);
+    neutralEngine.solve();
+    let model = initDraft(withNeutral, smoke.neutralWeight);
+    while (!model.done) {
+      const node = neutralEngine.nodeResult(model.path);
+      model = applyStep(model, node, argmax(node.choices.map((c) => c.prob)), argmax(node.why!.enStrategy));
+    }
+    for (const g of model.fixed.filter((x) => x.kind === 'refused' || x.kind === 'last')) {
+      expect(g.value).toBeCloseTo(withNeutral.cells[g.my][g.enemy].best + 7, 9);
+    }
+  });
 });
 
 /** v[i][j] = a[i] + b[j], best = worst: every full pairing totals

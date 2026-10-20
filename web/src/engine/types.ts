@@ -9,7 +9,10 @@ export interface Matrix {
   n: 3 | 4 | 5 | 6 | 7 | 8;
   myNames: string[];
   enemyNames: string[];
-  cells: { best: number; worst: number }[][];
+  /** `neutral` is the value of a neutral game (refused vs refused, last vs
+   * last) on this matchup; without it the engine uses the weighted midpoint
+   * `worst + neutralWeight × (best − worst)` (the frozen conformance model). */
+  cells: { best: number; worst: number; neutral?: number }[][];
 }
 
 /** A decision made walking the draft tree (§3.1) — engine-internal encoding;

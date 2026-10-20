@@ -2,6 +2,7 @@
 import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { DraftEngine } from '../engine/engine';
@@ -39,6 +40,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
 
@@ -82,6 +85,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
@@ -125,6 +130,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
           solve={engineSolveState()}
           onSolve={() => {}}
           onEditMatrix={() => {}}
+          remainingOpen={false}
+          onRemainingOpenChange={() => {}}
         />,
       );
       fireEvent.click(screen.getByRole('button', { name: /Start practice draft/ }));
@@ -149,6 +156,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
         onLiveChange={onLiveChange}
       />,
     );
@@ -174,6 +183,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
@@ -201,6 +212,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
 
@@ -264,6 +277,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Opponent: bot/ }));
@@ -287,6 +302,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
@@ -306,6 +323,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
@@ -316,5 +335,41 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
     await screen.findByRole('button', { name: 'Lock attackers' });
     await user.click(screen.getByRole('button', { name: /Undo/ }));
     expect(await screen.findByRole('button', { name: 'Lock defender' })).toBeInTheDocument();
+  });
+
+  test('the remaining-matchups panel stays open across a draft step', async () => {
+    const user = userEvent.setup();
+    const solve = engineSolveState();
+    // App owns the panel's open state; mirror that with a tiny stateful wrapper.
+    function Harness() {
+      const [remainingOpen, setRemainingOpen] = useState(false);
+      return (
+        <DraftTrainer
+          matrix={fixtureMatrix(smoke)}
+          myTeam="Us"
+          enemyTeam="Them"
+          neutralWeight={smoke.neutralWeight}
+          solve={solve}
+          onSolve={() => {}}
+          onEditMatrix={() => {}}
+          remainingOpen={remainingOpen}
+          onRemainingOpenChange={setRemainingOpen}
+        />
+      );
+    }
+    const { container } = render(<Harness />);
+    await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
+    await waitFor(() => expect(container.querySelector('.choice')).toBeTruthy());
+
+    const details = () => container.querySelector('details.remaining') as HTMLDetailsElement;
+    expect(details().open).toBe(false);
+    await user.click(details().querySelector('summary')!);
+    expect(details().open).toBe(true);
+
+    // Play one step (lock the defender): the panel must not collapse.
+    await user.click(container.querySelector('.choice') as HTMLElement);
+    await user.click(screen.getByRole('button', { name: 'Lock defender' }));
+    await screen.findByRole('button', { name: 'Lock attackers' });
+    expect(details().open).toBe(true);
   });
 });

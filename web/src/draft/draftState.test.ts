@@ -3,7 +3,7 @@ import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { DraftEngine } from '../engine/engine';
 import { bestOf, cellFromBestWorst, worstOf } from '../engine/maps';
 import type { Matrix } from '../engine/types';
-import { achievedTotal, applyStep, finalRoundOf, initDraft, pairingLabel } from './draftState';
+import { achievedTotal, applyStep, contextKind, finalRoundOf, initDraft, pairingLabel } from './draftState';
 
 function argmax(values: number[]): number {
   let best = 0;
@@ -285,5 +285,52 @@ describe('two-player mode', () => {
     model = applyStep(model, engine.nodeResult(model.path), 0, 0); // they refuse myPair[0]
     const refusal = model.enemyDecisions[2];
     expect(refusal.chosenName).toBe(matrix.myNames[myPair[1]]); // faced = the kept one
+  });
+});
+
+describe('contextKind', () => {
+  test('smoke 4×4 (the final round): undecided before defenders, then defender / refused kinds', () => {
+    const matrix = fixtureMatrix(smoke);
+    const engine = new DraftEngine(matrix, null, smoke.neutralWeight);
+    engine.solve();
+    const fresh = initDraft(matrix, smoke.neutralWeight);
+    for (let m = 0; m < 4; m++) for (let e = 0; e < 4; e++) expect(contextKind(fresh, m, e)).toBeNull();
+
+    const node = engine.nodeResult(fresh.path);
+    const model = applyStep(fresh, node, argmax(node.choices.map((c) => c.prob)), argmax(node.why!.enStrategy));
+    const { myDefender, enemyDefender } = model;
+    expect(myDefender).toBeGreaterThanOrEqual(0);
+    expect(enemyDefender).toBeGreaterThanOrEqual(0);
+    for (let m = 0; m < 4; m++) {
+      for (let e = 0; e < 4; e++) {
+        const expected =
+          m === myDefender && e === enemyDefender ? null
+          : m === myDefender ? 'my-defends'
+          : e === enemyDefender ? 'enemy-defends'
+          : 'refused';
+        expect(contextKind(model, m, e)).toBe(expected);
+      }
+    }
+  });
+
+  test('6×6 round 1: non-defender pairings stay undecided (refused attackers return to the pool)', () => {
+    const matrix = additiveMatrix([1, 2, 3, 0, -1, 2], [0, -1, 4, 2, -2, 1]);
+    const engine = new DraftEngine(matrix, null);
+    engine.solve();
+    const fresh = initDraft(matrix, 0.5);
+    const model = applyStep(fresh, engine.nodeResult(fresh.path), 0, 0);
+    expect(model.round).toBe(1);
+    expect(model.finalRound).toBe(2);
+    const { myDefender, enemyDefender } = model;
+    for (let m = 0; m < 6; m++) {
+      for (let e = 0; e < 6; e++) {
+        const expected =
+          m === myDefender && e === enemyDefender ? null
+          : m === myDefender ? 'my-defends'
+          : e === enemyDefender ? 'enemy-defends'
+          : null;
+        expect(contextKind(model, m, e)).toBe(expected);
+      }
+    }
   });
 });

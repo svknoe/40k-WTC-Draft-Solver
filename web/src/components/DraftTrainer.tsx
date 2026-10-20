@@ -5,6 +5,7 @@ import { sampleIndex } from '../draft/sampling';
 import type { DraftModel, FixedGame } from '../draft/draftState';
 import { applyStep, endgameNOf, enemyMoveId, finalRoundOf, initDraft, pairingLabel } from '../draft/draftState';
 import { enemyPairColIndex, pairChoiceIndex, projectedResult } from '../draft/cards';
+import type { Disposition } from '../model/dispositions';
 import { formatMatchupScore, formatTeamScore, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
 import type { SolveState } from '../worker/useSolve';
@@ -29,6 +30,13 @@ interface DraftTrainerProps {
   /** Notifies the app when a draft is in progress (not done), so it can lock the
    * Matrix tab while the draft depends on its numbers. */
   onLiveChange?: (live: boolean) => void;
+  /** Whether the Remaining matchups panel is open. Owned by the app so it
+   * survives the between-step placeholder and new drafts. */
+  remainingOpen: boolean;
+  onRemainingOpenChange: (open: boolean) => void;
+  /** Per-player dispositions, shown as pills in the Remaining matchups headers. */
+  myDispositions?: Disposition[];
+  enemyDispositions?: Disposition[];
 }
 
 const STAGE_COPY = {
@@ -56,7 +64,7 @@ const MAP_LABEL: Record<FixedGame['kind'], string> = {
   last: 'neutral',
 };
 
-export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onSolve, onEditMatrix, onLiveChange }: DraftTrainerProps) {
+export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onSolve, onEditMatrix, onLiveChange, remainingOpen, onRemainingOpenChange, myDispositions, enemyDispositions }: DraftTrainerProps) {
   const { myNames, enemyNames } = matrix;
   const [model, setModel] = useState<DraftModel | null>(null);
   const [history, setHistory] = useState<DraftModel[]>([]);
@@ -395,7 +403,15 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
 
       {showHints && <WhyPanel node={node} model={model} />}
 
-      <RemainingMatchups model={model} myNames={myNames} enemyNames={enemyNames} />
+      <RemainingMatchups
+        model={model}
+        myNames={myNames}
+        enemyNames={enemyNames}
+        open={remainingOpen}
+        onOpenChange={onRemainingOpenChange}
+        myDispositions={myDispositions}
+        enemyDispositions={enemyDispositions}
+      />
 
       <div className="locked">
         <div className="section-head">Locked pairings ({model.fixed.length})</div>

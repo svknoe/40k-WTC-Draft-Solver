@@ -112,7 +112,7 @@ select.disp.disp-unset { background: transparent; color: var(--text-4); border-c
 /* matchup tile: the value centred in the whole square (in both modes), with
  * the map A/B/C inputs overlaid as a darker strip along the bottom */
 td.cell { vertical-align: top; }
-.tile { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; }
+.tile { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; isolation: isolate; }
 /* blank cells only: the palette .pt-k classes own the fill of scored tiles */
 .tile.empty { background: var(--card-2); color: var(--text-4); }
 .tile-value { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;

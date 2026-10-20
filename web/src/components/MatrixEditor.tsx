@@ -218,7 +218,7 @@ export function MatrixEditor({
           </button>
           <button
             disabled={locked}
-            title="Fill every matchup with random 0-20 scores"
+            title="Random practice matchup: 0-20 scores on every map, plus a faction and disposition for each player"
             onClick={() => onMatrixChange(randomized(matrix))}
           >
             Random

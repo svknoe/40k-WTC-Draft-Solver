@@ -1,6 +1,7 @@
 import type { Matrix } from '../engine/types';
 import type { Disposition } from './dispositions';
-import { toDisposition } from './dispositions';
+import { DISPOSITIONS, toDisposition } from './dispositions';
+import { FACTIONS } from './factions';
 import { parseRating, toInputString, toScore } from './scale';
 
 /** Derived from the engine's Matrix so the two unions can never drift. */
@@ -195,12 +196,31 @@ export function cleared(n: MatrixSize): EditorMatrix {
   };
 }
 
-/** Rewrite every cell from three independent integer draws in 0-20 — one per
- * map — keeping all names and dispositions. The draws fill BOTH layers
+/** A shuffled copy (Fisher–Yates) driven by rng, which returns values in [0, 1). */
+function shuffled<T>(items: readonly T[], rng: () => number): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const k = Math.floor(rng() * (i + 1));
+    [out[i], out[k]] = [out[k], out[i]];
+  }
+  return out;
+}
+
+/** One team's random dispositions: every disposition once before any repeats,
+ * and none more than twice — so a team of 5+ fields each one 1-2 times, and a
+ * smaller team gets n distinct ones. Positions are shuffled too. */
+function randomDispositions(n: number, rng: () => number): Disposition[] {
+  const picks = [...shuffled(DISPOSITIONS, rng), ...shuffled(DISPOSITIONS, rng)].slice(0, n);
+  return shuffled(picks, rng);
+}
+
+/** A random practice matchup, keeping the team names. Every cell gets three
+ * independent integer draws in 0-20 — one per map — filling BOTH layers
  * regardless of the active mode: A/B/C take the draws in order and the single
  * rating takes their mean rounded to the nearest whole number (a mean of three
- * integers is never a .5 tie). rng is injectable for tests and must return
- * values in [0, 1). */
+ * integers is never a .5 tie). Each team then gets n distinct factions (both
+ * teams may share one) and random dispositions (see randomDispositions). rng
+ * is injectable for tests and must return values in [0, 1); cells draw first. */
 export function randomized(m: EditorMatrix, rng: () => number = Math.random): EditorMatrix {
   const draw = () => Math.floor(rng() * 21);
   // toInputString maps a drawn 0-20 score straight to its plain input string.
@@ -209,13 +229,14 @@ export function randomized(m: EditorMatrix, rng: () => number = Math.random): Ed
     const [a, b, c] = [draw(), draw(), draw()];
     return { maps: [asInput(a), asInput(b), asInput(c)], s: asInput(Math.round((a + b + c) / 3)) };
   };
+  const cells = m.cells.map((row) => row.map(cell));
   return {
     ...m,
-    myNames: [...m.myNames],
-    enemyNames: [...m.enemyNames],
-    myDispositions: [...m.myDispositions],
-    enemyDispositions: [...m.enemyDispositions],
-    cells: m.cells.map((row) => row.map(cell)),
+    myNames: shuffled(FACTIONS, rng).slice(0, m.n),
+    enemyNames: shuffled(FACTIONS, rng).slice(0, m.n),
+    myDispositions: randomDispositions(m.n, rng),
+    enemyDispositions: randomDispositions(m.n, rng),
+    cells,
   };
 }
 

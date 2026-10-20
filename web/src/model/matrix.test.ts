@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import type { Disposition } from './dispositions';
+import { DISPOSITIONS } from './dispositions';
+import { FACTIONS } from './factions';
 import {
   blank, cellValue, cleared, EditorCell, EditorMatrix, filledMaps, fromSaved, mapAverage, meanOf, randomized, resize,
   SavedMatrix, toEngineMatrix, toSaved, transpose,
@@ -200,11 +202,10 @@ describe('cleared', () => {
 });
 
 describe('randomized', () => {
-  test('fills all three maps and the single with integers 0-20, keeping names and dispositions', () => {
+  test('fills all three maps and the single with integers 0-20, keeping team names', () => {
     const m = randomized(sample4(), Math.random);
     expect(m.myTeam).toBe('Norway');
-    expect(m.myNames).toEqual(['A', 'B', 'C', 'D']);
-    expect(m.myDispositions).toEqual(['purge', 'hold', '', 'recon']);
+    expect(m.enemyTeam).toBe('Scotland');
     for (const row of m.cells) {
       for (const cell of row) {
         const maps = cell.maps.map(Number);
@@ -243,10 +244,52 @@ describe('randomized', () => {
     expect(randomized(sample4(), () => 0.999999).cells[0][0]).toEqual(c('20', '20', '20', '20'));
   });
 
-  test('always yields a valid matrix in both modes', () => {
-    const m = randomized(sample4(), Math.random);
-    expect(validateMatrix(m, false).ok).toBe(true);
-    expect(validateMatrix(m, true).ok).toBe(true);
+  test('always yields a valid matrix in both modes, even with a degenerate rng', () => {
+    for (const rng of [Math.random, () => 0, () => 0.999999]) {
+      const m = randomized(blank(8), rng);
+      expect(validateMatrix(m, false).ok).toBe(true);
+      expect(validateMatrix(m, true).ok).toBe(true);
+    }
+  });
+
+  const SIZES = [3, 4, 5, 6, 7, 8] as const;
+
+  test('gives each team distinct WTC factions (both teams may share one)', () => {
+    for (const n of SIZES) {
+      const m = randomized(blank(n), Math.random);
+      for (const names of [m.myNames, m.enemyNames]) {
+        expect(names).toHaveLength(n);
+        expect(names.every((f) => (FACTIONS as readonly string[]).includes(f))).toBe(true);
+        expect(new Set(names).size).toBe(n);
+      }
+    }
+  });
+
+  test('a team of 5+ fields every disposition at least once and at most twice', () => {
+    for (const n of [5, 6, 7, 8] as const) {
+      for (let run = 0; run < 20; run++) {
+        const m = randomized(blank(n), Math.random);
+        for (const dispositions of [m.myDispositions, m.enemyDispositions]) {
+          expect(dispositions).toHaveLength(n);
+          for (const d of DISPOSITIONS) {
+            const count = dispositions.filter((x) => x === d).length;
+            expect(count).toBeGreaterThanOrEqual(1);
+            expect(count).toBeLessThanOrEqual(2);
+          }
+        }
+      }
+    }
+  });
+
+  test('a team smaller than 5 gets distinct dispositions, none unset', () => {
+    for (const n of [3, 4] as const) {
+      const m = randomized(blank(n), Math.random);
+      for (const dispositions of [m.myDispositions, m.enemyDispositions]) {
+        expect(dispositions).toHaveLength(n);
+        expect(dispositions).not.toContain('');
+        expect(new Set(dispositions).size).toBe(n);
+      }
+    }
   });
 });
 

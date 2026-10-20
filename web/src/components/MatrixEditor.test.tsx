@@ -23,6 +23,11 @@ function valid4(): EditorMatrix {
   };
 }
 
+/** The players' current faction picks, read back from the grid's selects —
+ * Random rewrites them, and the cell aria-labels are built from them. */
+const factions = (side: 'Your' | 'Opponent'): string[] =>
+  [1, 2, 3, 4].map((k) => (screen.getByLabelText(`${side} player ${k} faction`) as HTMLSelectElement).value);
+
 function Harness({ initial }: { initial: EditorMatrix }) {
   const [matrix, setMatrix] = useState(initial);
   const [settings, setSettings] = useState<Settings>({ cb: false, simpleMode: false });
@@ -135,13 +140,29 @@ describe('MatrixEditor', () => {
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });
 
-  test('Random fills all three maps of every cell with integers 0-20, keeping names', async () => {
+  test('Random gives every player a distinct faction and a disposition, keeping team names', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />);
     await user.click(screen.getByRole('button', { name: 'Random' }));
     expect(screen.getByDisplayValue('Norway')).toBeInTheDocument();
-    for (const my of ['A', 'B', 'C', 'D']) {
-      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+    for (const side of ['Your', 'Opponent'] as const) {
+      const picks = factions(side);
+      expect(picks.every((f) => f !== '')).toBe(true);
+      expect(new Set(picks).size).toBe(4);
+      const dispositions = [1, 2, 3, 4].map((k) =>
+        (screen.getByLabelText(`${side} player ${k} disposition`) as HTMLSelectElement).value);
+      expect(dispositions).not.toContain('');
+      expect(new Set(dispositions).size).toBe(4); // a team of 4 can't field all five, so no repeats
+    }
+    expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
+  });
+
+  test('Random fills all three maps of every cell with integers 0-20', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.click(screen.getByRole('button', { name: 'Random' }));
+    for (const my of factions('Your')) {
+      for (const enemy of factions('Opponent')) {
         for (const letter of ['A', 'B', 'C']) {
           const raw = (screen.getByLabelText(`${my} vs ${enemy} map ${letter}`) as HTMLInputElement).value;
           expect(raw).not.toBe('');
@@ -160,8 +181,8 @@ describe('MatrixEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Random' }));
 
     const means: Record<string, number> = {};
-    for (const my of ['A', 'B', 'C', 'D']) {
-      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+    for (const my of factions('Your')) {
+      for (const enemy of factions('Opponent')) {
         const maps = ['A', 'B', 'C'].map((letter) =>
           Number((screen.getByLabelText(`${my} vs ${enemy} map ${letter}`) as HTMLInputElement).value));
         means[`${my}-${enemy}`] = (maps[0] + maps[1] + maps[2]) / 3;
@@ -169,8 +190,8 @@ describe('MatrixEditor', () => {
     }
 
     await user.click(screen.getByRole('button', { name: 'Single rating' }));
-    for (const my of ['A', 'B', 'C', 'D']) {
-      for (const enemy of ['W', 'X', 'Y', 'Z']) {
+    for (const my of factions('Your')) {
+      for (const enemy of factions('Opponent')) {
         const single = Number((screen.getByLabelText(`${my} vs ${enemy}`) as HTMLInputElement).value);
         expect(single).toBe(Math.round(means[`${my}-${enemy}`]));
       }

@@ -2,8 +2,8 @@ import { fromSaved, toSaved } from './matrix';
 import type { EditorMatrix, SavedMatrix } from './matrix';
 
 const FORMAT = 'wtc-matrix';
-/** v2: cells are { maps: [A, B, C], s } and players carry dispositions. v1
- * files ({ b, w } cells) still import — fromSaved migrates them. */
+/** v2: cells are { maps: [A, B, C], s }, players carry dispositions, and
+ * neutralMap names the neutral-game map. Only v2 imports. */
 const VERSION = 2;
 const UNREADABLE = 'Could not read that file — expected a matrix JSON exported from this app.';
 
@@ -23,7 +23,8 @@ export function importJson(text: string): EditorMatrix {
   } catch {
     throw new Error(UNREADABLE);
   }
-  if (typeof data !== 'object' || data === null || (data as { format?: unknown }).format !== FORMAT) {
+  const header = data as { format?: unknown; version?: unknown } | null;
+  if (typeof data !== 'object' || header === null || header.format !== FORMAT || header.version !== VERSION) {
     throw new Error(UNREADABLE);
   }
   return fromSaved(data as SavedMatrix);

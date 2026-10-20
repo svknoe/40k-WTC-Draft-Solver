@@ -1,5 +1,5 @@
-import type { EditorCell, EditorMatrix } from './matrix';
-import { MAP_LETTERS, resolveNames } from './matrix';
+import type { EditorCell, EditorMatrix, MapLetter } from './matrix';
+import { MAP_LETTERS, mapIndex, resolveNames } from './matrix';
 import { parseRating, toScore } from './scale';
 
 export interface ValidationResult {
@@ -12,11 +12,11 @@ export interface ValidationResult {
 
 /** Validate one cell's ACTIVE layer only — the inactive layer may legitimately
  * be blank or in-progress (§ independent layers) and must never block Solve.
- * Simple mode checks the single rating `s`; by-map mode needs at least one map
+ * Simple mode checks the single rating `s`; by-map mode needs the neutral map
  * filled and every filled map valid (no ordering rule: the solver takes the
  * max/min). A single game is played on one map, so every score must be a whole
  * number. */
-function cellError(cell: EditorCell, simple: boolean): string | null {
+function cellError(cell: EditorCell, simple: boolean, neutralMap: MapLetter): string | null {
   if (simple) {
     let single: number;
     try {
@@ -28,10 +28,8 @@ function cellError(cell: EditorCell, simple: boolean): string | null {
     return null;
   }
 
-  let filled = 0;
   for (const [k, raw] of cell.maps.entries()) {
     if (raw.trim() === '') continue;
-    filled += 1;
     const letter = MAP_LETTERS[k];
     let value: number;
     try {
@@ -41,17 +39,18 @@ function cellError(cell: EditorCell, simple: boolean): string | null {
     }
     if (!Number.isInteger(value)) return `Map ${letter} (${toScore(value)}) must be a whole number.`;
   }
-  return filled === 0 ? 'Enter at least one map rating.' : null;
+  if (cell.maps[mapIndex(neutralMap)].trim() === '') return `Map ${neutralMap} is the neutral map — fill it in.`;
+  return null;
 }
 
-/** Validate an EditorMatrix: the active rating layer parseable (at least one
- * whole-number map per cell in by-map mode); no two players on the SAME team
+/** Validate an EditorMatrix: the active rating layer parseable (whole-number
+ * maps, the neutral map filled, per cell in by-map mode); no two players on the SAME team
  * resolve to the same display label. A player may be left unset (the Player N /
  * Opponent K dropdown default, stored as ''), and the same faction may appear on
  * both teams. The worker assumes a clean Matrix, so the UI gates `solve` on `ok`. `simple` selects
  * which layer to validate, defaulting to by-map. */
 export function validateMatrix(m: EditorMatrix, simple = false): ValidationResult {
-  const cellErrors = m.cells.map((row) => row.map((cell) => cellError(cell, simple)));
+  const cellErrors = m.cells.map((row) => row.map((cell) => cellError(cell, simple, m.neutralMap)));
   const globalErrors: string[] = [];
 
   // Check distinctness on the RESOLVED names (unset '' filled with its

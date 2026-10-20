@@ -18,6 +18,7 @@ function valid4(): EditorMatrix {
     enemyNames: ['W', 'X', 'Y', 'Z'],
     myDispositions: ['', '', '', ''],
     enemyDispositions: ['', '', '', ''],
+    neutralMap: 'A',
     cells: Array.from({ length: 4 }, () =>
       Array.from({ length: 4 }, () => ({ maps: ['12', '9', ''] as [string, string, string], s: '10' }))),
   };
@@ -135,7 +136,7 @@ describe('MatrixEditor', () => {
     expect(screen.queryByDisplayValue('Norway')).not.toBeInTheDocument();
     // Unset names fall back to the terse P/E cell aria-label.
     expect(screen.getByLabelText('P1 vs E1 map A')).toHaveValue('10');
-    expect(screen.getByLabelText('P1 vs E1 map B')).toHaveValue('');
+    expect(screen.getByLabelText('P1 vs E1 map B')).toHaveValue('10');
     // Still solvable straight away.
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });

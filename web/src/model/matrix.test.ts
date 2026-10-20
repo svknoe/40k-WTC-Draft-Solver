@@ -1,10 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import type { Disposition } from './dispositions';
 import { DISPOSITIONS } from './dispositions';
 import { FACTIONS } from './factions';
 import {
-  blank, cellValue, cleared, EditorCell, EditorMatrix, filledMaps, fromSaved, mapAverage, meanOf, randomized, resize,
-  SavedMatrix, toEngineMatrix, toSaved, transpose,
+  blank, cellValue, cleared, EditorCell, EditorMatrix, filledMaps, fromSaved, mapAverage, mapIndex, meanOf, randomized,
+  resize, SavedMatrix, singleFromMaps, toEngineMatrix, toSaved, transpose,
 } from './matrix';
 import { validateMatrix } from './validation';
 
@@ -19,6 +18,7 @@ function sample4(): EditorMatrix {
     enemyNames: ['W', 'X', 'Y', 'Z'],
     myDispositions: ['purge', 'hold', '', 'recon'],
     enemyDispositions: ['', 'disrupt', 'priority', ''],
+    neutralMap: 'A',
     cells: [
       [c('15', '9', '12', '12'), c('11', '10', '', '11'), c('10', '8', '', '9'), c('13', '', '', '13')],
       [c('9', '7', '', '8'), c('12', '11', '', '12'), c('14', '10', '12', '12'), c('8', '6', '', '7')],
@@ -40,6 +40,13 @@ describe('blank', () => {
     expect(m.myNames.every((s) => s === '')).toBe(true);
     expect(m.myDispositions).toEqual(['', '', '', '', '', '']);
     expect(m.enemyDispositions).toEqual(['', '', '', '', '', '']);
+    expect(m.neutralMap).toBe('A');
+  });
+});
+
+describe('mapIndex', () => {
+  test('maps the letters to storage indices', () => {
+    expect([mapIndex('A'), mapIndex('B'), mapIndex('C')]).toEqual([0, 1, 2]);
   });
 });
 
@@ -72,18 +79,26 @@ describe('filledMaps / mapAverage / cellValue', () => {
 });
 
 describe('toEngineMatrix', () => {
-  test('by-map mode sends best = max and worst = min of the filled maps', () => {
+  test('by-map mode sends best = max, worst = min and the neutral map as neutral', () => {
     const e = toEngineMatrix(sample4(), false);
     expect(e.n).toBe(4);
     expect(e.myNames).toEqual(['A', 'B', 'C', 'D']);
     expect(e.enemyNames).toEqual(['W', 'X', 'Y', 'Z']);
-    expect(e.cells[0][0]).toEqual({ best: 5, worst: -1 }); // maps 15/9/12
-    expect(e.cells[0][3]).toEqual({ best: 3, worst: 3 }); // one map, 13
-    expect(e.cells[2][0]).toEqual({ best: 0, worst: 0 }); // 10/10/10 -> even
+    expect(e.cells[0][0]).toEqual({ best: 5, worst: -1, neutral: 5 }); // maps 15/9/12, neutral A
+    expect(e.cells[0][3]).toEqual({ best: 3, worst: 3, neutral: 3 }); // one map, 13
+    expect(e.cells[2][0]).toEqual({ best: 0, worst: 0, neutral: 0 }); // 10/10/10 -> even
+  });
+
+  test('the neutral value follows the chosen neutral map', () => {
+    // sample4 leaves some maps blank; fill them so every map can be neutral.
+    const full = sample4();
+    full.cells = full.cells.map((row) => row.map((cell) => c(cell.maps[0], cell.maps[1] || '10', cell.maps[2] || '10', cell.s)));
+    expect(toEngineMatrix({ ...full, neutralMap: 'C' }, false).cells[0][0]).toEqual({ best: 5, worst: -1, neutral: 2 }); // C = 12
+    expect(toEngineMatrix({ ...full, neutralMap: 'B' }, false).cells[0][0]).toEqual({ best: 5, worst: -1, neutral: -1 }); // B = 9
   });
 
   test('defaults to by-map mode when no flag is passed', () => {
-    expect(toEngineMatrix(sample4()).cells[0][0]).toEqual({ best: 5, worst: -1 });
+    expect(toEngineMatrix(sample4()).cells[0][0]).toEqual({ best: 5, worst: -1, neutral: 5 });
   });
 
   test('fills unset (empty) names with the positional Player/Opponent label', () => {
@@ -95,19 +110,22 @@ describe('toEngineMatrix', () => {
     expect(e.enemyNames).toEqual(['Opponent 1', 'Opponent 2', 'Opponent 3', 'Opponent 4']);
   });
 
-  test('simple mode uses the single rating for both maps, ignoring the maps', () => {
+  test('simple mode uses the single rating for best, worst and neutral, ignoring the maps', () => {
     const e = toEngineMatrix(sample4(), true);
-    expect(e.cells[0][0]).toEqual({ best: 2, worst: 2 }); // s = 12 -> +2 on both
-    expect(e.cells[2][0]).toEqual({ best: 0, worst: 0 });
+    expect(e.cells[0][0]).toEqual({ best: 2, worst: 2, neutral: 2 }); // s = 12 -> +2
+    expect(e.cells[2][0]).toEqual({ best: 0, worst: 0, neutral: 0 });
   });
 
-  test('by-map mode throws on an unparseable map or a cell with no map', () => {
+  test('by-map mode throws on an unparseable map or a blank neutral map', () => {
     const bad = sample4();
     bad.cells[1][1] = c('x', '5', '', '8');
     expect(() => toEngineMatrix(bad, false)).toThrow(RangeError);
     const empty = sample4();
     empty.cells[1][1] = c('', '', '', '8');
     expect(() => toEngineMatrix(empty, false)).toThrow(RangeError);
+    const noNeutral = { ...sample4(), neutralMap: 'C' as const };
+    noNeutral.cells[0][3] = c('13', '', '', '13');
+    expect(() => toEngineMatrix(noNeutral, false)).toThrow(RangeError);
   });
 
   test('simple mode throws when the single rating is unparseable', () => {
@@ -134,7 +152,11 @@ describe('transpose (swap which side you captain)', () => {
     const before = toEngineMatrix(sample4(), false).cells[0][1]; // best 1, worst 0
     const after = toEngineMatrix(transpose(sample4()), false).cells[1][0];
     // `0 - x` rather than `-x`: toEqual distinguishes -0 from +0, and worst is 0 here.
-    expect(after).toEqual({ best: 0 - before.worst, worst: 0 - before.best });
+    expect(after).toEqual({ best: 0 - before.worst, worst: 0 - before.best, neutral: 0 - (before.neutral as number) });
+  });
+
+  test('keeps the neutral map (a map keeps its letter)', () => {
+    expect(transpose({ ...sample4(), neutralMap: 'B' }).neutralMap).toBe('B');
   });
 
   test('is an involution on a numeric matrix', () => {
@@ -166,6 +188,11 @@ describe('resize', () => {
     expect(grown.enemyDispositions).toEqual(['', 'disrupt', 'priority', '', '', '']);
   });
 
+  test('keeps the neutral map', () => {
+    expect(resize({ ...sample4(), neutralMap: 'B' }, 6).neutralMap).toBe('B');
+    expect(resize({ ...sample4(), neutralMap: 'B' }, 3).neutralMap).toBe('B');
+  });
+
   test('shrinking truncates dispositions', () => {
     expect(resize(sample4(), 3).myDispositions).toEqual(['purge', 'hold', '']);
   });
@@ -179,7 +206,7 @@ describe('resize', () => {
 });
 
 describe('cleared', () => {
-  test('resets names and dispositions, and sets map A and the single to an even 10', () => {
+  test('resets names and dispositions, and sets all three maps and the single to an even 10', () => {
     const m = cleared(5);
     expect(m.n).toBe(5);
     expect(m.myTeam).toBe('');
@@ -190,7 +217,7 @@ describe('cleared', () => {
     expect(m.enemyDispositions).toEqual(['', '', '', '', '']);
     for (const row of m.cells) {
       expect(row).toHaveLength(5);
-      for (const cell of row) expect(cell).toEqual(c('10', '', '', '10'));
+      for (const cell of row) expect(cell).toEqual(c('10', '10', '10', '10'));
     }
   });
 
@@ -198,6 +225,12 @@ describe('cleared', () => {
     const m = cleared(4);
     expect(validateMatrix(m, false).ok).toBe(true);
     expect(validateMatrix(m, true).ok).toBe(true);
+  });
+
+  test('is valid whichever map is the neutral map', () => {
+    for (const neutralMap of ['A', 'B', 'C'] as const) {
+      expect(validateMatrix({ ...cleared(4), neutralMap }, false).ok).toBe(true);
+    }
   });
 });
 
@@ -312,84 +345,51 @@ describe('fromSaved sizes 3-8', () => {
   });
 });
 
-describe('fromSaved default-name migration', () => {
-  test('old literal "Player N" / "Opponent K" defaults become the unset sentinel', () => {
-    const saved: SavedMatrix = {
-      ...toSaved(blank(3)),
-      myNames: ['Player 1', 'Necrons', 'Player 3'],
-      enemyNames: ['Opponent 1', 'Opponent 2', 'Orks'],
-    };
-    const m = fromSaved(saved);
-    expect(m.myNames).toEqual(['', 'Necrons', '']);
-    expect(m.enemyNames).toEqual(['', '', 'Orks']);
-  });
-
-  test('a genuine free-text name that is not its positional default is preserved', () => {
-    const saved: SavedMatrix = {
-      ...toSaved(blank(3)),
-      myNames: ['Player 2', 'Bob', ''],
-      enemyNames: ['x', 'y', 'z'],
-    };
-    expect(fromSaved(saved).myNames).toEqual(['Player 2', 'Bob', '']);
-  });
-});
-
 describe('fromSaved dispositions', () => {
-  test('a save without dispositions loads them unset; unknown values become unset', () => {
+  test('unknown disposition values load as unset', () => {
     const saved: SavedMatrix = toSaved(blank(3));
-    delete saved.myDispositions;
-    saved.enemyDispositions = ['purge', 'bogus', 'hold'] as unknown as Disposition[];
-    const m = fromSaved(saved);
-    expect(m.myDispositions).toEqual(['', '', '']);
-    expect(m.enemyDispositions).toEqual(['purge', '', 'hold']);
+    saved.enemyDispositions = ['purge', 'bogus', 'hold'] as unknown as SavedMatrix['enemyDispositions'];
+    expect(fromSaved(saved).enemyDispositions).toEqual(['purge', '', 'hold']);
   });
 });
 
-describe('fromSaved legacy best/worst cells', () => {
-  // A 3×3 save whose top row carries the cells under test; the rest are blank
-  // legacy cells. Mimics data written before map A/B/C existed.
-  const savedRaw = (row0: object[]): SavedMatrix => {
-    const legacy = { b: '', w: '' };
-    return {
-      myTeam: '', enemyTeam: '',
-      myNames: ['a', 'b', 'c'], enemyNames: ['x', 'y', 'z'],
-      cells: [row0, [legacy, legacy, legacy], [legacy, legacy, legacy]],
-    } as unknown as SavedMatrix;
-  };
-
-  test('best/worst become maps A and B, keeping an existing single rating', () => {
-    const m = fromSaved(savedRaw([{ b: '15', w: '9', s: '11' }, { b: '', w: '' }, { b: '', w: '' }]));
-    expect(m.cells[0][0]).toEqual(c('15', '9', '', '11'));
-    expect(m.cells[1][0]).toEqual(c('', '', '', ''));
+describe('fromSaved formats', () => {
+  test('a cell without a maps array is malformed', () => {
+    const saved = toSaved(blank(3));
+    const legacy = { b: '15', w: '9' } as unknown as EditorCell;
+    saved.cells = [[legacy, legacy, legacy], saved.cells[1], saved.cells[2]];
+    expect(() => fromSaved(saved)).toThrow(/Malformed/);
   });
 
-  test('migrated cells solve exactly as before (max/min = old best/worst)', () => {
-    const m = fromSaved(savedRaw([{ b: '15', w: '9' }, { b: '', w: '' }, { b: '', w: '' }]));
-    const v = filledMaps(m.cells[0][0]);
-    expect([Math.max(...v), Math.min(...v)]).toEqual([5, -1]);
+  test('a short maps array is padded and a missing single rating stays blank', () => {
+    const saved = toSaved(blank(3));
+    saved.cells[0][0] = { maps: ['14'] } as unknown as EditorCell;
+    expect(fromSaved(saved).cells[0][0]).toEqual(c('14', '', '', ''));
   });
 
-  test('a missing single is derived: equal pair copies, spread pair takes the half-up average', () => {
-    const m = fromSaved(savedRaw([{ b: '12', w: '12' }, { b: '0', w: '0' }, { b: '15', w: '10' }]));
-    expect(m.cells[0][0].s).toBe('12');
-    expect(m.cells[0][1].s).toBe('0');
-    expect(m.cells[0][2].s).toBe('13'); // 12.5 -> 13
+  test('a missing or unknown neutralMap loads as A; C round-trips', () => {
+    const saved = toSaved(blank(3));
+    delete saved.neutralMap;
+    expect(fromSaved(saved).neutralMap).toBe('A');
+    expect(fromSaved({ ...saved, neutralMap: 'Z' as unknown as 'A' }).neutralMap).toBe('A');
+    expect(fromSaved(toSaved({ ...blank(3), neutralMap: 'C' })).neutralMap).toBe('C');
   });
 
-  test('an unparseable pair derives a blank single', () => {
-    const m = fromSaved(savedRaw([{ b: 'x', w: '5' }, { b: '', w: '' }, { b: '', w: '' }]));
-    expect(m.cells[0][0].s).toBe('');
+  test('names are no longer rewritten ("Player 1" stays "Player 1")', () => {
+    const saved: SavedMatrix = { ...toSaved(blank(3)), myNames: ['Player 1', 'Necrons', ''] };
+    expect(fromSaved(saved).myNames).toEqual(['Player 1', 'Necrons', '']);
+  });
+});
+
+describe('singleFromMaps', () => {
+  test('is the rounded mean of the filled maps', () => {
+    expect(singleFromMaps(['15', '9', '13'])).toBe('12');
+    expect(singleFromMaps(['15', '10', ''])).toBe('13'); // 12.5 -> 13
   });
 
-  test('a current-format cell passes through; a short maps array is padded', () => {
-    const m = fromSaved(savedRaw([
-      { maps: ['15', '9', '13'], s: '11' },
-      { maps: ['15', '9', '13'] }, // no single: mean 12.33 -> 12
-      { maps: ['14'] },
-    ]));
-    expect(m.cells[0][0]).toEqual(c('15', '9', '13', '11'));
-    expect(m.cells[0][1]).toEqual(c('15', '9', '13', '12'));
-    expect(m.cells[0][2]).toEqual(c('14', '', '', '14'));
+  test('is blank when nothing is filled or a map is unparseable', () => {
+    expect(singleFromMaps(['', '', ''])).toBe('');
+    expect(singleFromMaps(['x', '1', ''])).toBe('');
   });
 });
 

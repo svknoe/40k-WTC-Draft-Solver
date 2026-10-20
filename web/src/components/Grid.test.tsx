@@ -17,6 +17,7 @@ function matrix(overrides: Partial<EditorMatrix> = {}): EditorMatrix {
     enemyNames: ['', '', ''],
     myDispositions: ['', '', ''],
     enemyDispositions: ['', '', ''],
+    neutralMap: 'A',
     cells: Array.from({ length: n }, () =>
       Array.from({ length: n }, () => ({ maps: ['10', '10', ''] as [string, string, string], s: '10' }))),
     ...overrides,

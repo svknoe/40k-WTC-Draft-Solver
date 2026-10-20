@@ -18,6 +18,7 @@ function editor4(): EditorMatrix {
     enemyNames: ['w', 'x', 'y', 'z'],
     myDispositions: ['', '', '', ''],
     enemyDispositions: ['', '', '', ''],
+    neutralMap: 'A',
     cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ maps: ['12', '9', ''] as [string, string, string], s: '10' }))),
   };
 }

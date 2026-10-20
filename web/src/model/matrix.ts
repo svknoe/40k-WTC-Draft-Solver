@@ -25,7 +25,7 @@ const toMapLetter = (raw: unknown): MapLetter =>
 /** One editor cell: 0-20 strings AS TYPED. Storing raw strings tolerates
  * in-progress/invalid edits and round-trips losslessly; conversion to the
  * internal scale happens on solve (docs/web-design.md §4.2). The map ratings
- * `maps` (A, B, C — any 1 to 3 may be filled) and the single rating `s` are
+ * `maps` (A, B, C — 1 to 3 may be filled, one of which must be the matrix's neutral map) and the single rating `s` are
  * independent layers: the active rating mode decides which is edited,
  * validated and solved, and only Clear / Random / import / paste write both,
  * so switching modes never destroys data. */
@@ -298,7 +298,7 @@ export function singleFromMaps(maps: MapTriple): string {
 
 /** Read one saved cell. A cell must carry a `maps` array (padded to three);
  * anything else is malformed — older formats are not supported. */
-export function readCell(raw: unknown): EditorCell {
+function readCell(raw: unknown): EditorCell {
   const cell = raw as { maps?: unknown; s?: unknown } | null;
   if (!cell || !Array.isArray(cell.maps)) throw new Error('Malformed matrix cell.');
   const str = (v: unknown): string => (v === undefined || v === null ? '' : String(v));
@@ -323,6 +323,8 @@ export function fromSaved(s: SavedMatrix): EditorMatrix {
   for (const row of s.cells) {
     if (row?.length !== n) throw new Error(`Expected ${n} columns per row, got ${row?.length}.`);
   }
+  const allStrings = (names: unknown[]): boolean => names.every((x) => typeof x === 'string');
+  if (!allStrings(s.myNames) || !allStrings(s.enemyNames)) throw new Error('Malformed player names.');
   return {
     n,
     myTeam: s.myTeam ?? '',

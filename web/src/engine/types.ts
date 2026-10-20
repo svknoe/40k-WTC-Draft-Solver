@@ -59,7 +59,8 @@ export interface SolveRequest {
   matrix: Matrix;
   /** k-restriction (null = exact). */
   k: number | null;
-  /** Neutral-game weight w (default 0.5 = midpoint). */
+  /** Fallback weight w (default 0.5 = midpoint) for cells without a `neutral`
+   * value; the app always sends per-cell `neutral` values. */
   neutralWeight?: number;
 }
 

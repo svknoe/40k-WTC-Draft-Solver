@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useId, useRef, useState, type ChangeEvent } from 'react';
 import type { Disposition } from '../model/dispositions';
 import { exportJson, importJson } from '../model/exchange';
 import type { EditorCell, EditorMatrix, MatrixSize } from '../model/matrix';
@@ -48,6 +48,7 @@ export function MatrixEditor({
   const [pasteOpen, setPasteOpen] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const neutralLabelId = useId();
 
   const validation = validateMatrix(matrix, settings.simpleMode);
   const update = (partial: Partial<EditorMatrix>) => onMatrixChange({ ...matrix, ...partial });
@@ -235,9 +236,9 @@ export function MatrixEditor({
           {!settings.simpleMode && (
             // One unit, so a narrow controls row never wraps the label away
             // from its buttons.
-            <span className="neutral-pick">
-              <span className="neutral-label" id="neutral-map-label">Neutral games on</span>
-              <div className="segmented" role="group" aria-labelledby="neutral-map-label">
+            <div className="neutral-pick">
+              <span className="neutral-label" id={neutralLabelId}>Neutral games on</span>
+              <div className="segmented" role="group" aria-labelledby={neutralLabelId}>
                 {MAP_LETTERS.map((letter) => {
                   const isOn = matrix.neutralMap === letter;
                   return (
@@ -254,7 +255,7 @@ export function MatrixEditor({
                   );
                 })}
               </div>
-            </span>
+            </div>
           )}
           <button
             onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}

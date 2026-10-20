@@ -250,7 +250,9 @@ losslessly, tolerates in-progress/invalid edits).
   `"format": "wtc-matrix", "version": 2` header, including `neutralMap`. Import accepts
   v2 only (v1 `{b, w}` and other legacy formats are rejected). Human-portable, re-importable.
 - **Paste-from-spreadsheet** cells accept an `a/b/c` triple (maps A/B/C) or a single number
-  (the same score on all three maps and the single rating); any other token is a blank cell.
+  (the same score on all three maps and the single rating); a slash token that isn't exactly three values is a blank cell; any other token is written
+  as-is to all three maps (and the single rating) and flagged by validation if it isn't a 0-20
+  whole number.
 - **Deferred (post-MVP):** round-trip with the repo's `pairing_matrix_best.csv` +
   `pairing_matrix_worst.csv` so captains can move a matrix between the CLI and the web
   app. Nice-to-have; not required for the train-against-the-bot MVP. Revisit if users ask.

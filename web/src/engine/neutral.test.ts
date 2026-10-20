@@ -49,6 +49,12 @@ describe('per-cell neutral value', () => {
     expect(viaNeutral).toBeCloseTo(viaWeight, 9);
   });
 
+  test('k-restriction saturates at k = n - 1 with non-midpoint neutrals (n=6)', () => {
+    const m = spreadMatrix(6, (b, w) => w + (((b * 3 + w * 5 + 6) % 5) / 4) * (b - w));
+    const exact = solve(m);
+    expect(new DraftEngine(m, 5, 0.5).solve()).toBeCloseTo(exact, 9);
+  });
+
   test.each([5, 6] as const)('the brute-force reference honours per-cell neutral at n=%i', (n) => {
     // Non-midpoint, non-uniform neutrals: some at worst, some at best, some between.
     const m = spreadMatrix(n, (b, w) => w + (((b * 3 + w * 5 + n) % 5) / 4) * (b - w));

@@ -382,6 +382,12 @@ describe('fromSaved formats', () => {
     expect(fromSaved(toSaved({ ...blank(3), neutralMap: 'C' })).neutralMap).toBe('C');
   });
 
+  test('non-string player names are malformed', () => {
+    const saved = toSaved(blank(3));
+    saved.myNames = [null, 'b', 'c'] as unknown as string[];
+    expect(() => fromSaved(saved)).toThrow(/Malformed/);
+  });
+
   test('names are no longer rewritten ("Player 1" stays "Player 1")', () => {
     const saved: SavedMatrix = { ...toSaved(blank(3)), myNames: ['Player 1', 'Necrons', ''] };
     expect(fromSaved(saved).myNames).toEqual(['Player 1', 'Necrons', '']);

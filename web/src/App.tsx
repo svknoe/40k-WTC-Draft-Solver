@@ -139,7 +139,9 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
         </button>
       </header>
 
-      <main className="app-main">
+      {/* The matrix grid gets a wider page so its tiles (and the disposition
+          pills over them) have room; the other screens keep the reading width. */}
+      <main className={screen === 'editor' ? 'app-main wide' : 'app-main'}>
         {screen === 'editor' && (
           <MatrixEditor
             matrix={matrix}

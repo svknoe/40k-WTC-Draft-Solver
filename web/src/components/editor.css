@@ -49,14 +49,14 @@
 
 .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 
-/* grid — square, palette-filled tiles. Columns: row header + n tiles. The
+/* grid — square, palette-filled tiles. Columns: row header (11rem) + n tiles + AVG (4rem). The
  * table asks for tiles of up to 6rem and shrinks to its container
  * (table-layout: fixed shares the width evenly); the min-width trips the
  * horizontal-scroll fallback on narrow screens. --n is set inline by Grid. */
 .grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-2); }
 table.grid {
   border-collapse: separate; border-spacing: 3px; table-layout: fixed;
-  width: calc(11rem + var(--n) * 6rem); max-width: 100%; min-width: calc(11rem + var(--n) * 3.5rem);
+  width: calc(15rem + var(--n) * 6rem); max-width: 100%; min-width: calc(15rem + var(--n) * 3.5rem);
 }
 table.grid th, table.grid td { padding: 0; }
 table.grid .corner { width: 11rem; color: var(--text-4); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
@@ -64,6 +64,11 @@ table.grid .corner { width: 11rem; color: var(--text-4); font-size: 0.66rem; tex
   position: sticky; left: 0; background: var(--bg-2); z-index: 2; }
 table.grid .col-head { vertical-align: bottom; }
 table.grid .row-head { position: sticky; left: 0; background: var(--bg-2); z-index: 1; vertical-align: middle; }
+table.grid .avg-head { width: 4rem; color: var(--text-4); font-size: 0.66rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.03em; vertical-align: bottom; padding-bottom: 0.35rem; }
+table.grid .avg-head.row { text-align: right; padding: 0.35rem 0.5rem; position: sticky; left: 0; background: var(--bg-2); }
+table.grid td.avg { text-align: center; vertical-align: middle; color: var(--text-2);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.85rem; padding: 0.35rem 0; }
 
 /* player headers: a wrapping faction label with the native select laid
  * transparently over it (so long factions read in full), plus a disposition pill */

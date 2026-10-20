@@ -89,6 +89,13 @@ export function cellValue(cell: EditorCell, simple: boolean): number | null {
   }
 }
 
+/** The mean of the non-null values, or null when there are none — the
+ * matrix's AVG row/column, which skip blank cells. */
+export function meanOf(values: readonly (number | null)[]): number | null {
+  const present = values.filter((v): v is number => v !== null);
+  return present.length === 0 ? null : present.reduce((a, b) => a + b, 0) / present.length;
+}
+
 export function blank(n: MatrixSize): EditorMatrix {
   return {
     n,

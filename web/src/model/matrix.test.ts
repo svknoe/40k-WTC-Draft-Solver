@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import type { Disposition } from './dispositions';
 import {
-  blank, cellValue, cleared, EditorCell, EditorMatrix, filledMaps, fromSaved, mapAverage, randomized, resize,
+  blank, cellValue, cleared, EditorCell, EditorMatrix, filledMaps, fromSaved, mapAverage, meanOf, randomized, resize,
   SavedMatrix, toEngineMatrix, toSaved, transpose,
 } from './matrix';
 import { validateMatrix } from './validation';
@@ -347,5 +347,17 @@ describe('fromSaved legacy best/worst cells', () => {
     expect(m.cells[0][0]).toEqual(c('15', '9', '13', '11'));
     expect(m.cells[0][1]).toEqual(c('15', '9', '13', '12'));
     expect(m.cells[0][2]).toEqual(c('14', '', '', '14'));
+  });
+});
+
+describe('meanOf', () => {
+  test('averages the non-null values', () => {
+    expect(meanOf([11, null, 15])).toBe(13);
+    expect(meanOf([10, 10, 11])).toBeCloseTo(10.333, 3);
+  });
+
+  test('is null when there is nothing to average', () => {
+    expect(meanOf([])).toBeNull();
+    expect(meanOf([null, null])).toBeNull();
   });
 });

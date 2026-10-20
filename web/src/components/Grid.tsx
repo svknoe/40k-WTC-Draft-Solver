@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { Disposition } from '../model/dispositions';
 import { DISPOSITIONS, DISPOSITION_LABELS } from '../model/dispositions';
 import type { EditorCell, EditorMatrix, MapTriple } from '../model/matrix';
-import { MAP_LETTERS, cellValue, defaultEnemyName, defaultMyName } from '../model/matrix';
+import { MAP_LETTERS, cellValue, defaultEnemyName, defaultMyName, meanOf } from '../model/matrix';
 import { FACTIONS, FACTION_SET } from '../model/factions';
 import { formatMatchupScore } from '../model/scale';
 import { pointClass } from './palette';
@@ -156,6 +156,9 @@ function MatrixCell({ cell, simpleMode, label, error, readOnly, onChange }: Matr
   );
 }
 
+/** An AVG row/column entry: always one decimal, a dash when nothing is filled. */
+const formatAverage = (value: number | null): string => (value === null ? '–' : value.toFixed(1));
+
 export function Grid({
   matrix, simpleMode, cellErrors, readOnly = false,
   onCellChange, onMyName, onEnemyName, onMyDisposition, onEnemyDisposition,
@@ -166,6 +169,9 @@ export function Grid({
   // `f !== value` guard keeps a player's own faction selectable).
   const myTaken = new Set(myNames.map((s) => s.trim()).filter(Boolean));
   const enemyTaken = new Set(enemyNames.map((s) => s.trim()).filter(Boolean));
+  const values = cells.map((row) => row.map((cell) => cellValue(cell, simpleMode)));
+  const rowLabel = (i: number) => myNames[i] || `P${i + 1}`;
+  const colLabel = (j: number) => enemyNames[j] || `E${j + 1}`;
 
   return (
     <div className="grid-scroll">
@@ -193,6 +199,7 @@ export function Grid({
                 />
               </th>
             ))}
+            <th className="avg-head">avg</th>
           </tr>
         </thead>
         <tbody>
@@ -222,15 +229,27 @@ export function Grid({
                   key={j}
                   cell={cell}
                   simpleMode={simpleMode}
-                  label={`${rowName || `P${i + 1}`} vs ${enemyNames[j] || `E${j + 1}`}`}
+                  label={`${rowLabel(i)} vs ${colLabel(j)}`}
                   error={cellErrors[i][j]}
                   readOnly={readOnly}
                   onChange={(next) => onCellChange(i, j, next)}
                 />
               ))}
+              <td className="avg" aria-label={`${rowLabel(i)} average`}>{formatAverage(meanOf(values[i]))}</td>
             </tr>
           ))}
         </tbody>
+        <tfoot>
+          <tr>
+            <th className="avg-head row">avg</th>
+            {enemyNames.map((_, j) => (
+              <td key={j} className="avg" aria-label={`${colLabel(j)} average`}>
+                {formatAverage(meanOf(values.map((row) => row[j])))}
+              </td>
+            ))}
+            <td />
+          </tr>
+        </tfoot>
       </table>
     </div>
   );

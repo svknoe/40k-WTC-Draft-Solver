@@ -204,3 +204,30 @@ describe('Grid player headers', () => {
     expect(sel('Opponent player 1 disposition')).toBeDisabled();
   });
 });
+
+describe('Grid averages', () => {
+  test('AVG column and row average the shown values, one decimal, skipping blanks', () => {
+    const m = matrix(); // every cell 10/10 -> 10
+    m.cells[0][0] = { maps: ['12', '10', ''], s: '10' }; // 11
+    m.cells[0][1] = { maps: ['', '', ''], s: '' }; // blank, skipped
+    m.cells[0][2] = { maps: ['15', '', ''], s: '15' }; // 15
+    renderGrid(m);
+    expect(screen.getByLabelText('P1 average')).toHaveTextContent('13.0'); // (11 + 15) / 2
+    expect(screen.getByLabelText('P2 average')).toHaveTextContent('10.0');
+    expect(screen.getByLabelText('E1 average')).toHaveTextContent('10.3'); // (11 + 10 + 10) / 3
+  });
+
+  test('a line with nothing filled shows a dash', () => {
+    const m = matrix();
+    m.cells[1] = m.cells[1].map(() => ({ maps: ['', '', ''] as [string, string, string], s: '' }));
+    renderGrid(m);
+    expect(screen.getByLabelText('P2 average')).toHaveTextContent('–');
+  });
+
+  test('single mode averages the single ratings', () => {
+    const m = matrix();
+    m.cells[0][0] = { maps: ['10', '10', ''], s: '13' };
+    renderGrid(m, { simpleMode: true });
+    expect(screen.getByLabelText('P1 average')).toHaveTextContent('11.0'); // (13 + 10 + 10) / 3
+  });
+});

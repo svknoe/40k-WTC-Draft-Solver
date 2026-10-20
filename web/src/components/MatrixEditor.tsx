@@ -233,30 +233,32 @@ export function MatrixEditor({
               By map
             </button>
           </div>
-          {!settings.simpleMode && (
-            // One unit, so a narrow controls row never wraps the label away
-            // from its buttons.
-            <div className="neutral-pick">
-              <span className="neutral-label" id={neutralLabelId}>Neutral games on</span>
-              <div className="segmented" role="group" aria-labelledby={neutralLabelId}>
-                {MAP_LETTERS.map((letter) => {
-                  const isOn = matrix.neutralMap === letter;
-                  return (
-                    <button
-                      key={letter}
-                      className={isOn ? 'on' : ''}
-                      aria-pressed={isOn}
-                      disabled={locked}
-                      title={`Refused vs refused and last vs last are played on map ${letter}`}
-                      onClick={() => update({ neutralMap: letter })}
-                    >
-                      {letter}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* One unit, so a narrow controls row never wraps the label away from
+              its buttons. Always rendered (greyed out in single rating mode,
+              where every game uses the one rating) so toggling the rating mode
+              never shifts the controls. */}
+          <div className={settings.simpleMode ? 'neutral-pick off' : 'neutral-pick'}>
+            <span className="neutral-label" id={neutralLabelId}>Neutral games on</span>
+            <div className="segmented" role="group" aria-labelledby={neutralLabelId}>
+              {MAP_LETTERS.map((letter) => {
+                const isOn = matrix.neutralMap === letter;
+                return (
+                  <button
+                    key={letter}
+                    className={isOn ? 'on' : ''}
+                    aria-pressed={isOn}
+                    disabled={locked || settings.simpleMode}
+                    title={settings.simpleMode
+                      ? 'Single rating mode uses the one rating for every game'
+                      : `Refused vs refused and last vs last are played on map ${letter}`}
+                    onClick={() => update({ neutralMap: letter })}
+                  >
+                    {letter}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
           <button
             onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}
             disabled={locked || !validation.ok}

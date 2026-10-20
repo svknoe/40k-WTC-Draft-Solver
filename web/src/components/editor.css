@@ -130,6 +130,8 @@ input.tile-value:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
 .map-input:focus { outline: 1px solid var(--blue); outline-offset: -1px; }
 .neutral-pick { display: inline-flex; align-items: center; gap: 0.5rem; }
 .neutral-label { color: var(--text-3); font-size: 0.85rem; white-space: nowrap; }
+/* single rating mode: present but greyed out (the buttons dim via button:disabled) */
+.neutral-pick.off .neutral-label { opacity: 0.4; }
 td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }
 
 /* value bands (colours defined as vars in theme.css; flip under .cb) */

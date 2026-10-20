@@ -83,6 +83,12 @@ table.grid td.avg { text-align: center; vertical-align: middle; color: var(--tex
 .faction-select option { color: var(--text-1); background: var(--card); }
 
 table.grid .col-head { padding-bottom: 0.35rem; text-align: center; }
+/* Column-header pills fill the column and scale their text with its width
+ * (11cqi ≈ "PRIORITY"/"disposition" plus padding), so they fit even the
+ * narrow columns of an 8×8 grid on a small window. */
+.col-head-inner { container-type: inline-size; }
+.col-head-inner select.disp { width: 100%; padding: 0.1rem 0.15rem; letter-spacing: 0;
+  font-size: clamp(0.5rem, 11cqi, 0.62rem); }
 .row-head-inner { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; padding: 0 0.35rem; }
 .row-head-inner .faction-pick { align-self: stretch; }
 

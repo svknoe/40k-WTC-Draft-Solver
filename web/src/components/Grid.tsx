@@ -71,7 +71,7 @@ interface DispositionSelectProps {
 }
 
 /** A coloured pill picking a player's force disposition ('' shows a dashed
- * "disp?"). Display only — the solver ignores dispositions. */
+ * "disposition"). Display only — the solver ignores dispositions. */
 function DispositionSelect({ value, ariaLabel, readOnly, onChange }: DispositionSelectProps) {
   return (
     <select
@@ -81,7 +81,7 @@ function DispositionSelect({ value, ariaLabel, readOnly, onChange }: Disposition
       disabled={readOnly}
       onChange={(e) => onChange(e.target.value as Disposition)}
     >
-      <option value="">disp?</option>
+      <option value="">disposition</option>
       {DISPOSITIONS.map((d) => (
         <option key={d} value={d}>{DISPOSITION_LABELS[d]}</option>
       ))}
@@ -184,21 +184,25 @@ export function Grid({
             <th className="corner">{simpleMode ? 'single rating' : 'by map'}</th>
             {enemyNames.map((name, j) => (
               <th key={j} className="col-head">
-                <FactionSelect
-                  side="enemy"
-                  value={name}
-                  defaultLabel={defaultEnemyName(j)}
-                  taken={enemyTaken}
-                  ariaLabel={`Opponent player ${j + 1} faction`}
-                  readOnly={readOnly}
-                  onChange={(v) => onEnemyName(j, v)}
-                />
-                <DispositionSelect
-                  value={matrix.enemyDispositions[j]}
-                  ariaLabel={`Opponent player ${j + 1} disposition`}
-                  readOnly={readOnly}
-                  onChange={(d) => onEnemyDisposition(j, d)}
-                />
+                {/* A size container (table cells can't be one), so the pill can
+                    scale its text to the column width. */}
+                <div className="col-head-inner">
+                  <FactionSelect
+                    side="enemy"
+                    value={name}
+                    defaultLabel={defaultEnemyName(j)}
+                    taken={enemyTaken}
+                    ariaLabel={`Opponent player ${j + 1} faction`}
+                    readOnly={readOnly}
+                    onChange={(v) => onEnemyName(j, v)}
+                  />
+                  <DispositionSelect
+                    value={matrix.enemyDispositions[j]}
+                    ariaLabel={`Opponent player ${j + 1} disposition`}
+                    readOnly={readOnly}
+                    onChange={(d) => onEnemyDisposition(j, d)}
+                  />
+                </div>
               </th>
             ))}
             <th className="avg-head">avg</th>

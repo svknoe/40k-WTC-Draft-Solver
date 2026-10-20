@@ -177,11 +177,11 @@ describe('Grid player headers', () => {
     expect(screen.getByText('Opponent 2', { selector: '.faction-label' })).toBeInTheDocument();
   });
 
-  test('each player has a disposition select: unset "disp?" plus the five dispositions', () => {
+  test('each player has a disposition select: unset "disposition" plus the five dispositions', () => {
     renderGrid(matrix());
     const s = sel('Your player 1 disposition');
     expect(s.value).toBe('');
-    expect(s.options[0].textContent).toBe('disp?');
+    expect(s.options[0].textContent).toBe('disposition');
     expect([...s.options].map((o) => o.value)).toEqual(['', 'purge', 'hold', 'disrupt', 'priority', 'recon']);
     expect(s).toHaveClass('disp-unset');
     expect(sel('Opponent player 3 disposition')).toBeInTheDocument();

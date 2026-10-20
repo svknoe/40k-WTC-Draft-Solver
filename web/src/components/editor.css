@@ -128,8 +128,6 @@ input.tile-value:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
 .map-input::placeholder { color: inherit; opacity: 0.5; }
 .tile:hover .map-input, .map-input:focus { opacity: 1; }
 .map-input:focus { outline: 1px solid var(--blue); outline-offset: -1px; }
-/* the neutral-games map: outlined in every tile's strip */
-.map-input.neutral { box-shadow: inset 0 0 0 1.5px currentColor; border-radius: 3px; opacity: 0.9; }
 .neutral-pick { display: inline-flex; align-items: center; gap: 0.5rem; }
 .neutral-label { color: var(--text-3); font-size: 0.85rem; white-space: nowrap; }
 td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }

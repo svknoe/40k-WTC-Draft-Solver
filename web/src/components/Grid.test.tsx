@@ -95,12 +95,11 @@ describe('Grid faction dropdowns', () => {
 });
 
 describe('Grid tiles', () => {
-  test('the neutral map slot is marked in every tile', () => {
+  test('tiles do not mark the neutral map (the A/B/C control above the grid shows it)', () => {
     renderGrid(matrix({ neutralMap: 'B' }));
     const mapB = screen.getByLabelText('P1 vs E1 map B');
-    expect(mapB).toHaveClass('neutral');
-    expect(mapB).toHaveAttribute('title', 'Neutral games are played on map B');
-    expect(screen.getByLabelText('P1 vs E1 map A')).not.toHaveClass('neutral');
+    expect(mapB).toHaveClass('map-input', { exact: true });
+    expect(mapB).not.toHaveAttribute('title');
   });
 
   test('by-map mode shows the map average rounded to a whole score, matching its palette step', () => {

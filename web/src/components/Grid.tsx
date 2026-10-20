@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Disposition } from '../model/dispositions';
 import { DISPOSITIONS, DISPOSITION_LABELS } from '../model/dispositions';
-import type { EditorCell, EditorMatrix, MapLetter, MapTriple } from '../model/matrix';
+import type { EditorCell, EditorMatrix, MapTriple } from '../model/matrix';
 import { MAP_LETTERS, cellValue, defaultEnemyName, defaultMyName, meanOf } from '../model/matrix';
 import { FACTIONS, FACTION_SET } from '../model/factions';
 import { pointClass, pointStep } from './palette';
@@ -96,8 +96,6 @@ interface MatrixCellProps {
   label: string;
   error: string | null;
   readOnly: boolean;
-  /** The map neutral games are played on — outlined in the strip. */
-  neutralMap: MapLetter;
   onChange: (cell: EditorCell) => void;
 }
 
@@ -106,7 +104,7 @@ interface MatrixCellProps {
  * whole score its colour stands for — and the A/B/C inputs in a strip along
  * the bottom. Single mode: the centre number is itself the input. A blank or
  * unparseable cell draws neutral. */
-function MatrixCell({ cell, simpleMode, label, error, readOnly, neutralMap, onChange }: MatrixCellProps) {
+function MatrixCell({ cell, simpleMode, label, error, readOnly, onChange }: MatrixCellProps) {
   const value = cellValue(cell, simpleMode);
   // A fully-blank cell is "unfilled", not wrong — don't flag it red (Solve
   // stays gated by validation either way). "Blank" is judged on the active
@@ -142,8 +140,7 @@ function MatrixCell({ cell, simpleMode, label, error, readOnly, neutralMap, onCh
               {MAP_LETTERS.map((letter, k) => (
                 <input
                   key={letter}
-                  className={letter === neutralMap ? 'map-input neutral' : 'map-input'}
-                  title={letter === neutralMap ? `Neutral games are played on map ${letter}` : undefined}
+                  className="map-input"
                   value={cell.maps[k]}
                   placeholder={letter}
                   aria-label={`${label} map ${letter}`}
@@ -241,7 +238,6 @@ export function Grid({
                   label={`${rowLabel(i)} vs ${colLabel(j)}`}
                   error={cellErrors[i][j]}
                   readOnly={readOnly}
-                  neutralMap={matrix.neutralMap}
                   onChange={(next) => onCellChange(i, j, next)}
                 />
               ))}

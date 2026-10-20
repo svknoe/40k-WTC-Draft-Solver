@@ -117,8 +117,6 @@ describe('MatrixEditor', () => {
     expect(within(group).getByRole('button', { name: 'C' })).toHaveClass('on');
     expect(within(group).getByRole('button', { name: 'C' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(group).getByRole('button', { name: 'A' })).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByLabelText('A vs W map C')).toHaveClass('neutral');
-    expect(screen.getByLabelText('A vs W map A')).not.toHaveClass('neutral');
   });
 
   test('the neutral-map control is hidden in single rating mode', async () => {

@@ -233,26 +233,28 @@ export function MatrixEditor({
             </button>
           </div>
           {!settings.simpleMode && (
-            <>
+            // One unit, so a narrow controls row never wraps the label away
+            // from its buttons.
+            <span className="neutral-pick">
               <span className="neutral-label" id="neutral-map-label">Neutral games on</span>
               <div className="segmented" role="group" aria-labelledby="neutral-map-label">
                 {MAP_LETTERS.map((letter) => {
                   const isOn = matrix.neutralMap === letter;
                   return (
-                  <button
-                    key={letter}
-                    className={isOn ? 'on' : ''}
-                    aria-pressed={isOn}
-                    disabled={locked}
-                    title={`Refused vs refused and last vs last are played on map ${letter}`}
-                    onClick={() => update({ neutralMap: letter })}
-                  >
-                    {letter}
-                  </button>
+                    <button
+                      key={letter}
+                      className={isOn ? 'on' : ''}
+                      aria-pressed={isOn}
+                      disabled={locked}
+                      title={`Refused vs refused and last vs last are played on map ${letter}`}
+                      onClick={() => update({ neutralMap: letter })}
+                    >
+                      {letter}
+                    </button>
                   );
                 })}
               </div>
-            </>
+            </span>
           )}
           <button
             onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}

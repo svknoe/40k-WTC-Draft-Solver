@@ -125,9 +125,10 @@ td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }
 .band-good { color: var(--band-good); }
 .band-best { color: var(--band-best); }
 
-.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-3); }
-.legend { align-items: center; }
-.scale-strip { display: inline-flex; border-radius: 4px; overflow: hidden; max-width: 100%; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-3); }
+/* 21 segments of 1.1rem; the basis keeps the strip full width (its shrinkable
+ * segments give it no min-content), max-width lets it shrink on phones. */
+.scale-strip { display: inline-flex; flex: 0 1 23.1rem; border-radius: 4px; overflow: hidden; max-width: 100%; }
 .scale-strip > span { flex: 0 1 1.1rem; min-width: 0; height: 1rem; line-height: 1rem; text-align: center;
   font-family: var(--font-mono); font-size: 0.6rem; }
 

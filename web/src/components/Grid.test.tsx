@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
+import type { Disposition } from '../model/dispositions';
 import type { EditorCell, EditorMatrix } from '../model/matrix';
 import { Grid } from './Grid';
 
@@ -31,6 +32,7 @@ function renderGrid(
     simpleMode?: boolean;
     cellErrors?: (string | null)[][];
     onCellChange?: (i: number, j: number, cell: EditorCell) => void;
+    onMyDisposition?: (i: number, d: Disposition) => void;
   } = {},
 ) {
   render(
@@ -42,6 +44,8 @@ function renderGrid(
       onCellChange={opts.onCellChange ?? vi.fn()}
       onMyName={vi.fn()}
       onEnemyName={vi.fn()}
+      onMyDisposition={opts.onMyDisposition ?? vi.fn()}
+      onEnemyDisposition={vi.fn()}
     />,
   );
 }
@@ -150,5 +154,44 @@ describe('Grid tiles', () => {
     const blank = screen.getByLabelText('P1 vs E2 map A').closest('td');
     expect(blank).not.toHaveClass('invalid');
     expect(blank).not.toHaveAttribute('title');
+  });
+});
+
+describe('Grid player headers', () => {
+  test('the faction shows as a full, wrapping text label (not truncated in a select)', () => {
+    renderGrid(matrix({ enemyNames: ['Chaos Space Marines', '', ''] }));
+    expect(screen.getByText('Chaos Space Marines', { selector: '.faction-label' })).toBeInTheDocument();
+    expect(screen.getByText('Opponent 2', { selector: '.faction-label' })).toBeInTheDocument();
+  });
+
+  test('each player has a disposition select: unset "disp?" plus the five dispositions', () => {
+    renderGrid(matrix());
+    const s = sel('Your player 1 disposition');
+    expect(s.value).toBe('');
+    expect(s.options[0].textContent).toBe('disp?');
+    expect([...s.options].map((o) => o.value)).toEqual(['', 'purge', 'hold', 'disrupt', 'priority', 'recon']);
+    expect(s).toHaveClass('disp-unset');
+    expect(sel('Opponent player 3 disposition')).toBeInTheDocument();
+  });
+
+  test('a stored disposition shows selected, styled as its pill colour', () => {
+    renderGrid(matrix({ myDispositions: ['', 'hold', ''] }));
+    const s = sel('Your player 2 disposition');
+    expect(s.value).toBe('hold');
+    expect(s).toHaveClass('disp-hold');
+  });
+
+  test('picking a disposition reports it', async () => {
+    const user = userEvent.setup();
+    const onMyDisposition = vi.fn();
+    renderGrid(matrix(), { onMyDisposition });
+    await user.selectOptions(sel('Your player 3 disposition'), 'recon');
+    expect(onMyDisposition).toHaveBeenCalledWith(2, 'recon');
+  });
+
+  test('readOnly locks the disposition selects too', () => {
+    renderGrid(matrix(), { readOnly: true });
+    expect(sel('Your player 1 disposition')).toBeDisabled();
+    expect(sel('Opponent player 1 disposition')).toBeDisabled();
   });
 });

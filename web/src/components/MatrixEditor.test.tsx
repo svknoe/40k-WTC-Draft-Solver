@@ -108,6 +108,13 @@ describe('MatrixEditor', () => {
     expect(screen.queryByDisplayValue('Enemy 3')).not.toBeInTheDocument();
   });
 
+  test('a disposition picked in the grid sticks (wired to the matrix)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.selectOptions(screen.getByLabelText('Opponent player 2 disposition'), 'purge');
+    expect(screen.getByLabelText('Opponent player 2 disposition')).toHaveValue('purge');
+  });
+
   test('the sample loader is gone', () => {
     render(<Harness initial={valid4()} />);
     expect(screen.queryByLabelText(/Load a sample opponent/i)).not.toBeInTheDocument();

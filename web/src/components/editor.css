@@ -65,13 +65,33 @@ table.grid .corner { width: 11rem; color: var(--text-4); font-size: 0.66rem; tex
 table.grid .col-head { vertical-align: bottom; }
 table.grid .row-head { position: sticky; left: 0; background: var(--bg-2); z-index: 1; vertical-align: middle; }
 
-input.name, select.name { border: 0; background: transparent; width: 100%; min-width: 0; padding: 0.4rem 0.4rem; font-weight: 600;
-  font-size: 0.85rem; text-overflow: ellipsis; font-family: inherit; }
-select.name { cursor: pointer; }
-select.name:disabled { cursor: default; opacity: 1; }
-input.name.mine, select.name.mine { color: var(--blue); }
-input.name.enemy, select.name.enemy { color: var(--enemy); text-align: center; }
-input.name:focus, select.name:focus { outline: 1px solid var(--blue); border-radius: 4px; }
+/* player headers: a wrapping faction label with the native select laid
+ * transparently over it (so long factions read in full), plus a disposition pill */
+.faction-pick { position: relative; border-radius: 4px; }
+.faction-pick:focus-within { outline: 1px solid var(--blue); }
+.faction-label { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  font-weight: 600; font-size: 0.8rem; line-height: 1.2; padding: 0.3rem 0.35rem; overflow-wrap: anywhere; }
+.faction-pick.mine .faction-label { color: var(--blue); }
+.faction-pick.enemy .faction-label { color: var(--enemy); text-align: center; min-height: calc(2.4em + 0.6rem); }
+.faction-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+.faction-select:disabled { cursor: default; }
+.faction-select option { color: var(--text-1); background: var(--card); }
+
+table.grid .col-head { padding-bottom: 0.35rem; text-align: center; }
+.row-head-inner { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; padding: 0 0.35rem; }
+
+select.disp { appearance: none; -webkit-appearance: none; border: 1px solid transparent; border-radius: 4px;
+  padding: 0.1rem 0.5rem; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.04em;
+  text-align: center; text-align-last: center; cursor: pointer; }
+select.disp:disabled { cursor: default; }
+select.disp:focus { outline: 1px solid var(--blue); outline-offset: 1px; }
+select.disp option { background: var(--card); color: var(--text-1); }
+.disp-unset { background: transparent; color: var(--text-4); border-color: var(--border-strong); border-style: dashed; }
+.disp-purge { background: #e2445c; color: #ffffff; }
+.disp-hold { background: #45c48f; color: #0a0a0c; }
+.disp-disrupt { background: #a78bfa; color: #0a0a0c; }
+.disp-priority { background: #f0a030; color: #0a0a0c; }
+.disp-recon { background: #4fc3f7; color: #0a0a0c; }
 
 /* matchup tile: the value centred, map A/B/C inputs in a darker strip below */
 td.cell { vertical-align: top; }

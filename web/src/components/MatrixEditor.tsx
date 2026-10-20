@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react';
+import type { Disposition } from '../model/dispositions';
 import { exportJson, importJson } from '../model/exchange';
 import type { EditorCell, EditorMatrix, MatrixSize } from '../model/matrix';
 import { cleared, randomized, resize, transpose } from '../model/matrix';
@@ -60,6 +61,16 @@ export function MatrixEditor({
     const names = [...matrix.enemyNames];
     names[j] = name;
     update({ enemyNames: names });
+  };
+  const setMyDisposition = (i: number, disposition: Disposition) => {
+    const dispositions = [...matrix.myDispositions];
+    dispositions[i] = disposition;
+    update({ myDispositions: dispositions });
+  };
+  const setEnemyDisposition = (j: number, disposition: Disposition) => {
+    const dispositions = [...matrix.enemyDispositions];
+    dispositions[j] = disposition;
+    update({ enemyDispositions: dispositions });
   };
   const setCell = (i: number, j: number, cell: EditorCell) => {
     const cells = matrix.cells.map((row) => row.slice());
@@ -238,6 +249,8 @@ export function MatrixEditor({
           onCellChange={setCell}
           onMyName={setMyName}
           onEnemyName={setEnemyName}
+          onMyDisposition={setMyDisposition}
+          onEnemyDisposition={setEnemyDisposition}
         />
 
         <div className="legend">

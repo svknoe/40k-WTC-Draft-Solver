@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import type { Disposition } from '../model/dispositions';
+import { DISPOSITIONS, DISPOSITION_LABELS } from '../model/dispositions';
 import type { EditorCell, EditorMatrix, MapTriple } from '../model/matrix';
 import { MAP_LETTERS, cellValue, defaultEnemyName, defaultMyName } from '../model/matrix';
 import { FACTIONS, FACTION_SET } from '../model/factions';
@@ -14,6 +16,8 @@ interface GridProps {
   onCellChange: (i: number, j: number, cell: EditorCell) => void;
   onMyName: (i: number, name: string) => void;
   onEnemyName: (j: number, name: string) => void;
+  onMyDisposition: (i: number, disposition: Disposition) => void;
+  onEnemyDisposition: (j: number, disposition: Disposition) => void;
 }
 
 interface FactionSelectProps {
@@ -33,21 +37,54 @@ interface FactionSelectProps {
 /** A faction picker: the positional default on top, then every faction
  * alphabetically with same-team duplicates disabled. A non-faction current
  * value (imported/legacy free-text) gets its own option so it still displays
- * and round-trips. `<select>` has no readOnly, so a locked draft disables it. */
+ * and round-trips. `<select>` has no readOnly, so a locked draft disables it.
+ * The select is overlaid transparently on a wrapping text label (see below). */
 function FactionSelect({ value, side, defaultLabel, taken, ariaLabel, readOnly, onChange }: FactionSelectProps) {
   const legacy = value.trim() !== '' && !FACTION_SET.has(value);
   return (
+    // The visible label wraps onto two lines so long factions read in full; the
+    // native select sits transparently on top of it, so the dropdown, keyboard
+    // and screen-reader behaviour are unchanged.
+    <div className={`faction-pick ${side}`}>
+      <span className="faction-label" aria-hidden="true">{value.trim() || defaultLabel}</span>
+      <select
+        className="faction-select"
+        value={value}
+        aria-label={ariaLabel}
+        disabled={readOnly}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">{defaultLabel}</option>
+        {legacy && <option value={value}>{value}</option>}
+        {FACTIONS.map((f) => (
+          <option key={f} value={f} disabled={taken.has(f) && f !== value}>{f}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+interface DispositionSelectProps {
+  value: Disposition;
+  ariaLabel: string;
+  readOnly: boolean;
+  onChange: (value: Disposition) => void;
+}
+
+/** A coloured pill picking a player's force disposition ('' shows a dashed
+ * "disp?"). Display only — the solver ignores dispositions. */
+function DispositionSelect({ value, ariaLabel, readOnly, onChange }: DispositionSelectProps) {
+  return (
     <select
-      className={`name ${side}`}
+      className={`disp disp-${value || 'unset'}`}
       value={value}
       aria-label={ariaLabel}
       disabled={readOnly}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => onChange(e.target.value as Disposition)}
     >
-      <option value="">{defaultLabel}</option>
-      {legacy && <option value={value}>{value}</option>}
-      {FACTIONS.map((f) => (
-        <option key={f} value={f} disabled={taken.has(f) && f !== value}>{f}</option>
+      <option value="">disp?</option>
+      {DISPOSITIONS.map((d) => (
+        <option key={d} value={d}>{DISPOSITION_LABELS[d]}</option>
       ))}
     </select>
   );
@@ -120,7 +157,8 @@ function MatrixCell({ cell, simpleMode, label, error, readOnly, onChange }: Matr
 }
 
 export function Grid({
-  matrix, simpleMode, cellErrors, readOnly = false, onCellChange, onMyName, onEnemyName,
+  matrix, simpleMode, cellErrors, readOnly = false,
+  onCellChange, onMyName, onEnemyName, onMyDisposition, onEnemyDisposition,
 }: GridProps) {
   const { myNames, enemyNames, cells } = matrix;
   // Factions in use on each team — including each player's OWN pick, so a
@@ -147,6 +185,12 @@ export function Grid({
                   readOnly={readOnly}
                   onChange={(v) => onEnemyName(j, v)}
                 />
+                <DispositionSelect
+                  value={matrix.enemyDispositions[j]}
+                  ariaLabel={`Opponent player ${j + 1} disposition`}
+                  readOnly={readOnly}
+                  onChange={(d) => onEnemyDisposition(j, d)}
+                />
               </th>
             ))}
           </tr>
@@ -155,15 +199,23 @@ export function Grid({
           {myNames.map((rowName, i) => (
             <tr key={i}>
               <th className="row-head">
-                <FactionSelect
-                  side="mine"
-                  value={rowName}
-                  defaultLabel={defaultMyName(i)}
-                  taken={myTaken}
-                  ariaLabel={`Your player ${i + 1} faction`}
-                  readOnly={readOnly}
-                  onChange={(v) => onMyName(i, v)}
-                />
+                <div className="row-head-inner">
+                  <FactionSelect
+                    side="mine"
+                    value={rowName}
+                    defaultLabel={defaultMyName(i)}
+                    taken={myTaken}
+                    ariaLabel={`Your player ${i + 1} faction`}
+                    readOnly={readOnly}
+                    onChange={(v) => onMyName(i, v)}
+                  />
+                  <DispositionSelect
+                    value={matrix.myDispositions[i]}
+                    ariaLabel={`Your player ${i + 1} disposition`}
+                    readOnly={readOnly}
+                    onChange={(d) => onMyDisposition(i, d)}
+                  />
+                </div>
               </th>
               {cells[i].map((cell, j) => (
                 <MatrixCell

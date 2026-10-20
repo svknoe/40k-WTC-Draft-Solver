@@ -184,7 +184,7 @@ describe('MatrixEditor', () => {
     const single = screen.getByLabelText('A vs W');
     await user.clear(single);
     await user.type(single, '7');
-    await user.click(screen.getByRole('button', { name: 'Best / worst map' }));
+    await user.click(screen.getByRole('button', { name: 'By map' }));
     expect(screen.getByLabelText('A vs W map A')).toHaveValue('12');
     expect(screen.getByLabelText('A vs W map B')).toHaveValue('9');
   });
@@ -205,5 +205,20 @@ describe('MatrixEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Single rating' }));
     expect(screen.getByLabelText('A vs W')).toBeInTheDocument();
     expect(screen.queryByLabelText('A vs W map A')).not.toBeInTheDocument();
+  });
+
+  test('the rating toggle reads "Single rating" / "By map"', () => {
+    render(<Harness initial={valid4()} />);
+    expect(screen.getByRole('button', { name: 'By map' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Best / worst map' })).not.toBeInTheDocument();
+  });
+
+  test('the legend shows the 21-step 0-20 palette strip', () => {
+    const { container } = render(<Harness initial={valid4()} />);
+    const segments = container.querySelectorAll('.scale-strip > span');
+    expect(segments).toHaveLength(21);
+    expect(segments[0]).toHaveClass('pt-0');
+    expect(segments[20]).toHaveClass('pt-20');
+    expect(segments[10]).toHaveTextContent('10');
   });
 });

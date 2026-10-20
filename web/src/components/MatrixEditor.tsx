@@ -229,7 +229,7 @@ export function MatrixEditor({
               Single rating
             </button>
             <button className={!settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
-              Best / worst map
+              By map
             </button>
           </div>
           <button
@@ -255,11 +255,11 @@ export function MatrixEditor({
 
         <div className="legend">
           <span>Each cell: my expected score, 0–20 · 10 = even game</span>
-          <span className="swatch"><span className="chip worst" /> worst ≤ 4</span>
-          <span className="swatch"><span className="chip bad" /> bad 5–8</span>
-          <span className="swatch"><span className="chip okay" /> okay 9–11</span>
-          <span className="swatch"><span className="chip good" /> good 12–15</span>
-          <span className="swatch"><span className="chip best" /> best 16+</span>
+          <span className="scale-strip" aria-hidden="true">
+            {Array.from({ length: 21 }, (_, k) => (
+              <span key={k} className={`pt-${k}`}>{k % 5 === 0 ? k : ''}</span>
+            ))}
+          </span>
         </div>
 
         {validation.globalErrors.length > 0 && (

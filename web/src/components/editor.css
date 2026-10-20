@@ -126,13 +126,10 @@ td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }
 .band-best { color: var(--band-best); }
 
 .legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-3); }
-.legend .swatch { display: inline-flex; align-items: center; gap: 0.35rem; }
-.legend .chip { width: 0.7rem; height: 0.7rem; border-radius: 3px; }
-.legend .chip.worst { background: var(--band-worst); }
-.legend .chip.bad { background: var(--band-bad); }
-.legend .chip.okay { background: var(--band-okay); }
-.legend .chip.good { background: var(--band-good); }
-.legend .chip.best { background: var(--band-best); }
+.legend { align-items: center; }
+.scale-strip { display: inline-flex; border-radius: 4px; overflow: hidden; }
+.scale-strip > span { width: 1.1rem; height: 1rem; line-height: 1rem; text-align: center;
+  font-family: var(--font-mono); font-size: 0.6rem; }
 
 .solve-bar { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
 

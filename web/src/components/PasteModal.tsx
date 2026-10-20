@@ -14,15 +14,14 @@ export function PasteModal({ n, onApply, onCancel }: PasteModalProps) {
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Paste from spreadsheet">
         <h2>Paste from spreadsheet</h2>
         <p className="muted">
-          {n} rows × {n} cells, tab / comma / semicolon separated. Cells like <b>15/12</b>, single
-          numbers like <b>13</b>, or {2 * n} plain number columns (best, worst alternating).
+          {n} rows × {n} cells, tab / comma / semicolon separated. Cells like <b>15/12/9</b> (maps A, B, C), <b>15/12</b>, or a single number like <b>13</b> (map A) — or {2 * n} plain number columns (best, worst alternating).
         </p>
         <textarea
           autoFocus
           rows={8}
           value={text}
           aria-label="Pasted matrix"
-          placeholder={'15/12\t11/8\t…'}
+          placeholder={'15/12/9\t11/8\t…'}
           onChange={(e) => setText(e.target.value)}
         />
         <div className="modal-actions">

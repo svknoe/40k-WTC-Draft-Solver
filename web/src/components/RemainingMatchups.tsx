@@ -6,18 +6,27 @@ interface RemainingMatchupsProps {
   model: DraftModel;
   myNames: string[];
   enemyNames: string[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 /** Collapsible view of the shrinking sub-matrix as the draft narrows
  * (docs/design-mockup.html "Trainer": REMAINING MATCHUPS n×n). Best-map values
  * on the 0–20 scale, banded. `.band-*` colour classes come from the always-
- * bundled editor.css. Collapsed by default. */
-export function RemainingMatchups({ model, myNames, enemyNames }: RemainingMatchupsProps) {
+ * bundled editor.css. Collapsed until opened; the open state is owned by the
+ * app, so it survives step changes and new drafts. */
+export function RemainingMatchups({ model, myNames, enemyNames, open, onOpenChange }: RemainingMatchupsProps) {
   const { myRemaining, enemyRemaining, matrix } = model;
 
   return (
-    <details className="remaining">
-      <summary>
+    <details className="remaining" open={open}>
+      <summary
+        onClick={(e) => {
+          // Keep React the source of truth rather than the native toggle.
+          e.preventDefault();
+          onOpenChange(!open);
+        }}
+      >
         <span className="section-head">Remaining matchups</span>
         <span className="remaining-size">
           {myRemaining.length} × {enemyRemaining.length}

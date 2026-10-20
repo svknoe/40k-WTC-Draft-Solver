@@ -39,6 +39,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
 
@@ -82,6 +84,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
@@ -125,6 +129,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
           solve={engineSolveState()}
           onSolve={() => {}}
           onEditMatrix={() => {}}
+          remainingOpen={false}
+          onRemainingOpenChange={() => {}}
         />,
       );
       fireEvent.click(screen.getByRole('button', { name: /Start practice draft/ }));
@@ -149,6 +155,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
         onLiveChange={onLiveChange}
       />,
     );
@@ -174,6 +182,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
@@ -201,6 +211,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
 
@@ -264,6 +276,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Opponent: bot/ }));
@@ -287,6 +301,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));
@@ -306,6 +322,8 @@ describe('DraftTrainer (Smoke 4×4, real engine)', () => {
         solve={engineSolveState()}
         onSolve={() => {}}
         onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
       />,
     );
     await user.click(await screen.findByRole('button', { name: /Start practice draft/ }));

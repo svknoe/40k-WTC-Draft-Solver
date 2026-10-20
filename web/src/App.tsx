@@ -35,6 +35,9 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
   // Bumping this remounts DraftTrainer, resetting it to the intro — how "Discard
   // draft to edit" and a fresh replay clear an in-progress draft.
   const [draftKey, setDraftKey] = useState(0);
+  // Whether the trainer's Remaining matchups panel is open; lives here so it
+  // survives step changes and new drafts (DraftTrainer remounts / re-renders).
+  const [remainingOpen, setRemainingOpen] = useState(false);
   const ownSolve = useSolve();
   const solve = injectedSolve ?? ownSolve;
 
@@ -188,6 +191,8 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
               onSolve={() => solve.solve(matrix, null, settings.simpleMode)}
               onEditMatrix={() => setScreen('editor')}
               onLiveChange={setDraftLive}
+              remainingOpen={remainingOpen}
+              onRemainingOpenChange={setRemainingOpen}
             />
           </div>
         )}

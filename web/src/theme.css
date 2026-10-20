@@ -54,6 +54,81 @@
   --band-best: #8ce8f2;
 }
 
+/* 21-step matchup palette: one fill + ink per whole 0-20 score (red →
+ * neutral 10 → green → blue). Filled matrix tiles and the legend strip use
+ * it through the .pt-<k> classes below. */
+:root {
+  --pt-0: #1c1c1f;  --pt-ink-0: #ffffff;
+  --pt-1: #3a1414;  --pt-ink-1: #ffffff;
+  --pt-2: #5c1515;  --pt-ink-2: #ffffff;
+  --pt-3: #7a1818;  --pt-ink-3: #ffffff;
+  --pt-4: #961d1a;  --pt-ink-4: #ffffff;
+  --pt-5: #b3261e;  --pt-ink-5: #ffffff;
+  --pt-6: #d2453b;  --pt-ink-6: #ffffff;
+  --pt-7: #ec7a6e;  --pt-ink-7: #0a0a0c;
+  --pt-8: #f3b4b4;  --pt-ink-8: #0a0a0c;
+  --pt-9: #f3e27a;  --pt-ink-9: #0a0a0c;
+  --pt-10: #d9d9de; --pt-ink-10: #0a0a0c;
+  --pt-11: #b9e3a4; --pt-ink-11: #0a0a0c;
+  --pt-12: #8fd17a; --pt-ink-12: #0a0a0c;
+  --pt-13: #57b45a; --pt-ink-13: #0a0a0c;
+  --pt-14: #2f8f3f; --pt-ink-14: #ffffff;
+  --pt-15: #1e6b2f; --pt-ink-15: #ffffff;
+  --pt-16: #175a3a; --pt-ink-16: #ffffff;
+  --pt-17: #134d4f; --pt-ink-17: #ffffff;
+  --pt-18: #154a78; --pt-ink-18: #ffffff;
+  --pt-19: #1a54a0; --pt-ink-19: #ffffff;
+  --pt-20: #1f5fbf; --pt-ink-20: #ffffff;
+}
+
+/* Colour-blind-safe palette: an orange → grey → blue diverging ramp that
+ * avoids the red↔green axis. */
+.cb {
+  --pt-0: #2a1606;  --pt-ink-0: #ffffff;
+  --pt-1: #3d1e05;  --pt-ink-1: #ffffff;
+  --pt-2: #552905;  --pt-ink-2: #ffffff;
+  --pt-3: #6e3406;  --pt-ink-3: #ffffff;
+  --pt-4: #874008;  --pt-ink-4: #ffffff;
+  --pt-5: #a14d0b;  --pt-ink-5: #ffffff;
+  --pt-6: #c0600f;  --pt-ink-6: #ffffff;
+  --pt-7: #e07f1e;  --pt-ink-7: #0a0a0c;
+  --pt-8: #eda65b;  --pt-ink-8: #0a0a0c;
+  --pt-9: #f3cf9c;  --pt-ink-9: #0a0a0c;
+  --pt-10: #d9d9de; --pt-ink-10: #0a0a0c;
+  --pt-11: #b8e2ec; --pt-ink-11: #0a0a0c;
+  --pt-12: #8ccfe0; --pt-ink-12: #0a0a0c;
+  --pt-13: #5bb5cf; --pt-ink-13: #0a0a0c;
+  --pt-14: #2f93b4; --pt-ink-14: #ffffff;
+  --pt-15: #1f7898; --pt-ink-15: #ffffff;
+  --pt-16: #19637f; --pt-ink-16: #ffffff;
+  --pt-17: #155169; --pt-ink-17: #ffffff;
+  --pt-18: #154a78; --pt-ink-18: #ffffff;
+  --pt-19: #1a54a0; --pt-ink-19: #ffffff;
+  --pt-20: #1f5fbf; --pt-ink-20: #ffffff;
+}
+
+.pt-0 { background: var(--pt-0); color: var(--pt-ink-0); }
+.pt-1 { background: var(--pt-1); color: var(--pt-ink-1); }
+.pt-2 { background: var(--pt-2); color: var(--pt-ink-2); }
+.pt-3 { background: var(--pt-3); color: var(--pt-ink-3); }
+.pt-4 { background: var(--pt-4); color: var(--pt-ink-4); }
+.pt-5 { background: var(--pt-5); color: var(--pt-ink-5); }
+.pt-6 { background: var(--pt-6); color: var(--pt-ink-6); }
+.pt-7 { background: var(--pt-7); color: var(--pt-ink-7); }
+.pt-8 { background: var(--pt-8); color: var(--pt-ink-8); }
+.pt-9 { background: var(--pt-9); color: var(--pt-ink-9); }
+.pt-10 { background: var(--pt-10); color: var(--pt-ink-10); }
+.pt-11 { background: var(--pt-11); color: var(--pt-ink-11); }
+.pt-12 { background: var(--pt-12); color: var(--pt-ink-12); }
+.pt-13 { background: var(--pt-13); color: var(--pt-ink-13); }
+.pt-14 { background: var(--pt-14); color: var(--pt-ink-14); }
+.pt-15 { background: var(--pt-15); color: var(--pt-ink-15); }
+.pt-16 { background: var(--pt-16); color: var(--pt-ink-16); }
+.pt-17 { background: var(--pt-17); color: var(--pt-ink-17); }
+.pt-18 { background: var(--pt-18); color: var(--pt-ink-18); }
+.pt-19 { background: var(--pt-19); color: var(--pt-ink-19); }
+.pt-20 { background: var(--pt-20); color: var(--pt-ink-20); }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body, #root { min-height: 100%; }
 

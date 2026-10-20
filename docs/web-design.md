@@ -49,9 +49,10 @@ What the artifact *does* correctly encode, and we keep:
   games (refused-vs-refused, last players), where `w = neutral_map_weight` (default
   **0.5**, i.e. the midpoint — see `drafter/solver/context.py`). Midpoint is the default,
   not the model; the MVP hardcodes `w = 0.5` (see §7). *Superseded:* the shipped app plays
-  neutral games on a captain-chosen map (A/B/C) and sends it per cell (§4.1); the weighted
-  midpoint is now only the engine's fallback for cells without a `neutral` value (the frozen
-  conformance fixtures).
+  neutral games on a captain-chosen map (A/B/C): the engine receives each matchup's map
+  ratings plus the matrix's `neutralMap` (§4.1); the weighted midpoint is now only the
+  engine's fallback when `neutralMap` is null (single-rating mode, the frozen conformance
+  fixtures).
 - Bot "styles" (equilibrium / greedy / wildcard), colourblind toggle, undo stack,
   localStorage saves, JSON import/export, paste-from-spreadsheet, simple/advanced mode.
 
@@ -99,9 +100,9 @@ correlate responses. Versioned with `protocol: 1`.
 ```ts
 // Run the full solve for the current matrix. Long-running → emits progress.
 { type: 'solve', reqId, protocol: 1,
-  matrix: Matrix,           // see §4.1 — best/worst per cell, internal scale
+  matrix: Matrix,           // see §4.1 — A/B/C map ratings per cell + neutralMap, internal scale
   k: number | null,         // k-restriction (null = exact; M3/#5 decides default)
-  neutralWeight?: number }  // fallback w (default 0.5 = midpoint) for cells without `neutral`; the app always sends `neutral`
+  neutralWeight?: number }  // fallback w (default 0.5 = midpoint), used only when neutralMap is null
 
 // Query one draft node (instant; served from the solved values held in the worker).
 { type: 'node', reqId, path: Move[] }   // path from root; [] = opening node
@@ -212,9 +213,11 @@ both sides — i.e. `expected` + `root.choices` (my side) plus the enemy's root 
 type Matrix = {
   n: 3 | 4 | 5 | 6 | 7 | 8,  // odd sizes: terminal round at 3 players, no last-vs-last game
   myNames: string[], enemyNames: string[],   // length n; distinct within a team (may repeat across teams)
-  cells: { best: number, worst: number, neutral?: number }[][] // n×n, INTERNAL scale (score − 10, −10..+10);
-  // neutral = the rating on the captain's chosen neutral map, used for refused-vs-refused and
-  // last-players games; absent => the engine falls back to worst + w·(best − worst)
+  cells: { maps: [number | null, number | null, number | null] }[][] // n×n, INTERNAL scale (score − 10, −10..+10);
+  // the ratings on maps A, B, C (null = unrated)
+  neutralMap: 'A' | 'B' | 'C' | null
+  // best = max(maps), worst = min(maps); neutral games (refused-vs-refused, last players) use the
+  // rating on neutralMap, or worst + w·(best − worst) when neutralMap is null (see engine/types.ts)
 }
 ```
 
@@ -269,7 +272,7 @@ losslessly, tolerates in-progress/invalid edits).
 | Strategy (`prob`) | `softmax(evs)` heuristic | **Nash mixed strategy from the LP** |
 | Why panel | approximate | real payoff matrix (child values) + equilibrium mixes |
 | Bot styles | client-side sampling of a heuristic | client-side sampling of the **true** strategy (unchanged) |
-| Value model | best/worst; neutral = midpoint ✓ | best/worst; neutral = the chosen neutral map's rating (per-cell `neutral`; fallback `worst + w·(best−worst)`, `w`=`neutral_map_weight`, default 0.5) |
+| Value model | best/worst; neutral = midpoint ✓ | best/worst; neutral = the chosen neutral map's rating (`neutralMap`; fallback `worst + w·(best−worst)` when it is null, `w`=`neutral_map_weight`, default 0.5) |
 
 The UI's data *shapes* barely change; its *source* changes from "compute inline with a
 heuristic" to "await a message from the worker." This is why Slices 1–3 can be built

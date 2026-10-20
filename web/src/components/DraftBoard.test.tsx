@@ -4,6 +4,7 @@ import { render, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { initDraft } from '../draft/draftState';
+import { cellFromBestWorst } from '../engine/maps';
 import type { Matrix } from '../engine/types';
 import { DraftBoard } from './DraftBoard';
 
@@ -117,7 +118,8 @@ describe('DraftBoard', () => {
       myNames: ['F0', 'F1', 'F2', 'F3', 'F4'],
       enemyNames: ['E0', 'E1', 'E2', 'E3', 'E4'],
       cells: Array.from({ length: 5 }, () =>
-        Array.from({ length: 5 }, () => ({ best: 0, worst: 0 }))),
+        Array.from({ length: 5 }, () => cellFromBestWorst(0, 0))),
+      neutralMap: null,
     };
     const base = initDraft(matrix, 0.5);
     const model = {

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { DraftEngine } from './engine';
+import { cellFromBestWorst } from './maps';
 import { referenceValue } from './reference';
 import type { Matrix, Move } from './types';
 
@@ -13,7 +14,8 @@ function flatMatrix(v: number[][]): Matrix {
     n,
     myNames: names('F', n),
     enemyNames: names('E', n),
-    cells: v.map((row) => row.map((x) => ({ best: x, worst: x }))),
+    cells: v.map((row) => row.map((x) => cellFromBestWorst(x, x))),
+    neutralMap: null,
   };
 }
 
@@ -50,7 +52,8 @@ const matrix5: Matrix = {
   n: 5,
   myNames: names('F', 5),
   enemyNames: names('E', 5),
-  cells: BEST5.map((row, i) => row.map((bij, j) => ({ best: bij, worst: WORST5[i][j] }))),
+  cells: BEST5.map((row, i) => row.map((bij, j) => cellFromBestWorst(bij, WORST5[i][j]))),
+  neutralMap: null,
 };
 
 describe('odd team sizes', () => {
@@ -69,9 +72,9 @@ describe('odd team sizes', () => {
     const cells7 = Array.from({ length: 7 }, (_, i) =>
       Array.from({ length: 7 }, (_, j) => {
         const best = ((i * 3 + j * 5) % 13) - 6;
-        return { best, worst: best - ((i + j) % 4) };
+        return cellFromBestWorst(best, best - ((i + j) % 4));
       }));
-    const matrix7: Matrix = { n: 7, myNames: names('F', 7), enemyNames: names('E', 7), cells: cells7 };
+    const matrix7: Matrix = { n: 7, myNames: names('F', 7), enemyNames: names('E', 7), cells: cells7, neutralMap: null };
     expect(new DraftEngine(matrix7, null).solve()).toBeCloseTo(referenceValue(matrix7), 9);
   });
 

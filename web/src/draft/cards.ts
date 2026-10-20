@@ -1,4 +1,5 @@
 import type { NodeResult } from '../engine/types';
+import { bestOf, worstOf } from '../engine/maps';
 import type { DraftModel } from './draftState';
 import { combinations, enemyColEvs, enemyMoveId } from './draftState';
 import { toScore } from '../model/scale';
@@ -27,14 +28,14 @@ export function candidateStats(model: DraftModel, node: NodeResult, choiceIndex:
 
   if (node.stage === 'defender') {
     const my = choice.id as number;
-    const vals = model.enemyRemaining.map((e) => toScore(cells[my][e].best));
+    const vals = model.enemyRemaining.map((e) => toScore(bestOf(cells[my][e])));
     return { avg: mean(vals), floor: Math.min(...vals) };
   }
 
   if (node.stage === 'attackers') {
     const [a, b] = choice.id as [number, number];
     const d = model.enemyDefender;
-    const vals = [toScore(cells[a][d].worst), toScore(cells[b][d].worst)];
+    const vals = [toScore(worstOf(cells[a][d])), toScore(worstOf(cells[b][d]))];
     return { avg: mean(vals), floor: Math.min(...vals) };
   }
 
@@ -42,7 +43,7 @@ export function candidateStats(model: DraftModel, node: NodeResult, choiceIndex:
   const refuse = choice.id as number;
   const [ea, eb] = model.enemyPair!;
   const kept = ea === refuse ? eb : ea;
-  const v = toScore(cells[model.myDefender][kept].best);
+  const v = toScore(bestOf(cells[model.myDefender][kept]));
   return { avg: v, floor: v };
 }
 
@@ -91,7 +92,7 @@ export function attackerOptions(model: DraftModel, node: NodeResult): AttackerOp
   }
   return [...sent.keys()]
     .sort((x, y) => x - y)
-    .map((index) => ({ index, rating: toScore(cells[index][d].worst), sendProb: sent.get(index)! }));
+    .map((index) => ({ index, rating: toScore(worstOf(cells[index][d])), sendProb: sent.get(index)! }));
 }
 
 /** The opponent seat's view of a node (two-player mode), one entry per engine
@@ -153,21 +154,21 @@ export function enemyCandidateStats(model: DraftModel, node: NodeResult, colInde
 
   if (node.stage === 'defender') {
     const e = id as number;
-    const vals = model.myRemaining.map((m) => toEnemyScore(cells[m][e].worst));
+    const vals = model.myRemaining.map((m) => toEnemyScore(worstOf(cells[m][e])));
     return { avg: mean(vals), floor: Math.min(...vals) };
   }
 
   if (node.stage === 'attackers') {
     const [a, b] = id as [number, number];
     const d = model.myDefender;
-    const vals = [toEnemyScore(cells[d][a].best), toEnemyScore(cells[d][b].best)];
+    const vals = [toEnemyScore(bestOf(cells[d][a])), toEnemyScore(bestOf(cells[d][b]))];
     return { avg: mean(vals), floor: Math.min(...vals) };
   }
 
   // refusal: they refuse one of MY sent pair; their defender keeps the other.
   const refuse = id as number;
   const kept = model.myPair![0] === refuse ? model.myPair![1] : model.myPair![0];
-  const v = toEnemyScore(cells[kept][model.enemyDefender].worst);
+  const v = toEnemyScore(worstOf(cells[kept][model.enemyDefender]));
   return { avg: v, floor: v };
 }
 
@@ -186,7 +187,7 @@ export function enemyAttackerOptions(model: DraftModel, node: NodeResult): Attac
   });
   return [...sent.keys()]
     .sort((x, y) => x - y)
-    .map((index) => ({ index, rating: toEnemyScore(cells[d][index].best), sendProb: sent.get(index)! }));
+    .map((index) => ({ index, rating: toEnemyScore(bestOf(cells[d][index])), sendProb: sent.get(index)! }));
 }
 
 /** Column index of the enemy pair equal to the unordered {x, y} — the mirror

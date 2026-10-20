@@ -1,13 +1,19 @@
-import type { Matrix, Move, NodeChoice, NodeResult } from '../engine/types';
+import type { MapLetter, Matrix, Move, NodeChoice, NodeResult } from '../engine/types';
+import type { GameKind } from '../engine/maps';
+import { bestOf, neutralOf, playedMap, worstOf } from '../engine/maps';
 
 /** One of the n games fixed by the draft, with its value-model value (internal
  * scale). `my`/`enemy` are player indices. */
 export interface FixedGame {
   my: number;
   enemy: number;
-  kind: 'my-defends' | 'enemy-defends' | 'refused' | 'last';
+  kind: GameKind;
   value: number;
   round: number;
+  /** The map the game is played on: the defender's pick for defender games,
+   * the matrix's neutral map for refused / last games. Null when the matrix
+   * has no neutral map (the maps carry no identity). */
+  map: MapLetter | null;
 }
 
 /** A decision I made, with the regret it carries (docs/web-design.md §3.4). */
@@ -138,14 +144,25 @@ function enemyDecision(model: DraftModel, node: NodeResult, colIndex: number): D
   };
 }
 
-function matchupValue(model: DraftModel, kind: FixedGame['kind'], my: number, enemy: number): number {
-  const cell = model.matrix.cells[my][enemy];
-  if (kind === 'my-defends') return cell.best; // I defend → my best map
-  if (kind === 'enemy-defends') return cell.worst; // enemy defends → my worst map
-  // refused / last → neutral: the cell's own neutral map value when the matrix
-  // carries one, else the engine's weighted-midpoint fallback.
-  return cell.neutral ?? cell.worst + model.neutralWeight * (cell.best - cell.worst);
+/** A game's value and the map it is played on. The defender picks the map, so
+ * my-defends is my best map and enemy-defends my worst; refused / last games
+ * are scored on the matrix's neutral map (or the weighted midpoint when the
+ * maps carry no identity, in which case no map is recorded). */
+function matchupGame(
+  model: DraftModel, kind: GameKind, my: number, enemy: number,
+): { value: number; map: MapLetter | null } {
+  const { matrix } = model;
+  const cell = matrix.cells[my][enemy];
+  const map = playedMap(matrix, my, enemy, kind);
+  if (kind === 'my-defends') return { value: bestOf(cell), map };
+  if (kind === 'enemy-defends') return { value: worstOf(cell), map };
+  return { value: neutralOf(matrix, my, enemy, model.neutralWeight), map };
 }
+
+/** The pairing-row label: the kind label plus " · <map>" when the game's map is
+ * known. */
+export const pairingLabel = (label: string, map: MapLetter | null): string =>
+  map ? `${label} · ${map}` : label;
 
 /** Apply one simultaneous decision: my choice (index into node.choices) + the
  * bot's sampled enemy column (index into node.why.enStrategy). Returns a new
@@ -220,11 +237,11 @@ function resolveRound(next: DraftModel, iRefuse: number, enemyRefuses: number): 
   next.fixed.push(
     {
       my: next.myDefender, enemy: enemyKept, kind: 'my-defends', round,
-      value: matchupValue(next, 'my-defends', next.myDefender, enemyKept),
+      ...matchupGame(next, 'my-defends', next.myDefender, enemyKept),
     },
     {
       my: myKept, enemy: next.enemyDefender, kind: 'enemy-defends', round,
-      value: matchupValue(next, 'enemy-defends', myKept, next.enemyDefender),
+      ...matchupGame(next, 'enemy-defends', myKept, next.enemyDefender),
     },
   );
 
@@ -236,7 +253,7 @@ function resolveRound(next: DraftModel, iRefuse: number, enemyRefuses: number): 
     const enemyRefused = iRefuse; // enemy attacker I refused
     next.fixed.push({
       my: myRefused, enemy: enemyRefused, kind: 'refused', round,
-      value: matchupValue(next, 'refused', myRefused, enemyRefused),
+      ...matchupGame(next, 'refused', myRefused, enemyRefused),
     });
     // Only even team sizes have last players; at odd sizes defender + 2
     // attackers was the whole remaining team, so each pool now holds just its
@@ -251,7 +268,7 @@ function resolveRound(next: DraftModel, iRefuse: number, enemyRefuses: number): 
       }
       next.fixed.push({
         my: myLast, enemy: enemyLast, kind: 'last', round,
-        value: matchupValue(next, 'last', myLast, enemyLast),
+        ...matchupGame(next, 'last', myLast, enemyLast),
       });
     }
     next.done = true;

@@ -4,16 +4,16 @@
  * root game values for small matrices so the engine's enumeration, induction,
  * packing, and endgame arithmetic can be cross-checked (spec 2026-07-15).
  * Import from tests only; exponential-ish, fine for n <= 6. */
+import { bestOf, neutralOf, worstOf } from './maps';
 import type { Matrix } from './types';
 import { gameValue } from './zeroSum';
 
 export function referenceValue(matrix: Matrix, neutralWeight = 0.5): number {
   const n = matrix.n;
   const endgameN = n % 2 === 1 ? 3 : 4;
-  const best = matrix.cells.map((row) => row.map((c) => c.best));
-  const worst = matrix.cells.map((row) => row.map((c) => c.worst));
-  const neutral = (i: number, j: number): number =>
-    matrix.cells[i][j].neutral ?? worst[i][j] + neutralWeight * (best[i][j] - worst[i][j]);
+  const best = matrix.cells.map((row) => row.map((c) => bestOf(c)));
+  const worst = matrix.cells.map((row) => row.map((c) => worstOf(c)));
+  const neutral = (i: number, j: number): number => neutralOf(matrix, i, j, neutralWeight);
 
   const memo = new Map<string, number>();
 

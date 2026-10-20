@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { achievedTotal } from '../draft/draftState';
+import { achievedTotal, pairingLabel } from '../draft/draftState';
 import type { DraftDecision, DraftModel, FixedGame } from '../draft/draftState';
 import { decompose, decompose2p, verdict, verdict2p } from '../draft/summary';
 import { formatMatchupScore, teamResult, toScore } from '../model/scale';
@@ -136,7 +136,7 @@ export function DraftSummary({ myTeam, enemyTeam, myNames, enemyNames, expected,
                 <span className="pmine">{myNames[game.my]}</span>
                 <span className="pscore">{formatMatchupScore(my)}–{formatMatchupScore(20 - my)}</span>
                 <span className="penemy">{enemyNames[game.enemy]}</span>
-                <span className="pkind">{KIND_LABEL[game.kind]}</span>
+                <span className="pkind">{pairingLabel(KIND_LABEL[game.kind], game.map)}</span>
               </div>
             );
           })}

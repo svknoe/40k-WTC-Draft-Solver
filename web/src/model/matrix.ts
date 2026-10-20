@@ -1,4 +1,5 @@
-import type { Matrix } from '../engine/types';
+import type { MapLetter, Matrix } from '../engine/types';
+import { MAP_LETTERS } from '../engine/types';
 import type { Disposition } from './dispositions';
 import { DISPOSITIONS, toDisposition } from './dispositions';
 import { FACTIONS } from './factions';
@@ -10,11 +11,9 @@ export type MatrixSize = Matrix['n'];
 /** A cell's map A, B and C ratings, as typed. */
 export type MapTriple = [string, string, string];
 
-/** The labels of the three maps, in storage order. */
-export const MAP_LETTERS = ['A', 'B', 'C'] as const;
-
-/** One of the three map letters. */
-export type MapLetter = typeof MAP_LETTERS[number];
+/** The map letters live with the engine's Matrix (one definition). */
+export { MAP_LETTERS };
+export type { MapLetter };
 
 /** The storage index (0, 1, 2) of a map letter. */
 export const mapIndex = (letter: MapLetter): number => MAP_LETTERS.indexOf(letter);
@@ -78,8 +77,9 @@ export function filledMaps(cell: EditorCell): number[] {
 }
 
 /** The mean of a cell's filled maps as a 0-20 score, or null when no map is
- * filled or one is unparseable. Display only: the solver uses the max/min
- * (toEngineMatrix), and neutral games use the chosen neutral map. */
+ * filled or one is unparseable. Display only: the engine derives best and worst
+ * from the map ratings toEngineMatrix sends, and neutral games use the chosen
+ * neutral map. */
 export function mapAverage(cell: EditorCell): number | null {
   try {
     const values = filledMaps(cell);
@@ -124,13 +124,15 @@ export function blank(n: MatrixSize): EditorMatrix {
 
 /** Parse an EditorMatrix to the engine's internal-scale Matrix, reading the
  * layer the active rating mode shows: simple mode uses the single rating `s`
- * for every game (you solve what you see); by-map mode sends the best and
- * worst of the filled maps — the defender picks the map — and the chosen
- * neutral map as the value of neutral games. Throws RangeError if a cell in
- * the active layer is unparseable or lacks its neutral map — callers validate
- * first (§6). */
+ * on every map with no map identity (you solve what you see); by-map mode
+ * sends each cell's map A/B/C ratings (blank = unrated) and the chosen neutral
+ * map — the engine derives best (my defender's pick), worst (the enemy
+ * defender's pick) and the neutral-game value from them. Throws RangeError if
+ * a cell in the active layer is unparseable or lacks its neutral map —
+ * callers validate first (§6). */
 export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
   const k = mapIndex(m.neutralMap);
+  const rating = (raw: string): number | null => (raw.trim() === '' ? null : parseRating(raw));
   return {
     n: m.n,
     // Surface the positional label for any unset (empty) name, so the engine
@@ -138,15 +140,17 @@ export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
     // Opponent K rather than a blank for players left on the dropdown default.
     myNames: resolveNames(m.myNames, 'my'),
     enemyNames: resolveNames(m.enemyNames, 'enemy'),
+    // Single rating: one number on every map, and no map identity.
+    neutralMap: simple ? null : m.neutralMap,
     cells: m.cells.map((row) =>
       row.map((cell) => {
         if (simple) {
           const v = parseRating(cell.s);
-          return { best: v, worst: v, neutral: v };
+          return { maps: [v, v, v] };
         }
         if (cell.maps[k].trim() === '') throw new RangeError(`Map ${m.neutralMap} (the neutral map) is blank.`);
-        const maps = filledMaps(cell);
-        return { best: Math.max(...maps), worst: Math.min(...maps), neutral: parseRating(cell.maps[k]) };
+        const [a, b, c] = cell.maps;
+        return { maps: [rating(a), rating(b), rating(c)] };
       })),
   };
 }

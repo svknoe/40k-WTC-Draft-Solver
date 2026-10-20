@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import type { Matrix, NodeResult } from '../engine/types';
 import { sampleIndex } from '../draft/sampling';
 import type { DraftModel, FixedGame } from '../draft/draftState';
-import { applyStep, endgameNOf, enemyMoveId, finalRoundOf, initDraft } from '../draft/draftState';
+import { applyStep, endgameNOf, enemyMoveId, finalRoundOf, initDraft, pairingLabel } from '../draft/draftState';
 import { enemyPairColIndex, pairChoiceIndex, projectedResult } from '../draft/cards';
 import { formatMatchupScore, formatTeamScore, teamTotal, toScore } from '../model/scale';
 import { activeWtcEvent } from '../model/wtcDates';
@@ -47,8 +47,8 @@ const STAGE_COPY_2P = {
 
 // Which map a resolved game is played on: the defender picks it, so my-defends
 // is my best map and enemy-defends is theirs (my worst); the refused / last
-// games have no defender, so they're scored on the matrix's neutral map (the
-// engine's per-cell neutral value).
+// games have no defender, so they're scored on the matrix's neutral map
+// (engine/maps.ts neutralOf).
 const MAP_LABEL: Record<FixedGame['kind'], string> = {
   'my-defends': 'your map',
   'enemy-defends': 'their map',
@@ -410,7 +410,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
                   <span className="pmine">{myNames[game.my]}</span>
                   <span className="pscore">{formatMatchupScore(my)}–{formatMatchupScore(20 - my)}</span>
                   <span className="penemy">{enemyNames[game.enemy]}</span>
-                  <span className="pkind">{MAP_LABEL[game.kind]}</span>
+                  <span className="pkind">{pairingLabel(MAP_LABEL[game.kind], game.map)}</span>
                 </div>
               );
             })}

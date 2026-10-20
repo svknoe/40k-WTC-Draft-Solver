@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatCell, formatMatchupScore, formatTeamScore, parseRating, scoreBand, teamResult, teamTotal, toInputString, toScore } from './scale';
+import { formatMatchupScore, formatTeamScore, parseRating, scoreBand, teamResult, teamTotal, toInputString, toScore } from './scale';
 
 describe('parseRating', () => {
   test('0-20 numbers convert as score - 10', () => {
@@ -31,16 +31,11 @@ describe('parseRating', () => {
   });
 });
 
-describe('toScore / formatCell', () => {
+describe('toScore', () => {
   test('toScore inverts the score->internal shift', () => {
     expect(toScore(5)).toBe(15);
     expect(toScore(-10)).toBe(0);
     expect(toScore(0)).toBe(10);
-  });
-
-  test('formatCell renders best / worst on the 0-20 scale', () => {
-    expect(formatCell({ best: 5, worst: 2 })).toBe('15 / 12');
-    expect(formatCell({ best: 0, worst: -8 })).toBe('10 / 2');
   });
 });
 

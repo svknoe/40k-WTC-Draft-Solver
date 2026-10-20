@@ -136,7 +136,7 @@ export function DraftSummary({ myTeam, enemyTeam, myNames, enemyNames, expected,
                 <span className="pmine">{myNames[game.my]}</span>
                 <span className="pscore">{formatMatchupScore(my)}–{formatMatchupScore(20 - my)}</span>
                 <span className="penemy">{enemyNames[game.enemy]}</span>
-                <span className="pkind">{KIND_LABEL[game.kind]}</span>
+                <span className="pkind">{KIND_LABEL[game.kind]}{game.map ? ` · ${game.map}` : ''}</span>
               </div>
             );
           })}

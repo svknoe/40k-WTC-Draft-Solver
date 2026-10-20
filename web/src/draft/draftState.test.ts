@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { DraftEngine } from '../engine/engine';
-import { bestOf, cellFromBestWorst, worstOf } from '../engine/maps';
+import { bestMapIndex, bestOf, cellFromBestWorst, worstMapIndex, worstOf } from '../engine/maps';
 import type { Matrix } from '../engine/types';
+import { MAP_LETTERS } from '../engine/types';
 import { achievedTotal, applyStep, finalRoundOf, initDraft } from './draftState';
 
 function argmax(values: number[]): number {
@@ -86,6 +87,38 @@ describe('draftState (Smoke 4×4, exact engine)', () => {
         : (cell.maps[2] as number);
       expect(g.value).toBeCloseTo(expectedValue, 9);
     }
+  });
+
+  test('each locked game records the map it is played on', () => {
+    const withMaps: Matrix = {
+      ...matrix,
+      neutralMap: 'C',
+      cells: matrix.cells.map((row) => row.map((c) => ({
+        maps: [bestOf(c), worstOf(c), worstOf(c) + 0.25 * (bestOf(c) - worstOf(c))],
+      }))),
+    };
+    const mapsEngine = new DraftEngine(withMaps, null, smoke.neutralWeight);
+    mapsEngine.solve();
+    let model = initDraft(withMaps, smoke.neutralWeight);
+    while (!model.done) {
+      const node = mapsEngine.nodeResult(model.path);
+      model = applyStep(model, node, argmax(node.choices.map((c) => c.prob)), argmax(node.why!.enStrategy));
+    }
+    expect(model.fixed).toHaveLength(4);
+    for (const g of model.fixed) {
+      const { maps } = withMaps.cells[g.my][g.enemy];
+      const expectedMap =
+        g.kind === 'my-defends' ? MAP_LETTERS[bestMapIndex(maps)]
+        : g.kind === 'enemy-defends' ? MAP_LETTERS[worstMapIndex(maps)]
+        : 'C';
+      expect(g.map).toBe(expectedMap);
+    }
+  });
+
+  test('without a neutral map (map identity unknown) every game has no map', () => {
+    const model = walk((node) => argmax(node.choices.map((c) => c.prob)));
+    expect(model.fixed).toHaveLength(4);
+    for (const g of model.fixed) expect(g.map).toBeNull();
   });
 });
 

@@ -410,7 +410,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
                   <span className="pmine">{myNames[game.my]}</span>
                   <span className="pscore">{formatMatchupScore(my)}–{formatMatchupScore(20 - my)}</span>
                   <span className="penemy">{enemyNames[game.enemy]}</span>
-                  <span className="pkind">{MAP_LABEL[game.kind]}</span>
+                  <span className="pkind">{MAP_LABEL[game.kind]}{game.map ? ` · ${game.map}` : ''}</span>
                 </div>
               );
             })}

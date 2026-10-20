@@ -231,7 +231,9 @@ nav.screens { display: flex; gap: 0.25rem; flex-wrap: wrap; }
 
 .segmented { display: inline-flex; background: var(--bg-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
 .segmented button { border: 0; background: transparent; color: var(--text-3); padding: 0.35rem 0.7rem; border-radius: 6px; }
-.segmented button.on { background: var(--blue); color: #06101c; font-weight: 600; }
+/* Emphasis via a thin text stroke, not font-weight: bolder glyphs are wider, so
+ * a weight change would nudge the neighbouring buttons whenever the choice changes. */
+.segmented button.on { background: var(--blue); color: #06101c; -webkit-text-stroke: 0.4px currentColor; }
 
 /* --- modal (shared; screen-specific bodies add their own rules) --- */
 .modal-backdrop {

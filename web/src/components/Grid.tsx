@@ -4,8 +4,7 @@ import { DISPOSITIONS, DISPOSITION_LABELS } from '../model/dispositions';
 import type { EditorCell, EditorMatrix, MapTriple } from '../model/matrix';
 import { MAP_LETTERS, cellValue, defaultEnemyName, defaultMyName, meanOf } from '../model/matrix';
 import { FACTIONS, FACTION_SET } from '../model/factions';
-import { formatMatchupScore } from '../model/scale';
-import { pointClass } from './palette';
+import { pointClass, pointStep } from './palette';
 
 interface GridProps {
   matrix: EditorMatrix;
@@ -101,9 +100,10 @@ interface MatrixCellProps {
 }
 
 /** One square matchup tile, filled with the palette colour of the value it
- * shows. By-map mode: the read-only map average in the centre and the A/B/C
- * inputs in a strip along the bottom. Single mode: the centre number is itself
- * the input. A blank or unparseable cell draws neutral. */
+ * shows. By-map mode: the read-only map average in the centre — rounded to the
+ * whole score its colour stands for — and the A/B/C inputs in a strip along
+ * the bottom. Single mode: the centre number is itself the input. A blank or
+ * unparseable cell draws neutral. */
 function MatrixCell({ cell, simpleMode, label, error, readOnly, onChange }: MatrixCellProps) {
   const value = cellValue(cell, simpleMode);
   // A fully-blank cell is "unfilled", not wrong — don't flag it red (Solve
@@ -134,7 +134,7 @@ function MatrixCell({ cell, simpleMode, label, error, readOnly, onChange }: Matr
         ) : (
           <>
             <output className="tile-value" aria-label={`${label} average`} aria-live="off">
-              {value === null ? '–' : formatMatchupScore(value)}
+              {value === null ? '–' : pointStep(value)}
             </output>
             <div className="tile-maps">
               {MAP_LETTERS.map((letter, k) => (

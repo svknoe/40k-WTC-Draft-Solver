@@ -94,18 +94,27 @@ describe('Grid faction dropdowns', () => {
 });
 
 describe('Grid tiles', () => {
-  test('by-map mode shows the map average, coloured by its rounded palette step', () => {
+  test('by-map mode shows the map average rounded to a whole score, matching its palette step', () => {
     const m = matrix();
-    m.cells[0][0] = { maps: ['12', '9', ''], s: '10' };
+    m.cells[0][0] = { maps: ['12', '9', ''], s: '10' }; // 10.5 -> 11 (half up)
     renderGrid(m);
     const avg = screen.getByLabelText('P1 vs E1 average');
-    expect(avg).toHaveTextContent('10.5');
+    expect(avg).toHaveTextContent(/^11$/);
     expect(avg.closest('.tile')).toHaveClass('pt-11');
     expect(screen.getByLabelText('P1 vs E1 map A')).toHaveValue('12');
     expect(screen.getByLabelText('P1 vs E1 map C')).toHaveValue('');
   });
 
-  test('a whole-number average shows without a decimal', () => {
+  test('a fractional average rounds to the nearest whole score', () => {
+    const m = matrix();
+    m.cells[0][1] = { maps: ['15', '9', '13'], s: '10' }; // 12.33 -> 12
+    m.cells[0][2] = { maps: ['15', '9', '11'], s: '10' }; // 11.67 -> 12
+    renderGrid(m);
+    expect(screen.getByLabelText('P1 vs E2 average')).toHaveTextContent(/^12$/);
+    expect(screen.getByLabelText('P1 vs E3 average')).toHaveTextContent(/^12$/);
+  });
+
+  test('a whole-number average shows as is', () => {
     renderGrid(matrix()); // 10 / 10 / ''
     expect(screen.getByLabelText('P1 vs E2 average')).toHaveTextContent(/^10$/);
   });

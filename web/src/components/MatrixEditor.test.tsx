@@ -101,7 +101,7 @@ describe('MatrixEditor', () => {
     // Clear/Random would rewrite the matrix under the draft — frozen as well.
     expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Random' })).toBeDisabled();
-    expect(within(screen.getByRole('group', { name: 'Neutral games map' })).getByRole('button', { name: 'B' })).toBeDisabled();
+    expect(within(screen.getByRole('group', { name: 'Neutral games on' })).getByRole('button', { name: 'B' })).toBeDisabled();
 
     // "Discard draft to edit" discards immediately — no confirmation dialog.
     await user.click(screen.getByRole('button', { name: /discard draft to edit/i }));
@@ -111,10 +111,12 @@ describe('MatrixEditor', () => {
   test('By map mode shows a neutral-map control that sets the matrix neutral map', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />); // by-map mode, neutralMap 'A'
-    const group = screen.getByRole('group', { name: 'Neutral games map' });
+    const group = screen.getByRole('group', { name: 'Neutral games on' });
     expect(within(group).getByRole('button', { name: 'A' })).toHaveClass('on');
     await user.click(within(group).getByRole('button', { name: 'C' }));
     expect(within(group).getByRole('button', { name: 'C' })).toHaveClass('on');
+    expect(within(group).getByRole('button', { name: 'C' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(group).getByRole('button', { name: 'A' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByLabelText('A vs W map C')).toHaveClass('neutral');
     expect(screen.getByLabelText('A vs W map A')).not.toHaveClass('neutral');
   });
@@ -123,7 +125,7 @@ describe('MatrixEditor', () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />);
     await user.click(screen.getByRole('button', { name: 'Single rating' }));
-    expect(screen.queryByRole('group', { name: 'Neutral games map' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Neutral games on' })).not.toBeInTheDocument();
   });
 
   test('opponent name slots default to "Opponent k", not "Enemy k"', () => {

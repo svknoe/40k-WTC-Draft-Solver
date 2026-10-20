@@ -116,6 +116,13 @@ describe('toEngineMatrix', () => {
     expect(e.cells[2][0]).toEqual({ best: 0, worst: 0, neutral: 0 });
   });
 
+  test('simple mode ignores the neutral map: blank map C does not throw and neutral = s', () => {
+    const m = { ...sample4(), neutralMap: 'C' as const };
+    m.cells = m.cells.map((row) => row.map((cell) => ({ maps: [cell.maps[0], cell.maps[1], ''] as [string, string, string], s: cell.s })));
+    const e = toEngineMatrix(m, true);
+    expect(e.cells[0][0]).toEqual({ best: 2, worst: 2, neutral: 2 });
+  });
+
   test('by-map mode throws on an unparseable map or a blank neutral map', () => {
     const bad = sample4();
     bad.cells[1][1] = c('x', '5', '', '8');

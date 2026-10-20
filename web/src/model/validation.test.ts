@@ -88,6 +88,11 @@ describe('validateMatrix (single-rating mode)', () => {
     expect(validateMatrix(m, true).ok).toBe(true);
   });
 
+  test('ignores the neutral map: neutralMap C with every map C blank is still valid', () => {
+    const m = { ...valid4(), neutralMap: 'C' as const };
+    expect(validateMatrix(m, true).ok).toBe(true);
+  });
+
   test('flags a non-integer single rating on the offending cell only', () => {
     const m = valid4();
     m.cells[0][0] = { maps: ['12', '9', ''], s: '12.5' };

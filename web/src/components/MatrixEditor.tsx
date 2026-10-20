@@ -225,28 +225,32 @@ export function MatrixEditor({
           </button>
           <span className="spacer" />
           <div className="segmented" role="group" aria-label="Rating mode">
-            <button className={settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: true })}>
+            <button className={settings.simpleMode ? 'on' : ''} aria-pressed={settings.simpleMode} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: true })}>
               Single rating
             </button>
-            <button className={!settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
+            <button className={!settings.simpleMode ? 'on' : ''} aria-pressed={!settings.simpleMode} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
               By map
             </button>
           </div>
           {!settings.simpleMode && (
             <>
-              <span className="neutral-label">Neutral games on</span>
-              <div className="segmented" role="group" aria-label="Neutral games map">
-                {MAP_LETTERS.map((letter) => (
+              <span className="neutral-label" id="neutral-map-label">Neutral games on</span>
+              <div className="segmented" role="group" aria-labelledby="neutral-map-label">
+                {MAP_LETTERS.map((letter) => {
+                  const isOn = matrix.neutralMap === letter;
+                  return (
                   <button
                     key={letter}
-                    className={matrix.neutralMap === letter ? 'on' : ''}
+                    className={isOn ? 'on' : ''}
+                    aria-pressed={isOn}
                     disabled={locked}
                     title={`Refused vs refused and last vs last are played on map ${letter}`}
                     onClick={() => update({ neutralMap: letter })}
                   >
                     {letter}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}

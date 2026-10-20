@@ -13,7 +13,7 @@ export function referenceValue(matrix: Matrix, neutralWeight = 0.5): number {
   const best = matrix.cells.map((row) => row.map((c) => c.best));
   const worst = matrix.cells.map((row) => row.map((c) => c.worst));
   const neutral = (i: number, j: number): number =>
-    worst[i][j] + neutralWeight * (best[i][j] - worst[i][j]);
+    matrix.cells[i][j].neutral ?? worst[i][j] + neutralWeight * (best[i][j] - worst[i][j]);
 
   const memo = new Map<string, number>();
 

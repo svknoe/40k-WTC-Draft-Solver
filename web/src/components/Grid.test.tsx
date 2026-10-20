@@ -165,7 +165,7 @@ describe('Grid tiles', () => {
     m.cells[0][1] = { maps: ['', '', ''], s: '' };
     const errors = noErrors(m.n) as (string | null)[][];
     errors[0][0] = 'Map A: out of range';
-    errors[0][1] = 'Enter at least one map rating.';
+    errors[0][1] = 'Map A is the neutral map — fill it in.';
     renderGrid(m, { cellErrors: errors });
     const bad = screen.getByLabelText('P1 vs E1 map A').closest('td');
     expect(bad).toHaveClass('invalid');

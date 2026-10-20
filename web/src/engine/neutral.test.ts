@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { DraftEngine } from './engine';
+import { referenceValue } from './reference';
 import type { Matrix } from './types';
 
 const names = (prefix: string, n: number): string[] =>
@@ -46,5 +47,13 @@ describe('per-cell neutral value', () => {
     const viaNeutral = solve(spreadMatrix(4, (_b, w) => w));
     const viaWeight = new DraftEngine(spreadMatrix(4), null, 0).solve();
     expect(viaNeutral).toBeCloseTo(viaWeight, 9);
+  });
+
+  test.each([5, 6] as const)('the brute-force reference honours per-cell neutral at n=%i', (n) => {
+    // Non-midpoint, non-uniform neutrals: some at worst, some at best, some between.
+    const m = spreadMatrix(n, (b, w) => w + (((b * 3 + w * 5 + n) % 5) / 4) * (b - w));
+    expect(referenceValue(m)).toBeCloseTo(solve(m), 9);
+    // Guard against a vacuous check: the neutrals must actually change the value.
+    expect(Math.abs(solve(m) - solve(spreadMatrix(n)))).toBeGreaterThan(1e-6);
   });
 });

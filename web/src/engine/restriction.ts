@@ -10,7 +10,8 @@
  * plays the enemy defender, who picks the map, so it gets the pairing's
  * worst-map value; an enemy attacker faces the friendly defender's best-map
  * value. Games against the rest of the field have no defender yet and use the
- * neutral (weighted-midpoint) value.
+ * neutral value (the cell's per-cell neutral when it carries one, else the
+ * weighted midpoint).
  *
  * Ordering matters beyond the set: the returned RANKED order drives the
  * attacker-pair enumeration order, hence payoff-matrix row/column order and

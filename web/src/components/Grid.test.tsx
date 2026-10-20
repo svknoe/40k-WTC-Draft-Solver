@@ -33,6 +33,7 @@ function renderGrid(
     cellErrors?: (string | null)[][];
     onCellChange?: (i: number, j: number, cell: EditorCell) => void;
     onMyDisposition?: (i: number, d: Disposition) => void;
+    onEnemyDisposition?: (j: number, d: Disposition) => void;
   } = {},
 ) {
   render(
@@ -45,7 +46,7 @@ function renderGrid(
       onMyName={vi.fn()}
       onEnemyName={vi.fn()}
       onMyDisposition={opts.onMyDisposition ?? vi.fn()}
-      onEnemyDisposition={vi.fn()}
+      onEnemyDisposition={opts.onEnemyDisposition ?? vi.fn()}
     />,
   );
 }
@@ -158,7 +159,7 @@ describe('Grid tiles', () => {
 });
 
 describe('Grid player headers', () => {
-  test('the faction shows as a full, wrapping text label (not truncated in a select)', () => {
+  test('the faction shows as a text label over the select (full name, or the positional default)', () => {
     renderGrid(matrix({ enemyNames: ['Chaos Space Marines', '', ''] }));
     expect(screen.getByText('Chaos Space Marines', { selector: '.faction-label' })).toBeInTheDocument();
     expect(screen.getByText('Opponent 2', { selector: '.faction-label' })).toBeInTheDocument();
@@ -187,6 +188,14 @@ describe('Grid player headers', () => {
     renderGrid(matrix(), { onMyDisposition });
     await user.selectOptions(sel('Your player 3 disposition'), 'recon');
     expect(onMyDisposition).toHaveBeenCalledWith(2, 'recon');
+  });
+
+  test('picking an opponent disposition reports it', async () => {
+    const user = userEvent.setup();
+    const onEnemyDisposition = vi.fn();
+    renderGrid(matrix(), { onEnemyDisposition });
+    await user.selectOptions(sel('Opponent player 2 disposition'), 'priority');
+    expect(onEnemyDisposition).toHaveBeenCalledWith(1, 'priority');
   });
 
   test('readOnly locks the disposition selects too', () => {

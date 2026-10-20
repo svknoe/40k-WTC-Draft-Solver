@@ -79,6 +79,7 @@ table.grid .row-head { position: sticky; left: 0; background: var(--bg-2); z-ind
 
 table.grid .col-head { padding-bottom: 0.35rem; text-align: center; }
 .row-head-inner { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; padding: 0 0.35rem; }
+.row-head-inner .faction-pick { align-self: stretch; }
 
 select.disp { appearance: none; -webkit-appearance: none; border: 1px solid transparent; border-radius: 4px;
   padding: 0.1rem 0.5rem; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.04em;
@@ -86,7 +87,7 @@ select.disp { appearance: none; -webkit-appearance: none; border: 1px solid tran
 select.disp:disabled { cursor: default; }
 select.disp:focus { outline: 1px solid var(--blue); outline-offset: 1px; }
 select.disp option { background: var(--card); color: var(--text-1); }
-.disp-unset { background: transparent; color: var(--text-4); border-color: var(--border-strong); border-style: dashed; }
+select.disp.disp-unset { background: transparent; color: var(--text-4); border-color: var(--border-strong); border-style: dashed; }
 .disp-purge { background: #e2445c; color: #ffffff; }
 .disp-hold { background: #45c48f; color: #0a0a0c; }
 .disp-disrupt { background: #a78bfa; color: #0a0a0c; }

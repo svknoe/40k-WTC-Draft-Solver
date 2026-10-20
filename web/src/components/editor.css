@@ -87,6 +87,10 @@ table.grid .col-head { padding-bottom: 0.35rem; text-align: center; }
  * (11cqi ≈ "PRIORITY"/"disposition" plus padding), so they fit even the
  * narrow columns of an 8×8 grid on a small window. */
 .col-head-inner { container-type: inline-size; }
+/* Likewise the faction name: the longest single words ("Genestealer",
+ * "Mechanicus") are ~5.7em wide, so 15.5cqi keeps every word whole in a
+ * narrow column; wide columns stay at the normal size. */
+.col-head-inner .faction-label { font-size: clamp(0.5rem, 15.5cqi, 0.76rem); }
 .col-head-inner select.disp { width: 100%; padding: 0.1rem 0.15rem; letter-spacing: 0;
   font-size: clamp(0.5rem, 11cqi, 0.62rem); }
 .row-head-inner { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; padding: 0 0.35rem; }

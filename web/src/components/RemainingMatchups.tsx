@@ -31,8 +31,9 @@ interface MatchupTileProps {
 
 /** One read-only matchup tile in the Matrix page's design: the rounded mean of
  * the rated maps in the centre, palette-filled, and (with map identity) the
- * A/B/C ratings in a strip along the bottom. The map that would be played
- * given the current draft roles is bold and bright, the others dimmer. */
+ * A/B/C ratings in a strip along the bottom. When the current draft roles
+ * decide which map would be played, that rating is shown full-size and bold
+ * while the average and the other two maps fade. */
 function MatchupTile({ model, m, e, label }: MatchupTileProps) {
   const { matrix } = model;
   const identity = hasMapIdentity(matrix);
@@ -54,7 +55,7 @@ function MatchupTile({ model, m, e, label }: MatchupTileProps) {
   return (
     <td className="cell">
       <div
-        className={`tile ${pointClass(avg)}`}
+        className={`tile ${pointClass(avg)}${played ? ' has-played' : ''}`}
         role="img"
         aria-label={`${label}: ${mapsLabel}`}
         data-matchup={label}
@@ -86,7 +87,11 @@ function MatchupTile({ model, m, e, label }: MatchupTileProps) {
 export function RemainingMatchups({
   model, myNames, enemyNames, open, onOpenChange, myDispositions = [], enemyDispositions = [],
 }: RemainingMatchupsProps) {
-  const { myRemaining, enemyRemaining } = model;
+  const { myRemaining, enemyRemaining, myDefender, enemyDefender } = model;
+  // The "active" row and column: this round's defenders, once both are on the table.
+  const defendersKnown = myDefender >= 0 && enemyDefender >= 0;
+  const activeRow = (m: number) => defendersKnown && m === myDefender;
+  const activeCol = (e: number) => defendersKnown && e === enemyDefender;
 
   return (
     <details
@@ -115,7 +120,11 @@ export function RemainingMatchups({
             <tr>
               <th className="corner" />
               {enemyRemaining.map((e) => (
-                <th key={e} className="col-head">
+                <th
+                  key={e}
+                  className={activeCol(e) ? 'col-head active' : 'col-head'}
+                  title={activeCol(e) ? 'Defending this round' : undefined}
+                >
                   <div className="col-head-inner">
                     <span className="faction-label enemy-label">{enemyNames[e]}</span>
                     {pill(enemyDispositions[e])}
@@ -127,7 +136,10 @@ export function RemainingMatchups({
           <tbody>
             {myRemaining.map((m) => (
               <tr key={m}>
-                <th className="row-head">
+                <th
+                  className={activeRow(m) ? 'row-head active' : 'row-head'}
+                  title={activeRow(m) ? 'Defending this round' : undefined}
+                >
                   <div className="row-head-inner">
                     <span className="faction-label mine-label">{myNames[m]}</span>
                     {pill(myDispositions[m])}

@@ -185,11 +185,22 @@
 .remaining table.grid.compact .corner, .remaining table.grid.compact .row-head { width: 8rem; }
 .remaining .faction-label.mine-label { color: var(--blue); text-align: left; }
 .remaining .faction-label.enemy-label { color: var(--enemy); text-align: center; }
-/* read-only map strip: the played map (if decided) bold and bright, others dimmer */
+/* read-only map strip. When the draft roles decide the map in play, that rating
+ * is shown full-size and bold while the average and the other two maps fade.
+ * The tile is a size container so "full-size" scales down on small tiles. */
+.remaining .tile { container-type: inline-size; }
 .remaining .map-cell { flex: 1; min-width: 0; text-align: center; align-self: center; color: inherit; opacity: 0.6;
-  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.72rem; }
-.remaining .tile-maps.has-played .map-cell { opacity: 0.35; }
-.remaining .tile-maps.has-played .map-cell.played { opacity: 1; font-weight: 700; }
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.72rem; line-height: 1; }
+.remaining .tile.has-played .tile-value { opacity: 0.25; }
+.remaining .tile-maps.has-played .map-cell { opacity: 0.25; }
+.remaining .tile-maps.has-played .map-cell.played { opacity: 1; font-weight: 700;
+  font-size: clamp(0.72rem, 22cqi, 1.15rem); }
+/* this round's defenders: the active row and column get a tinted header with an
+ * accent bar on the edge facing the grid (blue = mine, red = theirs) */
+.remaining table.grid .row-head.active { background: color-mix(in srgb, var(--blue) 18%, var(--bg-2));
+  box-shadow: inset -3px 0 0 var(--blue); }
+.remaining table.grid .col-head.active { background: color-mix(in srgb, var(--enemy) 18%, var(--bg-2));
+  box-shadow: inset 0 -3px 0 var(--enemy); }
 .remaining span.disp { display: inline-block; border-radius: 4px; padding: 0.1rem 0.3rem; font-size: 0.62rem;
   font-weight: 700; letter-spacing: 0.02em; }
 /* column-header pills fill the column and scale with it, like the Matrix page

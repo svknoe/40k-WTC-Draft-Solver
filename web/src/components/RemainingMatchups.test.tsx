@@ -122,6 +122,29 @@ describe('matrix tiles', () => {
     }
   });
 
+  test('a tile with a played map is marked so its average and other maps can fade', () => {
+    const { container } = renderGrid(model);
+    for (const m of model.myRemaining) {
+      for (const e of model.enemyRemaining) {
+        const t = tile(container, m, e);
+        expect(t.classList.contains('has-played')).toBe(contextKind(model, m, e) !== null);
+      }
+    }
+  });
+
+  test('the defenders\' row and column headers are marked active', () => {
+    const { container } = renderGrid(model);
+    const active = (selector: string) =>
+      [...container.querySelectorAll(`${selector}.active`)].map((th) => th.textContent);
+    expect(active('th.row-head')).toEqual([matrix.myNames[myDefender]]);
+    expect(active('th.col-head')).toEqual([matrix.enemyNames[enemyDefender]]);
+  });
+
+  test('before the defenders are picked nothing is active', () => {
+    const { container } = renderGrid(initDraft(matrix, smoke.neutralWeight));
+    expect(container.querySelectorAll('th.active, .tile.has-played')).toHaveLength(0);
+  });
+
   test('each tile is an image with a full label: average, every map, and the played one', () => {
     const { container } = renderGrid(model);
     const m = myDefender;

@@ -126,7 +126,8 @@ function MatrixCell({ cell, simpleMode, label, error, readOnly, onChange }: Matr
             value={cell.s}
             placeholder="–"
             aria-label={label}
-            inputMode="decimal"
+            aria-invalid={showError || undefined}
+            inputMode="numeric"
             readOnly={readOnly}
             onChange={(e) => onChange({ ...cell, s: e.target.value })}
           />
@@ -143,7 +144,8 @@ function MatrixCell({ cell, simpleMode, label, error, readOnly, onChange }: Matr
                   value={cell.maps[k]}
                   placeholder={letter}
                   aria-label={`${label} map ${letter}`}
-                  inputMode="decimal"
+                  aria-invalid={showError || undefined}
+                  inputMode="numeric"
                   readOnly={readOnly}
                   onChange={(e) => setMap(k, e.target.value)}
                 />
@@ -241,7 +243,7 @@ export function Grid({
         </tbody>
         <tfoot>
           <tr>
-            <th className="avg-head row">avg</th>
+            <th className="avg-head avg-foot">avg</th>
             {enemyNames.map((_, j) => (
               <td key={j} className="avg" aria-label={`${colLabel(j)} column average`}>
                 {formatAverage(meanOf(values.map((row) => row[j])))}

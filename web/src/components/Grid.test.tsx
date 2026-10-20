@@ -155,6 +155,9 @@ describe('Grid tiles', () => {
     const blank = screen.getByLabelText('P1 vs E2 map A').closest('td');
     expect(blank).not.toHaveClass('invalid');
     expect(blank).not.toHaveAttribute('title');
+    expect(screen.getByLabelText('P1 vs E1 map A')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('P1 vs E2 map A')).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByLabelText('P1 vs E3 map A')).not.toHaveAttribute('aria-invalid');
   });
 });
 
@@ -206,6 +209,13 @@ describe('Grid player headers', () => {
 });
 
 describe('Grid averages', () => {
+  test('the footer AVG header does not pick up the global .row utility class', () => {
+    renderGrid(matrix());
+    const foot = screen.getByText('avg', { selector: 'tfoot th' });
+    expect(foot).toHaveClass('avg-foot');
+    expect(foot).not.toHaveClass('row');
+  });
+
   test('AVG column and row average the shown values, one decimal, skipping blanks', () => {
     const m = matrix(); // every cell 10/10 -> 10
     m.cells[0][0] = { maps: ['12', '10', ''], s: '10' }; // 11

@@ -49,16 +49,21 @@
 
 .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 
-/* grid — sized to fit its container so the whole matrix is visible without a
- * horizontal scrollbar on desktop (table-layout: fixed distributes the columns
- * evenly). The min-width only trips the scroll fallback on very narrow screens. */
-.grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-table.grid { border-collapse: collapse; width: 100%; table-layout: fixed; min-width: 34rem; }
-table.grid th, table.grid td { border: 1px solid var(--border); padding: 0; }
-table.grid .corner { width: 6.5rem; color: var(--text-4); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
-  padding: 0.35rem 0.5rem; text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--bg-2); z-index: 2; }
-table.grid .col-head { background: var(--bg-2); }
-table.grid .row-head { width: 6.5rem; position: sticky; left: 0; background: var(--bg-2); z-index: 1; }
+/* grid — square, palette-filled tiles. Columns: row header + n tiles. The
+ * table asks for tiles of up to 6rem and shrinks to its container
+ * (table-layout: fixed shares the width evenly); the min-width trips the
+ * horizontal-scroll fallback on narrow screens. --n is set inline by Grid. */
+.grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-2); }
+table.grid {
+  border-collapse: separate; border-spacing: 3px; table-layout: fixed;
+  width: calc(11rem + var(--n) * 6rem); max-width: 100%; min-width: calc(11rem + var(--n) * 3.5rem);
+}
+table.grid th, table.grid td { padding: 0; }
+table.grid .corner { width: 11rem; color: var(--text-4); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 0.35rem 0.5rem; text-align: left; font-weight: 500; vertical-align: bottom;
+  position: sticky; left: 0; background: var(--bg-2); z-index: 2; }
+table.grid .col-head { vertical-align: bottom; }
+table.grid .row-head { position: sticky; left: 0; background: var(--bg-2); z-index: 1; vertical-align: middle; }
 
 input.name, select.name { border: 0; background: transparent; width: 100%; min-width: 0; padding: 0.4rem 0.4rem; font-weight: 600;
   font-size: 0.85rem; text-overflow: ellipsis; font-family: inherit; }
@@ -68,13 +73,23 @@ input.name.mine, select.name.mine { color: var(--blue); }
 input.name.enemy, select.name.enemy { color: var(--enemy); text-align: center; }
 input.name:focus, select.name:focus { outline: 1px solid var(--blue); border-radius: 4px; }
 
-td.cell { text-align: center; }
-td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }
-.cell-input { border: 0; background: transparent; text-align: center; width: 100%; padding: 0.45rem 0.1rem;
-  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.9rem; }
-.cell-input:focus { outline: 1px solid var(--blue); border-radius: 4px; }
-.bw { display: flex; align-items: center; justify-content: center; gap: 1px; }
-.bw .cell-input { width: 32%; padding: 0.45rem 0.05rem; }
+/* matchup tile: the value centred, map A/B/C inputs in a darker strip below */
+td.cell { vertical-align: top; }
+.tile { aspect-ratio: 1; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--card-2); color: var(--text-4); }
+.tile-value { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.15rem; color: inherit; }
+input.tile-value { display: block; border: 0; background: transparent; text-align: center; padding: 0; border-radius: 6px; }
+input.tile-value::placeholder { color: inherit; }
+input.tile-value:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
+.tile-maps { display: flex; flex: 0 0 24%; background: #00000033; }
+.map-input { flex: 1; width: 0; min-width: 0; border: 0; border-radius: 0; background: transparent; padding: 0;
+  color: inherit; opacity: 0.6; text-align: center;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.72rem; }
+.map-input::placeholder { color: inherit; opacity: 0.5; }
+.tile:hover .map-input, .map-input:focus { opacity: 1; }
+.map-input:focus { outline: 1px solid var(--blue); outline-offset: -1px; }
+td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }
 
 /* value bands (colours defined as vars in theme.css; flip under .cb) */
 .band-worst { color: var(--band-worst); }

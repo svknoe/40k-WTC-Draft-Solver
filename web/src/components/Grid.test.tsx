@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
-import type { EditorMatrix } from '../model/matrix';
+import type { EditorCell, EditorMatrix } from '../model/matrix';
 import { Grid } from './Grid';
 
 function matrix(overrides: Partial<EditorMatrix> = {}): EditorMatrix {
@@ -23,14 +24,17 @@ function matrix(overrides: Partial<EditorMatrix> = {}): EditorMatrix {
 
 const noErrors = (n: number) => Array.from({ length: n }, () => Array.from({ length: n }, () => null));
 
-function renderGrid(m: EditorMatrix, opts: { readOnly?: boolean } = {}) {
+function renderGrid(
+  m: EditorMatrix,
+  opts: { readOnly?: boolean; simpleMode?: boolean; onCellChange?: (i: number, j: number, cell: EditorCell) => void } = {},
+) {
   render(
     <Grid
       matrix={m}
-      simpleMode={false}
+      simpleMode={opts.simpleMode ?? false}
       cellErrors={noErrors(m.n)}
       readOnly={opts.readOnly}
-      onCellChange={vi.fn()}
+      onCellChange={opts.onCellChange ?? vi.fn()}
       onMyName={vi.fn()}
       onEnemyName={vi.fn()}
     />,
@@ -76,5 +80,54 @@ describe('Grid faction dropdowns', () => {
     expect(optionDisabled(sel('Your player 2 faction'), 'Necrons')).toBe(true); // teammate: greyed
     expect(optionDisabled(sel('Your player 1 faction'), 'Necrons')).toBe(false); // own pick: the f !== value guard
     expect(optionDisabled(sel('Opponent player 1 faction'), 'Necrons')).toBe(false); // cross-team: allowed
+  });
+});
+
+describe('Grid tiles', () => {
+  test('by-map mode shows the map average, coloured by its rounded palette step', () => {
+    const m = matrix();
+    m.cells[0][0] = { maps: ['12', '9', ''], s: '10' };
+    renderGrid(m);
+    const avg = screen.getByLabelText('P1 vs E1 average');
+    expect(avg).toHaveTextContent('10.5');
+    expect(avg.closest('.tile')).toHaveClass('pt-11');
+    expect(screen.getByLabelText('P1 vs E1 map A')).toHaveValue('12');
+    expect(screen.getByLabelText('P1 vs E1 map C')).toHaveValue('');
+  });
+
+  test('a whole-number average shows without a decimal', () => {
+    renderGrid(matrix()); // 10 / 10 / ''
+    expect(screen.getByLabelText('P1 vs E2 average')).toHaveTextContent(/^10$/);
+  });
+
+  test('a blank cell draws a neutral tile with a dash', () => {
+    const m = matrix();
+    m.cells[0][1] = { maps: ['', '', ''], s: '' };
+    renderGrid(m);
+    const avg = screen.getByLabelText('P1 vs E2 average');
+    expect(avg).toHaveTextContent('–');
+    expect(avg.closest('.tile')).toHaveClass('empty');
+    expect(avg.closest('.tile')?.className).not.toMatch(/pt-/);
+  });
+
+  test('typing in a map input reports the updated map triple', async () => {
+    const user = userEvent.setup();
+    const onCellChange = vi.fn();
+    renderGrid(matrix(), { onCellChange });
+    await user.type(screen.getByLabelText('P1 vs E1 map C'), '7');
+    expect(onCellChange).toHaveBeenLastCalledWith(0, 0, { maps: ['10', '10', '7'], s: '10' });
+  });
+
+  test('single mode: the centre number is the input and there is no map strip', () => {
+    renderGrid(matrix(), { simpleMode: true });
+    const input = screen.getByLabelText('P1 vs E1');
+    expect(input).toHaveValue('10');
+    expect(input.closest('.tile')).toHaveClass('pt-10');
+    expect(screen.queryByLabelText('P1 vs E1 map A')).not.toBeInTheDocument();
+  });
+
+  test('readOnly makes every tile input read-only', () => {
+    renderGrid(matrix(), { readOnly: true });
+    expect(screen.getByLabelText('P1 vs E1 map A')).toHaveAttribute('readonly');
   });
 });

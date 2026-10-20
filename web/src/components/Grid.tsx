@@ -1,7 +1,9 @@
+import type { CSSProperties } from 'react';
 import type { EditorCell, EditorMatrix, MapTriple } from '../model/matrix';
-import { MAP_LETTERS, defaultEnemyName, defaultMyName } from '../model/matrix';
+import { MAP_LETTERS, cellValue, defaultEnemyName, defaultMyName } from '../model/matrix';
 import { FACTIONS, FACTION_SET } from '../model/factions';
-import { parseRating, scoreBand, toScore } from '../model/scale';
+import { formatMatchupScore } from '../model/scale';
+import { pointClass } from './palette';
 
 interface GridProps {
   matrix: EditorMatrix;
@@ -12,15 +14,6 @@ interface GridProps {
   onCellChange: (i: number, j: number, cell: EditorCell) => void;
   onMyName: (i: number, name: string) => void;
   onEnemyName: (j: number, name: string) => void;
-}
-
-/** Colour-band class for a raw cell value (blank/invalid → none). */
-function bandClass(raw: string): string {
-  try {
-    return `band-${scoreBand(toScore(parseRating(raw)))}`;
-  } catch {
-    return '';
-  }
 }
 
 interface FactionSelectProps {
@@ -60,6 +53,72 @@ function FactionSelect({ value, side, defaultLabel, taken, ariaLabel, readOnly, 
   );
 }
 
+interface MatrixCellProps {
+  cell: EditorCell;
+  simpleMode: boolean;
+  /** "<row> vs <col>" — the base of every aria label in the tile. */
+  label: string;
+  error: string | null;
+  readOnly: boolean;
+  onChange: (cell: EditorCell) => void;
+}
+
+/** One square matchup tile, filled with the palette colour of the value it
+ * shows. By-map mode: the read-only map average in the centre and the A/B/C
+ * inputs in a strip along the bottom. Single mode: the centre number is itself
+ * the input. A blank or unparseable cell draws neutral. */
+function MatrixCell({ cell, simpleMode, label, error, readOnly, onChange }: MatrixCellProps) {
+  const value = cellValue(cell, simpleMode);
+  // A fully-blank cell is "unfilled", not wrong — don't flag it red (Solve
+  // stays gated by validation either way). "Blank" is judged on the active
+  // layer, since the inactive one may be legitimately empty.
+  const blank = simpleMode ? cell.s.trim() === '' : cell.maps.every((raw) => raw.trim() === '');
+  const showError = error !== null && !blank;
+  const setMap = (k: number, raw: string) => {
+    const maps: MapTriple = [...cell.maps];
+    maps[k] = raw;
+    onChange({ ...cell, maps });
+  };
+
+  return (
+    <td className={showError ? 'cell invalid' : 'cell'} title={showError ? error : undefined}>
+      <div className={value === null ? 'tile empty' : `tile ${pointClass(value)}`}>
+        {simpleMode ? (
+          <input
+            className="tile-value"
+            value={cell.s}
+            placeholder="–"
+            aria-label={label}
+            inputMode="decimal"
+            readOnly={readOnly}
+            onChange={(e) => onChange({ ...cell, s: e.target.value })}
+          />
+        ) : (
+          <>
+            <output className="tile-value" aria-label={`${label} average`} aria-live="off">
+              {value === null ? '–' : formatMatchupScore(value)}
+            </output>
+            <div className="tile-maps">
+              {MAP_LETTERS.map((letter, k) => (
+                <input
+                  key={letter}
+                  className="map-input"
+                  value={cell.maps[k]}
+                  placeholder={letter}
+                  aria-label={`${label} map ${letter}`}
+                  inputMode="decimal"
+                  readOnly={readOnly}
+                  onChange={(e) => setMap(k, e.target.value)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </td>
+  );
+}
+
 export function Grid({
   matrix, simpleMode, cellErrors, readOnly = false, onCellChange, onMyName, onEnemyName,
 }: GridProps) {
@@ -72,7 +131,8 @@ export function Grid({
 
   return (
     <div className="grid-scroll">
-      <table className="grid">
+      {/* --n sizes the table so the tiles stay square at every team size. */}
+      <table className="grid" style={{ '--n': matrix.n } as CSSProperties}>
         <thead>
           <tr>
             <th className="corner">{simpleMode ? 'single rating' : 'by map'}</th>
@@ -105,51 +165,17 @@ export function Grid({
                   onChange={(v) => onMyName(i, v)}
                 />
               </th>
-              {cells[i].map((cell, j) => {
-                const err = cellErrors[i][j];
-                // A fully-blank cell is "unfilled", not wrong — don't flag it
-                // red (Solve stays gated by validation either way). "Blank" is
-                // judged on the active layer, since the inactive one may be
-                // legitimately empty.
-                const blank = simpleMode
-                  ? cell.s.trim() === ''
-                  : cell.maps.every((raw) => raw.trim() === '');
-                const showError = err !== null && !blank;
-                const label = `${rowName || `P${i + 1}`} vs ${enemyNames[j] || `E${j + 1}`}`;
-                return (
-                  <td key={j} className={showError ? 'cell invalid' : 'cell'} title={showError ? err : undefined}>
-                    {simpleMode ? (
-                      <input
-                        className={`cell-input ${bandClass(cell.s)}`}
-                        value={cell.s}
-                        aria-label={label}
-                        inputMode="decimal"
-                        readOnly={readOnly}
-                        onChange={(e) => onCellChange(i, j, { ...cell, s: e.target.value })}
-                      />
-                    ) : (
-                      <div className="bw">
-                        {MAP_LETTERS.map((letter, k) => (
-                          <input
-                            key={letter}
-                            className={`cell-input ${bandClass(cell.maps[k])}`}
-                            value={cell.maps[k]}
-                            placeholder={letter}
-                            aria-label={`${label} map ${letter}`}
-                            inputMode="decimal"
-                            readOnly={readOnly}
-                            onChange={(e) => {
-                              const maps: MapTriple = [...cell.maps];
-                              maps[k] = e.target.value;
-                              onCellChange(i, j, { ...cell, maps });
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                );
-              })}
+              {cells[i].map((cell, j) => (
+                <MatrixCell
+                  key={j}
+                  cell={cell}
+                  simpleMode={simpleMode}
+                  label={`${rowName || `P${i + 1}`} vs ${enemyNames[j] || `E${j + 1}`}`}
+                  error={cellErrors[i][j]}
+                  readOnly={readOnly}
+                  onChange={(next) => onCellChange(i, j, next)}
+                />
+              ))}
             </tr>
           ))}
         </tbody>

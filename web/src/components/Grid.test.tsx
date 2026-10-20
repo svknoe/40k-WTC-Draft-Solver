@@ -212,22 +212,37 @@ describe('Grid averages', () => {
     m.cells[0][1] = { maps: ['', '', ''], s: '' }; // blank, skipped
     m.cells[0][2] = { maps: ['15', '', ''], s: '15' }; // 15
     renderGrid(m);
-    expect(screen.getByLabelText('P1 average')).toHaveTextContent('13.0'); // (11 + 15) / 2
-    expect(screen.getByLabelText('P2 average')).toHaveTextContent('10.0');
-    expect(screen.getByLabelText('E1 average')).toHaveTextContent('10.3'); // (11 + 10 + 10) / 3
+    expect(screen.getByLabelText('P1 row average')).toHaveTextContent('13.0'); // (11 + 15) / 2
+    expect(screen.getByLabelText('P2 row average')).toHaveTextContent('10.0');
+    expect(screen.getByLabelText('E1 column average')).toHaveTextContent('10.3'); // (11 + 10 + 10) / 3
   });
 
   test('a line with nothing filled shows a dash', () => {
     const m = matrix();
     m.cells[1] = m.cells[1].map(() => ({ maps: ['', '', ''] as [string, string, string], s: '' }));
     renderGrid(m);
-    expect(screen.getByLabelText('P2 average')).toHaveTextContent('–');
+    expect(screen.getByLabelText('P2 row average')).toHaveTextContent('–');
   });
 
   test('single mode averages the single ratings', () => {
     const m = matrix();
     m.cells[0][0] = { maps: ['10', '10', ''], s: '13' };
     renderGrid(m, { simpleMode: true });
-    expect(screen.getByLabelText('P1 average')).toHaveTextContent('11.0'); // (13 + 10 + 10) / 3
+    expect(screen.getByLabelText('P1 row average')).toHaveTextContent('11.0'); // (13 + 10 + 10) / 3
+  });
+
+  test('a faction fielded by both teams keeps distinct row and column labels', () => {
+    renderGrid(matrix({ myNames: ['Orks', '', ''], enemyNames: ['Orks', '', ''] }));
+    expect(screen.getAllByLabelText('Orks row average')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Orks column average')).toHaveLength(1);
+    expect(screen.getByLabelText('Orks row average')).toBeInTheDocument();
+    expect(screen.getByLabelText('Orks column average')).toBeInTheDocument();
+  });
+
+  test('a column with nothing filled shows a dash', () => {
+    const m = matrix();
+    m.cells = m.cells.map((row) => row.map((cell, j) => (j === 2 ? { maps: ['', '', ''] as [string, string, string], s: '' } : cell)));
+    renderGrid(m);
+    expect(screen.getByLabelText('E3 column average')).toHaveTextContent('–');
   });
 });

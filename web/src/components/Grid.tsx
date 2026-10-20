@@ -235,7 +235,7 @@ export function Grid({
                   onChange={(next) => onCellChange(i, j, next)}
                 />
               ))}
-              <td className="avg" aria-label={`${rowLabel(i)} average`}>{formatAverage(meanOf(values[i]))}</td>
+              <td className="avg" aria-label={`${rowLabel(i)} row average`}>{formatAverage(meanOf(values[i]))}</td>
             </tr>
           ))}
         </tbody>
@@ -243,7 +243,7 @@ export function Grid({
           <tr>
             <th className="avg-head row">avg</th>
             {enemyNames.map((_, j) => (
-              <td key={j} className="avg" aria-label={`${colLabel(j)} average`}>
+              <td key={j} className="avg" aria-label={`${colLabel(j)} column average`}>
                 {formatAverage(meanOf(values.map((row) => row[j])))}
               </td>
             ))}

@@ -16,8 +16,10 @@ function valid4(): EditorMatrix {
     enemyTeam: 'Scotland',
     myNames: ['A', 'B', 'C', 'D'],
     enemyNames: ['W', 'X', 'Y', 'Z'],
+    myDispositions: ['', '', '', ''],
+    enemyDispositions: ['', '', '', ''],
     cells: Array.from({ length: 4 }, () =>
-      Array.from({ length: 4 }, () => ({ b: '12', w: '9', s: '10' }))),
+      Array.from({ length: 4 }, () => ({ maps: ['12', '9', ''] as [string, string, string], s: '10' }))),
   };
 }
 
@@ -43,7 +45,7 @@ describe('MatrixEditor', () => {
   test('renders the matchup and grid for a valid matrix, Solve enabled', () => {
     render(<Harness initial={valid4()} />);
     expect(screen.getByDisplayValue('Norway')).toBeInTheDocument();
-    expect(screen.getByLabelText('A vs W best')).toBeInTheDocument();
+    expect(screen.getByLabelText('A vs W map A')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });
 
@@ -55,12 +57,11 @@ describe('MatrixEditor', () => {
     expect(screen.queryByText(/needs a name/i)).not.toBeInTheDocument();
   });
 
-  test('making best < worst flags the cell and disables Solve', async () => {
+  test('an out-of-range map flags the cell and disables Solve', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />);
-    const bestInput = screen.getByLabelText('A vs W best');
-    await user.clear(bestInput); // best now blank -> invalid
-    await user.type(bestInput, '5'); // best 5 < worst 9
+    const mapC = screen.getByLabelText('A vs W map C');
+    await user.type(mapC, '25');
     expect(screen.getByRole('button', { name: /solve/i })).toBeDisabled();
   });
 
@@ -86,7 +87,7 @@ describe('MatrixEditor', () => {
     // Warning banner explaining why editing is paused.
     expect(screen.getByText(/practice draft is in progress/i)).toBeInTheDocument();
     // The grid is frozen and Solve is disabled while a draft depends on it.
-    expect(screen.getByLabelText('A vs W best')).toHaveAttribute('readonly');
+    expect(screen.getByLabelText('A vs W map A')).toHaveAttribute('readonly');
     expect(screen.getByRole('button', { name: /solve/i })).toBeDisabled();
     // Saved-opponent load AND delete are frozen too — the whole editor is paused.
     expect(screen.getByRole('button', { name: 'Scotland' })).toBeDisabled();
@@ -112,7 +113,7 @@ describe('MatrixEditor', () => {
     expect(screen.queryByLabelText(/Load a sample opponent/i)).not.toBeInTheDocument();
   });
 
-  test('Clear resets names to the unset default and every cell to an even 10/10', async () => {
+  test('Clear resets names and sets every matchup to an even 10', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />);
     await user.click(screen.getByRole('button', { name: 'Clear' }));
@@ -121,77 +122,72 @@ describe('MatrixEditor', () => {
     expect(screen.getByDisplayValue('Opponent 4')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Norway')).not.toBeInTheDocument();
     // Unset names fall back to the terse P/E cell aria-label.
-    expect(screen.getByLabelText('P1 vs E1 best')).toHaveValue('10');
-    expect(screen.getByLabelText('P1 vs E1 worst')).toHaveValue('10');
+    expect(screen.getByLabelText('P1 vs E1 map A')).toHaveValue('10');
+    expect(screen.getByLabelText('P1 vs E1 map B')).toHaveValue('');
     // Still solvable straight away.
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });
 
-  test('Random fills every cell with integers 0-20, best ≥ worst, keeping names', async () => {
+  test('Random fills all three maps of every cell with integers 0-20, keeping names', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />);
     await user.click(screen.getByRole('button', { name: 'Random' }));
     expect(screen.getByDisplayValue('Norway')).toBeInTheDocument();
     for (const my of ['A', 'B', 'C', 'D']) {
       for (const enemy of ['W', 'X', 'Y', 'Z']) {
-        const best = Number((screen.getByLabelText(`${my} vs ${enemy} best`) as HTMLInputElement).value);
-        const worst = Number((screen.getByLabelText(`${my} vs ${enemy} worst`) as HTMLInputElement).value);
-        expect(Number.isInteger(best)).toBe(true);
-        expect(best).toBeGreaterThanOrEqual(worst);
-        expect(best).toBeLessThanOrEqual(20);
-        expect(worst).toBeGreaterThanOrEqual(0);
+        for (const letter of ['A', 'B', 'C']) {
+          const raw = (screen.getByLabelText(`${my} vs ${enemy} map ${letter}`) as HTMLInputElement).value;
+          expect(raw).not.toBe('');
+          expect(Number.isInteger(Number(raw))).toBe(true);
+          expect(Number(raw)).toBeGreaterThanOrEqual(0);
+          expect(Number(raw)).toBeLessThanOrEqual(20);
+        }
       }
     }
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });
 
-  test('Random writes the best/worst spread AND the single view in one click, regardless of mode', async () => {
+  test('Random writes the maps AND the single view in one click, regardless of mode', async () => {
     const user = userEvent.setup();
-    render(<Harness initial={valid4()} />); // starts in best/worst mode
+    render(<Harness initial={valid4()} />); // starts in by-map mode
     await user.click(screen.getByRole('button', { name: 'Random' }));
 
-    // Capture the best/worst spread Random produced.
-    const pairs: Record<string, { best: number; worst: number }> = {};
+    const means: Record<string, number> = {};
     for (const my of ['A', 'B', 'C', 'D']) {
       for (const enemy of ['W', 'X', 'Y', 'Z']) {
-        const best = Number((screen.getByLabelText(`${my} vs ${enemy} best`) as HTMLInputElement).value);
-        const worst = Number((screen.getByLabelText(`${my} vs ${enemy} worst`) as HTMLInputElement).value);
-        pairs[`${my}-${enemy}`] = { best, worst };
+        const maps = ['A', 'B', 'C'].map((letter) =>
+          Number((screen.getByLabelText(`${my} vs ${enemy} map ${letter}`) as HTMLInputElement).value));
+        means[`${my}-${enemy}`] = (maps[0] + maps[1] + maps[2]) / 3;
       }
     }
 
-    // Flip to the single-rating view: the SAME Random click must have written a
-    // single equal to the pair's average, rounded either way for a .5 tie.
     await user.click(screen.getByRole('button', { name: 'Single rating' }));
     for (const my of ['A', 'B', 'C', 'D']) {
       for (const enemy of ['W', 'X', 'Y', 'Z']) {
         const single = Number((screen.getByLabelText(`${my} vs ${enemy}`) as HTMLInputElement).value);
-        const { best, worst } = pairs[`${my}-${enemy}`];
-        const mean = (best + worst) / 2;
-        expect(Number.isInteger(single)).toBe(true);
-        expect([Math.floor(mean), Math.ceil(mean)]).toContain(single);
+        expect(single).toBe(Math.round(means[`${my}-${enemy}`]));
       }
     }
   });
 
-  test('typing a single rating leaves the best/worst layer untouched (independent layers)', async () => {
+  test('typing a single rating leaves the maps untouched (independent layers)', async () => {
     const user = userEvent.setup();
-    render(<Harness initial={valid4()} />); // A vs W is 12 / 9 in best/worst
+    render(<Harness initial={valid4()} />); // A vs W maps are 12 / 9 / ''
     await user.click(screen.getByRole('button', { name: 'Single rating' }));
     const single = screen.getByLabelText('A vs W');
     await user.clear(single);
     await user.type(single, '7');
     await user.click(screen.getByRole('button', { name: 'Best / worst map' }));
-    expect(screen.getByLabelText('A vs W best')).toHaveValue('12');
-    expect(screen.getByLabelText('A vs W worst')).toHaveValue('9');
+    expect(screen.getByLabelText('A vs W map A')).toHaveValue('12');
+    expect(screen.getByLabelText('A vs W map B')).toHaveValue('9');
   });
 
-  test('typing a best/worst score leaves the single rating untouched (independent layers)', async () => {
+  test('typing a map leaves the single rating untouched (independent layers)', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />); // A vs W single is 10
-    const best = screen.getByLabelText('A vs W best');
-    await user.clear(best);
-    await user.type(best, '15');
+    const mapA = screen.getByLabelText('A vs W map A');
+    await user.clear(mapA);
+    await user.type(mapA, '15');
     await user.click(screen.getByRole('button', { name: 'Single rating' }));
     expect(screen.getByLabelText('A vs W')).toHaveValue('10');
   });
@@ -201,6 +197,6 @@ describe('MatrixEditor', () => {
     render(<Harness initial={valid4()} />);
     await user.click(screen.getByRole('button', { name: 'Single rating' }));
     expect(screen.getByLabelText('A vs W')).toBeInTheDocument();
-    expect(screen.queryByLabelText('A vs W best')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('A vs W map A')).not.toBeInTheDocument();
   });
 });

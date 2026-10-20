@@ -1,19 +1,26 @@
 import type { Matrix } from '../engine/types';
+import type { Disposition } from './dispositions';
+import { toDisposition } from './dispositions';
 import { parseRating, toInputString, toScore } from './scale';
 
 /** Derived from the engine's Matrix so the two unions can never drift. */
 export type MatrixSize = Matrix['n'];
 
+/** A cell's map A, B and C ratings, as typed. */
+export type MapTriple = [string, string, string];
+
+/** The labels of the three maps, in storage order. */
+export const MAP_LETTERS = ['A', 'B', 'C'] as const;
+
 /** One editor cell: 0-20 strings AS TYPED. Storing raw strings tolerates
  * in-progress/invalid edits and round-trips losslessly; conversion to the
- * internal scale happens on solve (docs/web-design.md §4.2). The best `b` and
- * worst `w` maps and the single rating `s` are independent layers: the active
- * rating mode decides which is edited, validated and solved, and only Clear /
- * Random / import write all three at once, so switching modes never destroys
- * data. */
+ * internal scale happens on solve (docs/web-design.md §4.2). The map ratings
+ * `maps` (A, B, C — any 1 to 3 may be filled) and the single rating `s` are
+ * independent layers: the active rating mode decides which is edited,
+ * validated and solved, and only Clear / Random / import / paste write both,
+ * so switching modes never destroys data. */
 export interface EditorCell {
-  b: string;
-  w: string;
+  maps: MapTriple;
   s: string;
 }
 
@@ -24,10 +31,15 @@ export interface EditorMatrix {
   enemyTeam: string;
   myNames: string[];
   enemyNames: string[];
+  /** Per-player force disposition — display only, the solver ignores it. */
+  myDispositions: Disposition[];
+  enemyDispositions: Disposition[];
   cells: EditorCell[][];
 }
 
-const empty = (): EditorCell => ({ b: '', w: '', s: '' });
+const empty = (): EditorCell => ({ maps: ['', '', ''], s: '' });
+const copyCell = (cell: EditorCell): EditorCell => ({ maps: [...cell.maps], s: cell.s });
+const unset = (n: number): Disposition[] => Array.from({ length: n }, (): Disposition => '');
 
 /** The positional label a player falls back to when no faction is chosen (the
  * stored name is ''). Presentation only: the editor stores '' for "unset", and
@@ -47,6 +59,36 @@ export function resolveNames(names: readonly string[], kind: 'my' | 'enemy'): st
   return names.map((name, i) => name.trim() || label(i));
 }
 
+/** A cell's filled maps on the internal scale, in A/B/C order. Throws
+ * RangeError if a filled map is unparseable. */
+export function filledMaps(cell: EditorCell): number[] {
+  return cell.maps.filter((raw) => raw.trim() !== '').map(parseRating);
+}
+
+/** The mean of a cell's filled maps as a 0-20 score, or null when no map is
+ * filled or one is unparseable. Display only: the solver uses the max/min
+ * (toEngineMatrix), and neutral games keep the engine's best/worst midpoint. */
+export function mapAverage(cell: EditorCell): number | null {
+  try {
+    const values = filledMaps(cell);
+    if (values.length === 0) return null;
+    return toScore(values.reduce((a, b) => a + b, 0) / values.length);
+  } catch {
+    return null;
+  }
+}
+
+/** The 0-20 value a cell shows in the active mode — the map average, or the
+ * single rating in simple mode — or null when blank/unparseable. */
+export function cellValue(cell: EditorCell, simple: boolean): number | null {
+  if (!simple) return mapAverage(cell);
+  try {
+    return toScore(parseRating(cell.s));
+  } catch {
+    return null;
+  }
+}
+
 export function blank(n: MatrixSize): EditorMatrix {
   return {
     n,
@@ -54,15 +96,18 @@ export function blank(n: MatrixSize): EditorMatrix {
     enemyTeam: '',
     myNames: Array.from({ length: n }, () => ''),
     enemyNames: Array.from({ length: n }, () => ''),
+    myDispositions: unset(n),
+    enemyDispositions: unset(n),
     cells: Array.from({ length: n }, () => Array.from({ length: n }, empty)),
   };
 }
 
 /** Parse an EditorMatrix to the engine's internal-scale Matrix, reading the
  * layer the active rating mode shows: simple mode uses the single rating `s`
- * as both maps (you solve what you see), best/worst mode uses the `b`/`w` pair.
- * Throws RangeError if a cell in the active layer is unparseable — callers
- * validate first (§6). */
+ * as both maps (you solve what you see); by-map mode sends the best and worst
+ * of the filled maps — the defender picks the map, so only the extremes
+ * matter to the draft. Throws RangeError if a cell in the active layer is
+ * unparseable or has no map — callers validate first (§6). */
 export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
   return {
     n: m.n,
@@ -77,18 +122,20 @@ export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
           const v = parseRating(cell.s);
           return { best: v, worst: v };
         }
-        return { best: parseRating(cell.b), worst: parseRating(cell.w) };
+        const maps = filledMaps(cell);
+        if (maps.length === 0) throw new RangeError('No map rating entered.');
+        return { best: Math.max(...maps), worst: Math.min(...maps) };
       })),
   };
 }
 
 /** Swap which side you captain: transpose the grid AND re-express every score
- * from the opposing captain's view — their score is `20 - mine`, and the best
- * map for one side is the worst for the other (docs/design-mockup.html). The
- * single rating flips in place. Flipping is lenient: an unparseable or blank
- * field becomes '' rather than throwing, since Swap is gated only on the active
- * layer (§ independent layers) and the inactive layer may legitimately be
- * blank. */
+ * from the opposing captain's view — their score is `20 - mine` on the same
+ * map, so each map keeps its letter (and the best map for one side becomes the
+ * worst for the other). Names and dispositions swap sides. Flipping is
+ * lenient: an unparseable or blank field becomes '' rather than throwing,
+ * since Swap is gated only on the active layer and the inactive layer may
+ * legitimately be blank. */
 export function transpose(m: EditorMatrix): EditorMatrix {
   const flip = (raw: string): string => {
     try {
@@ -103,19 +150,19 @@ export function transpose(m: EditorMatrix): EditorMatrix {
     enemyTeam: m.myTeam,
     myNames: [...m.enemyNames],
     enemyNames: [...m.myNames],
+    myDispositions: [...m.enemyDispositions],
+    enemyDispositions: [...m.myDispositions],
     cells: Array.from({ length: m.n }, (_, i) =>
-      Array.from({ length: m.n }, (_, j) => ({
-        b: flip(m.cells[j][i].w), // new best map = old worst map, value negated
-        w: flip(m.cells[j][i].b),
-        s: flip(m.cells[j][i].s), // the single rating is self-inverse under the flip
-      }))),
+      Array.from({ length: m.n }, (_, j) => {
+        const [a, b, c] = m.cells[j][i].maps;
+        return { maps: [flip(a), flip(b), flip(c)], s: flip(m.cells[j][i].s) };
+      })),
   };
 }
 
 /** Change team size, preserving the overlapping top-left block and padding or
- * truncating names/rows/columns. Added name slots start unset ('' — the
- * Player N / Opponent K dropdown default); slots that already existed keep
- * their faction (even blank). New cells stay blank. */
+ * truncating names/dispositions/rows/columns. Added slots start unset; slots
+ * that already existed keep their values. New cells stay blank. */
 export function resize(m: EditorMatrix, n: MatrixSize): EditorMatrix {
   return {
     n,
@@ -123,57 +170,59 @@ export function resize(m: EditorMatrix, n: MatrixSize): EditorMatrix {
     enemyTeam: m.enemyTeam,
     myNames: Array.from({ length: n }, (_, i) => m.myNames[i] ?? ''),
     enemyNames: Array.from({ length: n }, (_, j) => m.enemyNames[j] ?? ''),
+    myDispositions: Array.from({ length: n }, (_, i) => m.myDispositions[i] ?? ''),
+    enemyDispositions: Array.from({ length: n }, (_, j) => m.enemyDispositions[j] ?? ''),
     cells: Array.from({ length: n }, (_, i) =>
-      Array.from({ length: n }, (_, j) => ({ ...(m.cells[i]?.[j] ?? empty()) }))),
+      Array.from({ length: n }, (_, j) => copyCell(m.cells[i]?.[j] ?? empty()))),
   };
 }
 
-/** A full reset at size n: unset player names ('' — the Player N / Opponent K
- * dropdown default), blank team names, and an even 10-10 game in every cell —
- * immediately valid, ready to overwrite. */
+/** A full reset at size n: unset player names and dispositions, blank team
+ * names, and an even 10-10 game in every cell (map A and the single rating) —
+ * immediately valid in both modes, ready to overwrite. */
 export function cleared(n: MatrixSize): EditorMatrix {
   return {
-    n,
-    myTeam: '',
-    enemyTeam: '',
-    myNames: Array.from({ length: n }, () => ''),
-    enemyNames: Array.from({ length: n }, () => ''),
-    cells: Array.from({ length: n }, () => Array.from({ length: n }, () => ({ b: '10', w: '10', s: '10' }))),
+    ...blank(n),
+    cells: Array.from({ length: n }, () =>
+      Array.from({ length: n }, (): EditorCell => ({ maps: ['10', '', ''], s: '10' }))),
   };
 }
 
-/** Rewrite every cell from two independent integer draws in 0-20, keeping all
- * names. The draws fill BOTH representations regardless of the active mode, so
- * either view is ready to solve: the ordered pair goes to best/worst (larger →
- * best map, smaller → worst) and their average goes to the single rating,
- * breaking a .5 average up or down with 50/50 probability so it stays a whole
- * number. rng is injectable for tests and must return values in [0, 1). */
+/** Rewrite every cell from three independent integer draws in 0-20 — one per
+ * map — keeping all names and dispositions. The draws fill BOTH layers
+ * regardless of the active mode: A/B/C take the draws in order and the single
+ * rating takes their mean rounded to the nearest whole number (a mean of three
+ * integers is never a .5 tie). rng is injectable for tests and must return
+ * values in [0, 1). */
 export function randomized(m: EditorMatrix, rng: () => number = Math.random): EditorMatrix {
   const draw = () => Math.floor(rng() * 21);
   // toInputString maps a drawn 0-20 score straight to its plain input string.
   const asInput = (score: number) => toInputString(score - 10);
   const cell = (): EditorCell => {
-    const [a, b] = [draw(), draw()];
-    const mean = (a + b) / 2;
-    const single = Number.isInteger(mean) ? mean : (rng() < 0.5 ? Math.floor(mean) : Math.ceil(mean));
-    return { b: asInput(Math.max(a, b)), w: asInput(Math.min(a, b)), s: asInput(single) };
+    const [a, b, c] = [draw(), draw(), draw()];
+    return { maps: [asInput(a), asInput(b), asInput(c)], s: asInput(Math.round((a + b + c) / 3)) };
   };
   return {
     ...m,
     myNames: [...m.myNames],
     enemyNames: [...m.enemyNames],
+    myDispositions: [...m.myDispositions],
+    enemyDispositions: [...m.enemyDispositions],
     cells: m.cells.map((row) => row.map(cell)),
   };
 }
 
 /** The persisted / exported shape: an EditorMatrix minus `n`, which is derived
  * from myNames.length. Matches the localStorage `current` block and the export
- * file body (docs/web-design.md §4.2/§4.3). */
+ * file body (docs/web-design.md §4.2/§4.3). Dispositions are optional because
+ * data saved before they existed has none. */
 export interface SavedMatrix {
   myTeam: string;
   enemyTeam: string;
   myNames: string[];
   enemyNames: string[];
+  myDispositions?: Disposition[];
+  enemyDispositions?: Disposition[];
   cells: EditorCell[][];
 }
 
@@ -183,28 +232,36 @@ export function toSaved(m: EditorMatrix): SavedMatrix {
     enemyTeam: m.enemyTeam,
     myNames: m.myNames,
     enemyNames: m.enemyNames,
+    myDispositions: m.myDispositions,
+    enemyDispositions: m.enemyDispositions,
     cells: m.cells,
   };
 }
 
-/** Normalise a raw saved/pasted cell to an EditorCell, deriving the single
- * rating `s` when it is absent (old localStorage, old exports, pasted grids
- * that carry no single). Derivation: copy `b` when `b === w` (lossless for
- * data authored in simple mode, incl. a fully-blank cell); else the half-up
- * rounded average of the two maps when both parse; else '' (nothing sensible
- * to derive). An `s` that is already present is preserved untouched. */
-export function withSingle(cell: { b?: unknown; w?: unknown; s?: unknown }): EditorCell {
-  const b = String(cell.b ?? '');
-  const w = String(cell.w ?? '');
-  const existing = cell.s === undefined || cell.s === null ? '' : String(cell.s);
-  if (existing !== '') return { b, w, s: existing };
-  if (b === w) return { b, w, s: b };
+/** The single rating implied by a cell's maps: the mean of the filled maps
+ * rounded half up, '' when none is filled or one is unparseable. */
+function deriveSingle(maps: MapTriple): string {
   try {
-    const avg = Math.round((toScore(parseRating(b)) + toScore(parseRating(w))) / 2);
-    return { b, w, s: toInputString(avg - 10) };
+    const values = filledMaps({ maps, s: '' });
+    if (values.length === 0) return '';
+    return toInputString(Math.round(values.reduce((a, b) => a + b, 0) / values.length));
   } catch {
-    return { b, w, s: '' };
+    return '';
   }
+}
+
+/** Normalise a raw saved/imported/pasted cell to an EditorCell. Current cells
+ * carry `maps` (padded to three); legacy cells carry best `b` / worst `w`,
+ * which become maps A and B — their max/min are the old best/worst, so old
+ * matrices solve identically. A missing single rating `s` is derived from the
+ * maps (half-up rounded mean); one that is present is preserved untouched. */
+export function normaliseCell(raw: { maps?: unknown; b?: unknown; w?: unknown; s?: unknown }): EditorCell {
+  const str = (v: unknown): string => (v === undefined || v === null ? '' : String(v));
+  const maps: MapTriple = Array.isArray(raw.maps)
+    ? [str(raw.maps[0]), str(raw.maps[1]), str(raw.maps[2])]
+    : [str(raw.b), str(raw.w), ''];
+  const s = str(raw.s);
+  return { maps, s: s !== '' ? s : deriveSingle(maps) };
 }
 
 function isSize(n: number): n is MatrixSize {
@@ -235,6 +292,8 @@ export function fromSaved(s: SavedMatrix): EditorMatrix {
     // Trimmed match, matching the unset convention used everywhere else.
     myNames: s.myNames.map((name, i) => (name.trim() === defaultMyName(i) ? '' : name)),
     enemyNames: s.enemyNames.map((name, j) => (name.trim() === defaultEnemyName(j) ? '' : name)),
-    cells: s.cells.map((row) => row.map(withSingle)),
+    myDispositions: Array.from({ length: n }, (_, i) => toDisposition(s.myDispositions?.[i])),
+    enemyDispositions: Array.from({ length: n }, (_, j) => toDisposition(s.enemyDispositions?.[j])),
+    cells: s.cells.map((row) => row.map((cell) => normaliseCell(cell))),
   };
 }

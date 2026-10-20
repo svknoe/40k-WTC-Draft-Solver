@@ -1,5 +1,5 @@
-import type { EditorCell, EditorMatrix } from '../model/matrix';
-import { defaultEnemyName, defaultMyName } from '../model/matrix';
+import type { EditorCell, EditorMatrix, MapTriple } from '../model/matrix';
+import { MAP_LETTERS, defaultEnemyName, defaultMyName } from '../model/matrix';
 import { FACTIONS, FACTION_SET } from '../model/factions';
 import { parseRating, scoreBand, toScore } from '../model/scale';
 
@@ -113,7 +113,7 @@ export function Grid({
                 // legitimately empty.
                 const blank = simpleMode
                   ? cell.s.trim() === ''
-                  : cell.b.trim() === '' && cell.w.trim() === '';
+                  : cell.maps.every((raw) => raw.trim() === '');
                 const showError = err !== null && !blank;
                 const label = `${rowName || `P${i + 1}`} vs ${enemyNames[j] || `E${j + 1}`}`;
                 return (
@@ -129,23 +129,22 @@ export function Grid({
                       />
                     ) : (
                       <div className="bw">
-                        <input
-                          className={`cell-input ${bandClass(cell.b)}`}
-                          value={cell.b}
-                          aria-label={`${label} best`}
-                          inputMode="decimal"
-                          readOnly={readOnly}
-                          onChange={(e) => onCellChange(i, j, { ...cell, b: e.target.value })}
-                        />
-                        <span className="sep">/</span>
-                        <input
-                          className={`cell-input worst ${bandClass(cell.w)}`}
-                          value={cell.w}
-                          aria-label={`${label} worst`}
-                          inputMode="decimal"
-                          readOnly={readOnly}
-                          onChange={(e) => onCellChange(i, j, { ...cell, w: e.target.value })}
-                        />
+                        {MAP_LETTERS.map((letter, k) => (
+                          <input
+                            key={letter}
+                            className={`cell-input ${bandClass(cell.maps[k])}`}
+                            value={cell.maps[k]}
+                            placeholder={letter}
+                            aria-label={`${label} map ${letter}`}
+                            inputMode="decimal"
+                            readOnly={readOnly}
+                            onChange={(e) => {
+                              const maps: MapTriple = [...cell.maps];
+                              maps[k] = e.target.value;
+                              onCellChange(i, j, { ...cell, maps });
+                            }}
+                          />
+                        ))}
                       </div>
                     )}
                   </td>

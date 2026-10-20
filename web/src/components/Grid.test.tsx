@@ -13,8 +13,10 @@ function matrix(overrides: Partial<EditorMatrix> = {}): EditorMatrix {
     enemyTeam: '',
     myNames: ['', '', ''],
     enemyNames: ['', '', ''],
+    myDispositions: ['', '', ''],
+    enemyDispositions: ['', '', ''],
     cells: Array.from({ length: n }, () =>
-      Array.from({ length: n }, () => ({ b: '10', w: '10', s: '10' }))),
+      Array.from({ length: n }, () => ({ maps: ['10', '10', ''] as [string, string, string], s: '10' }))),
     ...overrides,
   };
 }

@@ -74,9 +74,7 @@ td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }
   font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.9rem; }
 .cell-input:focus { outline: 1px solid var(--blue); border-radius: 4px; }
 .bw { display: flex; align-items: center; justify-content: center; gap: 1px; }
-.bw .sep { color: var(--text-4); font-size: 0.8rem; }
-.bw .cell-input { width: 44%; padding: 0.45rem 0.05rem; }
-.cell-input.worst { font-weight: 500; opacity: 0.85; }
+.bw .cell-input { width: 32%; padding: 0.45rem 0.05rem; }
 
 /* value bands (colours defined as vars in theme.css; flip under .cb) */
 .band-worst { color: var(--band-worst); }

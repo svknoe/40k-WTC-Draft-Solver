@@ -1,5 +1,5 @@
 import type { EditorCell, EditorMatrix } from './matrix';
-import { resolveNames } from './matrix';
+import { MAP_LETTERS, resolveNames } from './matrix';
 import { parseRating, toScore } from './scale';
 
 export interface ValidationResult {
@@ -12,9 +12,10 @@ export interface ValidationResult {
 
 /** Validate one cell's ACTIVE layer only — the inactive layer may legitimately
  * be blank or in-progress (§ independent layers) and must never block Solve.
- * Simple mode checks the single rating `s`; best/worst mode checks the `b`/`w`
- * pair with best ≥ worst. A single game is played on one map, so every score
- * must be a whole number. */
+ * Simple mode checks the single rating `s`; by-map mode needs at least one map
+ * filled and every filled map valid (no ordering rule: the solver takes the
+ * max/min). A single game is played on one map, so every score must be a whole
+ * number. */
 function cellError(cell: EditorCell, simple: boolean): string | null {
   if (simple) {
     let single: number;
@@ -27,32 +28,28 @@ function cellError(cell: EditorCell, simple: boolean): string | null {
     return null;
   }
 
-  let best: number;
-  let worst: number;
-  try {
-    best = parseRating(cell.b);
-  } catch (error) {
-    return `Best map: ${(error as Error).message}`;
+  let filled = 0;
+  for (const [k, raw] of cell.maps.entries()) {
+    if (raw.trim() === '') continue;
+    filled += 1;
+    const letter = MAP_LETTERS[k];
+    let value: number;
+    try {
+      value = parseRating(raw);
+    } catch (error) {
+      return `Map ${letter}: ${(error as Error).message}`;
+    }
+    if (!Number.isInteger(value)) return `Map ${letter} (${toScore(value)}) must be a whole number.`;
   }
-  try {
-    worst = parseRating(cell.w);
-  } catch (error) {
-    return `Worst map: ${(error as Error).message}`;
-  }
-  if (!Number.isInteger(best)) return `Best map (${toScore(best)}) must be a whole number.`;
-  if (!Number.isInteger(worst)) return `Worst map (${toScore(worst)}) must be a whole number.`;
-  if (best < worst) {
-    return `Best map (${toScore(best)}) must be ≥ worst map (${toScore(worst)}).`;
-  }
-  return null;
+  return filled === 0 ? 'Enter at least one map rating.' : null;
 }
 
-/** Validate an EditorMatrix: the active rating layer parseable (best ≥ worst in
- * best/worst mode); no two players on the SAME team resolve to the same display
- * label. A player may be left unset (the Player N / Opponent K dropdown default,
- * stored as ''), and the same faction may appear on both teams. The worker
- * assumes a clean Matrix, so the UI gates `solve` on `ok`. `simple` selects
- * which layer to validate, defaulting to best/worst. */
+/** Validate an EditorMatrix: the active rating layer parseable (at least one
+ * whole-number map per cell in by-map mode); no two players on the SAME team
+ * resolve to the same display label. A player may be left unset (the Player N /
+ * Opponent K dropdown default, stored as ''), and the same faction may appear on
+ * both teams. The worker assumes a clean Matrix, so the UI gates `solve` on `ok`. `simple` selects
+ * which layer to validate, defaulting to by-map. */
 export function validateMatrix(m: EditorMatrix, simple = false): ValidationResult {
   const cellErrors = m.cells.map((row) => row.map((cell) => cellError(cell, simple)));
   const globalErrors: string[] = [];

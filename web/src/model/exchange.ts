@@ -2,7 +2,9 @@ import { fromSaved, toSaved } from './matrix';
 import type { EditorMatrix, SavedMatrix } from './matrix';
 
 const FORMAT = 'wtc-matrix';
-const VERSION = 1;
+/** v2: cells are { maps: [A, B, C], s } and players carry dispositions. v1
+ * files ({ b, w } cells) still import — fromSaved migrates them. */
+const VERSION = 2;
 const UNREADABLE = 'Could not read that file — expected a matrix JSON exported from this app.';
 
 /** Native JSON export: the SavedMatrix body plus a format/version header

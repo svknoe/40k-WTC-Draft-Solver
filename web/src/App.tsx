@@ -42,7 +42,7 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
   const matrix = useMemo(() => state.current ?? blank(8), [state.current]);
   const { settings, saves } = state;
   // Validate and convert the layer the active rating mode shows — you solve
-  // what you see (single rating vs best/worst map).
+  // what you see (the single rating vs the map A/B/C ratings).
   const solvable = useMemo(
     () => validateMatrix(matrix, settings.simpleMode).ok, [matrix, settings.simpleMode]);
   const engineMatrix = useMemo(() => {

@@ -228,7 +228,8 @@ Key `wtcDraftTrainer`:
   "current": {               // the working matrix (auto-restored on load)
     "myTeam": "Norway", "enemyTeam": "Scotland",
     "myNames": [...], "enemyNames": [...],
-    "cells": [[{ "b": "12", "w": "9" }, ...], ...]   // strings (as typed), 0–20 scale
+    "myDispositions": [...], "enemyDispositions": [...],   // display-only, never solved
+    "cells": [[{ "maps": ["15", "9", ""], "s": "12" }, ...], ...]   // strings (as typed), 0–20 scale
   }
 }
 ```
@@ -240,7 +241,7 @@ losslessly, tolerates in-progress/invalid edits).
 
 **Decided (2026-07-05): JSON-only for the MVP.** CSV interop is deferred.
 - **Native JSON export** — a `SavedMatrix` (the `current` block above) plus a
-  `"format": "wtc-matrix", "version": 1` header. Human-portable, re-importable.
+  `"format": "wtc-matrix", "version": 2` header (v1 `{b, w}` files still import as maps A/B). Human-portable, re-importable.
 - **Deferred (post-MVP):** round-trip with the repo's `pairing_matrix_best.csv` +
   `pairing_matrix_worst.csv` so captains can move a matrix between the CLI and the web
   app. Nice-to-have; not required for the train-against-the-bot MVP. Revisit if users ask.
@@ -268,10 +269,9 @@ real engine dropped in behind the same contract at Slice 2.
 
 ## 6. Validation rules (mirror the CLI; run in the UI before `solve`)
 
-- Every cell: `best ≥ worst` (reject otherwise).
-- Cells accept **0–20 numbers** or legacy tokens `--,-,0,+,++`. A bare `0` is the legacy
-  *even* token (10–10), **not** the score 0 — write `0.0` for a 20–0 blowout loss.
-  Numbers outside 0–20 are rejected.
+- A by-map cell is valid when at least one of maps A/B/C is filled and every filled map is a
+  whole number 0–20 (no `best ≥ worst` rule; the solver takes the max and min of the filled
+  maps). A single-rating cell is a whole number 0–20.
 - Player names are factions from a dropdown, or the unset `Player N` / `Opponent K`
   default. No two players on the **same** team may resolve to the same label
   (checked on the positional-filled names, so the default fill can't create a

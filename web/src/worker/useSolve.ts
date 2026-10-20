@@ -15,7 +15,7 @@ export interface SolveState {
   /** The k of the completed solve (null = exact); undefined before any solve. */
   solvedK: number | null | undefined;
   /** k = null → exact; k = 3 → fast preview (§7). `simple` selects the rating
-   * layer to solve (single rating vs best/worst), defaulting to best/worst. */
+   * layer to solve (single rating vs map A/B/C ratings), defaulting to the maps. */
   solve: (matrix: EditorMatrix, k: number | null, simple?: boolean) => void;
   /** Query one draft node from the solved values (instant). The trainer uses
    * this; it rejects if nothing is solved. */

@@ -130,7 +130,6 @@
 .ev-bar > span { display: block; height: 0.5rem; border-radius: 3px; background: var(--text-3); min-width: 2px; }
 .ev-bar > span.top { background: var(--green); }
 .ev-val { text-align: right; color: var(--text-2); width: 3rem; }
-.why-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 
 /* remaining-matchups collapsible */
 .remaining { margin-top: 1.25rem; }
@@ -142,7 +141,8 @@
 .remaining[open] > summary::after { content: '▴'; }
 .remaining[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .remaining .remaining-size { color: var(--text-3); font-family: var(--font-mono); font-size: 0.85rem; }
-.remaining .why-scroll { border-top-left-radius: 0; border-top-right-radius: 0; }
+.remaining .remaining-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--bg-2); }
 
 .locked { margin-top: 1.5rem; }
 .locked-list { display: flex; flex-direction: column; gap: 0.3rem; }
@@ -186,9 +186,13 @@
 .remaining .faction-label.mine-label { color: var(--blue); text-align: left; }
 .remaining .faction-label.enemy-label { color: var(--enemy); text-align: center; }
 /* read-only map strip: the played map (if decided) bold and bright, others dimmer */
-.map-cell { flex: 1; min-width: 0; text-align: center; align-self: center; color: inherit; opacity: 0.6;
+.remaining .map-cell { flex: 1; min-width: 0; text-align: center; align-self: center; color: inherit; opacity: 0.6;
   font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.72rem; }
-.tile-maps.has-played .map-cell { opacity: 0.35; }
-.tile-maps.has-played .map-cell.played { opacity: 1; font-weight: 700; }
-span.disp { display: inline-block; border-radius: 4px; padding: 0.1rem 0.3rem; font-size: 0.62rem;
+.remaining .tile-maps.has-played .map-cell { opacity: 0.35; }
+.remaining .tile-maps.has-played .map-cell.played { opacity: 1; font-weight: 700; }
+.remaining span.disp { display: inline-block; border-radius: 4px; padding: 0.1rem 0.3rem; font-size: 0.62rem;
   font-weight: 700; letter-spacing: 0.02em; }
+/* column-header pills fill the column and scale with it, like the Matrix page
+ * (container-type comes from .col-head-inner in editor.css) */
+.remaining .col-head-inner span.disp { display: block; width: 100%; font-size: clamp(0.5rem, 11cqi, 0.62rem);
+  padding: 0.1rem 0.15rem; letter-spacing: 0; text-align: center; }

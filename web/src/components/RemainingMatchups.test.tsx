@@ -52,7 +52,7 @@ function mapsMatrix(): Matrix {
     ...matrix,
     neutralMap: 'C',
     cells: matrix.cells.map((row) => row.map((c) => ({
-      maps: [bestOf(c), worstOf(c), worstOf(c) + 0.25 * (bestOf(c) - worstOf(c))] as [number, number, number],
+      maps: [bestOf(c), worstOf(c), Math.round(worstOf(c) + 0.25 * (bestOf(c) - worstOf(c)))] as [number, number, number],
     }))),
   };
 }
@@ -77,7 +77,7 @@ describe('matrix tiles', () => {
   const model = afterDefenders(matrix);
   const { myDefender, enemyDefender } = model;
   const tile = (container: HTMLElement, m: number, e: number) =>
-    container.querySelector<HTMLElement>(`[aria-label="${matrix.myNames[m]} vs ${matrix.enemyNames[e]}"]`)!;
+    container.querySelector<HTMLElement>(`[data-matchup="${matrix.myNames[m]} vs ${matrix.enemyNames[e]}"]`)!;
   const playedLetters = (el: HTMLElement) =>
     [...el.querySelectorAll('.map-cell.played')].map((x) => x.getAttribute('title')!.replace('Played on map ', ''));
 
@@ -120,6 +120,38 @@ describe('matrix tiles', () => {
         if (kind) expect(t.querySelector('.tile-maps')!.classList.contains('has-played')).toBe(true);
       }
     }
+  });
+
+  test('each tile is an image with a full label: average, every map, and the played one', () => {
+    const { container } = renderGrid(model);
+    const m = myDefender;
+    const e = model.enemyRemaining.find((x) => x !== enemyDefender)!;
+    const maps = matrix.cells[m][e].maps as number[];
+    const scores = maps.map((v) => v + 10);
+    const avg = Math.round(scores.reduce((a, v) => a + v, 0) / 3);
+    const played = MAP_LETTERS[maps.indexOf(Math.max(...maps))]; // my defender: best map
+    const parts = MAP_LETTERS.map((l, k) => `map ${l} ${scores[k]}${l === played ? ' (played)' : ''}`);
+    const name = `${matrix.myNames[m]} vs ${matrix.enemyNames[e]}: ${avg} average; ${parts.join(', ')}`;
+    const t = within(container).getByRole('img', { name });
+    expect(t).toBe(tile(container, m, e));
+    expect(name).toContain('(played)');
+  });
+
+  test('an unrated map reads as unrated, and without identity the label is just the value', () => {
+    const open = fixtureMatrix(smoke);
+    const { container } = renderGrid(afterDefenders(open));
+    const first = container.querySelector<HTMLElement>('.tile')!;
+    expect(first.getAttribute('role')).toBe('img');
+    expect(first.getAttribute('aria-label')).toMatch(/^.+ vs .+: \d+$/);
+
+    const partial = mapsMatrix();
+    partial.cells[0][0] = { maps: [partial.cells[0][0].maps[0], partial.cells[0][0].maps[1], null] };
+    const pm = initDraft(partial, smoke.neutralWeight);
+    const { container: c2 } = renderGrid(pm);
+    const label = c2.querySelector<HTMLElement>(
+      `[data-matchup="${partial.myNames[0]} vs ${partial.enemyNames[0]}"]`,
+    )!.getAttribute('aria-label')!;
+    expect(label).toContain('map C unrated');
   });
 
   test('without map identity there is no strip and nothing is marked', () => {

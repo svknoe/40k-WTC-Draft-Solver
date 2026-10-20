@@ -41,10 +41,25 @@ function MatchupTile({ model, m, e, label }: MatchupTileProps) {
   const avg = rated.reduce((a, v) => a + v, 0) / rated.length;
   const kind = identity ? contextKind(model, m, e) : null;
   const played = kind ? playedMap(matrix, m, e, kind) : null;
+  const step = pointStep(avg);
+  // The tile is one image to assistive tech: the visible text is presentational.
+  const mapsLabel = identity
+    ? `${step} average; ` +
+      MAP_LETTERS.map((letter, k) => {
+        const score = scores[k];
+        if (score === null) return `map ${letter} unrated`;
+        return `map ${letter} ${score}${letter === played ? ' (played)' : ''}`;
+      }).join(', ')
+    : String(step);
   return (
     <td className="cell">
-      <div className={`tile ${pointClass(avg)}`} aria-label={label}>
-        <span className="tile-value">{pointStep(avg)}</span>
+      <div
+        className={`tile ${pointClass(avg)}`}
+        role="img"
+        aria-label={`${label}: ${mapsLabel}`}
+        data-matchup={label}
+      >
+        <span className="tile-value">{step}</span>
         {identity && (
           <div className={played ? 'tile-maps has-played' : 'tile-maps'}>
             {MAP_LETTERS.map((letter, k) => (
@@ -74,7 +89,14 @@ export function RemainingMatchups({
   const { myRemaining, enemyRemaining } = model;
 
   return (
-    <details className="remaining" open={open}>
+    <details
+      className="remaining"
+      open={open}
+      // Also follow native toggles (e.g. find-in-page auto-expanding the panel).
+      onToggle={(e) => {
+        if (e.currentTarget.open !== open) onOpenChange(e.currentTarget.open);
+      }}
+    >
       <summary
         onClick={(e) => {
           // Keep React the source of truth rather than the native toggle.
@@ -87,7 +109,7 @@ export function RemainingMatchups({
           {myRemaining.length} × {enemyRemaining.length}
         </span>
       </summary>
-      <div className="why-scroll">
+      <div className="remaining-scroll">
         <table className="grid compact" style={{ '--n': enemyRemaining.length } as CSSProperties}>
           <thead>
             <tr>

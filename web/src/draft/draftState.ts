@@ -169,7 +169,10 @@ export const pairingLabel = (label: string, map: MapLetter | null): string =>
  * row/column is a defender game; in the final round every other pairing that
  * happens is neutral (refused vs refused, or last vs last); before the
  * defenders are known — or for non-defenders in earlier rounds, whose refused
- * attackers return to the pool — it is undecided (null). Defenders never meet. */
+ * attackers return to the pool — it is undecided (null). Defenders never meet.
+ *
+ * 'refused' stands for ANY neutral game in the final round, last-vs-last
+ * included: the map played is the same for both, so they are not told apart. */
 export function contextKind(model: DraftModel, m: number, e: number): GameKind | null {
   const { myDefender, enemyDefender } = model;
   if (myDefender < 0 || enemyDefender < 0) return null;

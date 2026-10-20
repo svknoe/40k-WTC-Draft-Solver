@@ -75,8 +75,8 @@ table.grid td.avg { text-align: center; vertical-align: middle; color: var(--tex
 .faction-pick { position: relative; border-radius: 4px; }
 .faction-pick:focus-within { outline: 1px solid var(--blue); }
 .faction-label { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
-  font-weight: 600; font-size: 0.8rem; line-height: 1.2; padding: 0.3rem 0.35rem; overflow-wrap: anywhere; }
-.faction-pick.mine .faction-label { color: var(--blue); }
+  font-weight: 600; font-size: 0.76rem; line-height: 1.2; padding: 0.3rem 0.15rem; overflow-wrap: break-word; }
+.faction-pick.mine .faction-label { color: var(--blue); text-align: left; }
 .faction-pick.enemy .faction-label { color: var(--enemy); text-align: center; min-height: calc(2.4em + 0.6rem); }
 .faction-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
 .faction-select:disabled { cursor: default; }
@@ -127,8 +127,8 @@ td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }
 
 .legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-3); }
 .legend { align-items: center; }
-.scale-strip { display: inline-flex; border-radius: 4px; overflow: hidden; }
-.scale-strip > span { width: 1.1rem; height: 1rem; line-height: 1rem; text-align: center;
+.scale-strip { display: inline-flex; border-radius: 4px; overflow: hidden; max-width: 100%; }
+.scale-strip > span { flex: 0 1 1.1rem; min-width: 0; height: 1rem; line-height: 1rem; text-align: center;
   font-family: var(--font-mono); font-size: 0.6rem; }
 
 .solve-bar { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
@@ -139,6 +139,6 @@ td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }
 .hidden-file { display: none; }
 
 @media (max-width: 820px) {
-  .editor { flex-direction: column; }
+  .editor { flex-direction: column; align-items: stretch; }
   .editor-sidebar { flex-basis: auto; width: 100%; }
 }

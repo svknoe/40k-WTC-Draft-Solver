@@ -6,6 +6,7 @@ import {
   resize, SavedMatrix, singleFromMaps, toEngineMatrix, toSaved, transpose,
 } from './matrix';
 import { validateMatrix } from './validation';
+import { bestOf, worstOf } from '../engine/maps';
 
 const c = (a: string, b: string, cc: string, s: string): EditorCell => ({ maps: [a, b, cc], s });
 
@@ -79,26 +80,31 @@ describe('filledMaps / mapAverage / cellValue', () => {
 });
 
 describe('toEngineMatrix', () => {
-  test('by-map mode sends best = max, worst = min and the neutral map as neutral', () => {
+  test('by-map mode sends each map rating (blank = null) and the neutral map', () => {
     const e = toEngineMatrix(sample4(), false);
     expect(e.n).toBe(4);
     expect(e.myNames).toEqual(['A', 'B', 'C', 'D']);
     expect(e.enemyNames).toEqual(['W', 'X', 'Y', 'Z']);
-    expect(e.cells[0][0]).toEqual({ best: 5, worst: -1, neutral: 5 }); // maps 15/9/12, neutral A
-    expect(e.cells[0][3]).toEqual({ best: 3, worst: 3, neutral: 3 }); // one map, 13
-    expect(e.cells[2][0]).toEqual({ best: 0, worst: 0, neutral: 0 }); // 10/10/10 -> even
+    expect(e.neutralMap).toBe('A');
+    expect(e.cells[0][0]).toEqual({ maps: [5, -1, 2] }); // maps 15/9/12
+    expect(e.cells[0][3]).toEqual({ maps: [3, null, null] }); // one map, 13
+    expect(e.cells[2][0]).toEqual({ maps: [0, 0, 0] }); // 10/10/10 -> even
+    expect([bestOf(e.cells[0][0]), worstOf(e.cells[0][0])]).toEqual([5, -1]);
   });
 
-  test('the neutral value follows the chosen neutral map', () => {
+  test('the neutral map letter follows the chosen neutral map', () => {
     // sample4 leaves some maps blank; fill them so every map can be neutral.
     const full = sample4();
     full.cells = full.cells.map((row) => row.map((cell) => c(cell.maps[0], cell.maps[1] || '10', cell.maps[2] || '10', cell.s)));
-    expect(toEngineMatrix({ ...full, neutralMap: 'C' }, false).cells[0][0]).toEqual({ best: 5, worst: -1, neutral: 2 }); // C = 12
-    expect(toEngineMatrix({ ...full, neutralMap: 'B' }, false).cells[0][0]).toEqual({ best: 5, worst: -1, neutral: -1 }); // B = 9
+    expect(toEngineMatrix({ ...full, neutralMap: 'C' }, false).neutralMap).toBe('C');
+    expect(toEngineMatrix({ ...full, neutralMap: 'B' }, false).neutralMap).toBe('B');
+    expect(toEngineMatrix({ ...full, neutralMap: 'B' }, false).cells[0][0]).toEqual({ maps: [5, -1, 2] });
   });
 
   test('defaults to by-map mode when no flag is passed', () => {
-    expect(toEngineMatrix(sample4()).cells[0][0]).toEqual({ best: 5, worst: -1, neutral: 5 });
+    const e = toEngineMatrix(sample4());
+    expect(e.cells[0][0]).toEqual({ maps: [5, -1, 2] });
+    expect(e.neutralMap).toBe('A');
   });
 
   test('fills unset (empty) names with the positional Player/Opponent label', () => {
@@ -110,17 +116,19 @@ describe('toEngineMatrix', () => {
     expect(e.enemyNames).toEqual(['Opponent 1', 'Opponent 2', 'Opponent 3', 'Opponent 4']);
   });
 
-  test('simple mode uses the single rating for best, worst and neutral, ignoring the maps', () => {
+  test('simple mode puts the single rating on every map, with no map identity', () => {
     const e = toEngineMatrix(sample4(), true);
-    expect(e.cells[0][0]).toEqual({ best: 2, worst: 2, neutral: 2 }); // s = 12 -> +2
-    expect(e.cells[2][0]).toEqual({ best: 0, worst: 0, neutral: 0 });
+    expect(e.neutralMap).toBeNull();
+    expect(e.cells[0][0]).toEqual({ maps: [2, 2, 2] }); // s = 12 -> +2
+    expect(e.cells[2][0]).toEqual({ maps: [0, 0, 0] });
   });
 
   test('simple mode ignores the neutral map: blank map C does not throw and neutral = s', () => {
     const m = { ...sample4(), neutralMap: 'C' as const };
     m.cells = m.cells.map((row) => row.map((cell) => ({ maps: [cell.maps[0], cell.maps[1], ''] as [string, string, string], s: cell.s })));
     const e = toEngineMatrix(m, true);
-    expect(e.cells[0][0]).toEqual({ best: 2, worst: 2, neutral: 2 });
+    expect(e.cells[0][0]).toEqual({ maps: [2, 2, 2] });
+    expect(e.neutralMap).toBeNull();
   });
 
   test('by-map mode throws on an unparseable map or a blank neutral map', () => {
@@ -156,10 +164,11 @@ describe('transpose (swap which side you captain)', () => {
   });
 
   test("the other captain's best/worst are the negated worst/best", () => {
-    const before = toEngineMatrix(sample4(), false).cells[0][1]; // best 1, worst 0
+    const before = toEngineMatrix(sample4(), false).cells[0][1]; // maps 1 / 0 / unrated
     const after = toEngineMatrix(transpose(sample4()), false).cells[1][0];
-    // `0 - x` rather than `-x`: toEqual distinguishes -0 from +0, and worst is 0 here.
-    expect(after).toEqual({ best: 0 - before.worst, worst: 0 - before.best, neutral: 0 - (before.neutral as number) });
+    // `0 - x` rather than `-x`: toEqual distinguishes -0 from +0, and map B is 0 here.
+    expect(after.maps).toEqual(before.maps.map((v) => (v === null ? null : 0 - v)));
+    expect([bestOf(after), worstOf(after)]).toEqual([0 - worstOf(before), 0 - bestOf(before)]);
   });
 
   test('keeps the neutral map (a map keeps its letter)', () => {

@@ -1,5 +1,17 @@
 /** Shared engine/UI data shapes (docs/web-design.md §3–§4). */
 
+/** The three map layouts a matchup is rated on. */
+export const MAP_LETTERS = ['A', 'B', 'C'] as const;
+export type MapLetter = typeof MAP_LETTERS[number];
+
+/** A matchup's map A, B, C ratings on the internal scale; null = not rated
+ * (a defender never picks an unrated map). */
+export type MapRatings = [number | null, number | null, number | null];
+
+export interface MatchupCell {
+  maps: MapRatings;
+}
+
 /** §4.1 — the matrix that crosses the worker boundary. Cell values are on the
  * INTERNAL scale (score − 10, range −10..+10); 0–20 conversion is a UI
  * presentation concern. Player indices are the array positions — the caller
@@ -9,10 +21,12 @@ export interface Matrix {
   n: 3 | 4 | 5 | 6 | 7 | 8;
   myNames: string[];
   enemyNames: string[];
-  /** `neutral` is the value of a neutral game (refused vs refused, last vs
-   * last) on this matchup; without it the engine uses the weighted midpoint
-   * `worst + neutralWeight × (best − worst)` (the frozen conformance model). */
-  cells: { best: number; worst: number; neutral?: number }[][];
+  cells: MatchupCell[][];
+  /** The map neutral games (refused vs refused, last vs last) are played on.
+   * null = the maps carry no identity (single-rating mode, the conformance
+   * fixtures, hand-built test matrices): neutral games then score
+   * worst + neutralWeight × (best − worst). */
+  neutralMap: MapLetter | null;
 }
 
 /** A decision made walking the draft tree (§3.1) — engine-internal encoding;
@@ -59,8 +73,9 @@ export interface SolveRequest {
   matrix: Matrix;
   /** k-restriction (null = exact). */
   k: number | null;
-  /** Fallback weight w (default 0.5 = midpoint) for cells without a `neutral`
-   * value; the app always sends per-cell `neutral` values. */
+  /** Neutral-game weight w (default 0.5 = midpoint), used only when the
+   * matrix's `neutralMap` is null; with a neutral map the engine reads that
+   * map's rating instead. */
   neutralWeight?: number;
 }
 

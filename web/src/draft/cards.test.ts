@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { DraftEngine } from '../engine/engine';
+import { bestOf, worstOf } from '../engine/maps';
 import { applyStep, enemyMoveId, initDraft } from './draftState';
 import {
   attackerOptions,
@@ -35,7 +36,7 @@ describe('candidateStats', () => {
 
     const s = candidateStats(model, node, 0);
     const my = node.choices[0].id as number;
-    const vals = model.enemyRemaining.map((e) => matrix.cells[my][e].best + 10); // → 0–20
+    const vals = model.enemyRemaining.map((e) => bestOf(matrix.cells[my][e]) + 10); // → 0–20
     expect(s.floor).toBe(Math.min(...vals));
     expect(s.avg).toBe(Math.round(vals.reduce((a, b) => a + b, 0) / vals.length));
   });
@@ -60,7 +61,7 @@ describe('candidateStats', () => {
 
     const s = candidateStats(model, node, 0);
     const [a, b] = node.choices[0].id as [number, number];
-    const vals = [matrix.cells[a][enDef].worst + 10, matrix.cells[b][enDef].worst + 10];
+    const vals = [worstOf(matrix.cells[a][enDef]) + 10, worstOf(matrix.cells[b][enDef]) + 10];
     expect(s.floor).toBe(Math.min(...vals));
     expect(s.avg).toBe(Math.round((vals[0] + vals[1]) / 2));
   });
@@ -77,7 +78,7 @@ describe('attackerOptions', () => {
 
     for (const o of opts) {
       // Rating = worst-map value vs the enemy defender, on the 0–20 scale.
-      expect(o.rating).toBe(matrix.cells[o.index][enDef].worst + 10);
+      expect(o.rating).toBe(worstOf(matrix.cells[o.index][enDef]) + 10);
       // Marginal = summed prob of every offered pair containing the attacker.
       const marginal = node.choices
         .filter((c) => (c.id as [number, number]).includes(o.index))
@@ -206,7 +207,7 @@ describe('enemyCandidateStats', () => {
     const s = enemyCandidateStats(model, node, j);
     const e = model.enemyRemaining[j];
     // Their score for an enemy-defends game = 20 − my worst-map score.
-    const vals = model.myRemaining.map((m) => 20 - (matrix.cells[m][e].worst + 10));
+    const vals = model.myRemaining.map((m) => 20 - (worstOf(matrix.cells[m][e]) + 10));
     expect(s.floor).toBe(Math.min(...vals));
     expect(s.avg).toBe(Math.round(vals.reduce((a, b) => a + b, 0) / vals.length));
   });
@@ -216,7 +217,7 @@ describe('enemyCandidateStats', () => {
     const s = enemyCandidateStats(model, node, 0);
     const [a, b] = enemyMoveId(model, 'attackers', 0) as [number, number];
     const d = model.myDefender;
-    const vals = [20 - (matrix.cells[d][a].best + 10), 20 - (matrix.cells[d][b].best + 10)];
+    const vals = [20 - (bestOf(matrix.cells[d][a]) + 10), 20 - (bestOf(matrix.cells[d][b]) + 10)];
     expect(s.floor).toBe(Math.min(...vals));
     expect(s.avg).toBe(Math.round((vals[0] + vals[1]) / 2));
   });
@@ -225,7 +226,7 @@ describe('enemyCandidateStats', () => {
     const { matrix, model, node } = refusalNode();
     const s = enemyCandidateStats(model, node, 0); // they refuse myPair[0], keep myPair[1]
     const kept = model.myPair![1];
-    const v = 20 - (matrix.cells[kept][model.enemyDefender].worst + 10);
+    const v = 20 - (worstOf(matrix.cells[kept][model.enemyDefender]) + 10);
     expect(s.avg).toBe(v);
     expect(s.floor).toBe(v);
   });
@@ -241,7 +242,7 @@ describe('enemyAttackerOptions', () => {
 
     const en = node.why!.enStrategy;
     for (const o of opts) {
-      expect(o.rating).toBe(20 - (matrix.cells[model.myDefender][o.index].best + 10));
+      expect(o.rating).toBe(20 - (bestOf(matrix.cells[model.myDefender][o.index]) + 10));
       const marginal = en.reduce((s, p, j) => {
         const pair = enemyMoveId(model, 'attackers', j) as [number, number];
         return pair.includes(o.index) ? s + p : s;

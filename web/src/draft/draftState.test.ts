@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { fixtureMatrix, smoke } from '../conformance/fixtures';
 import { DraftEngine } from '../engine/engine';
+import { bestOf, cellFromBestWorst, worstOf } from '../engine/maps';
 import type { Matrix } from '../engine/types';
 import { achievedTotal, applyStep, finalRoundOf, initDraft } from './draftState';
 
@@ -39,9 +40,9 @@ describe('draftState (Smoke 4×4, exact engine)', () => {
     for (const g of model.fixed) {
       const cell = matrix.cells[g.my][g.enemy];
       const expectedValue =
-        g.kind === 'my-defends' ? cell.best
-        : g.kind === 'enemy-defends' ? cell.worst
-        : cell.worst + smoke.neutralWeight * (cell.best - cell.worst);
+        g.kind === 'my-defends' ? bestOf(cell)
+        : g.kind === 'enemy-defends' ? worstOf(cell)
+        : worstOf(cell) + smoke.neutralWeight * (bestOf(cell) - worstOf(cell));
       expect(g.value).toBeCloseTo(expectedValue, 9);
     }
   });
@@ -60,10 +61,14 @@ describe('draftState (Smoke 4×4, exact engine)', () => {
     expect(worstDecision).toBeDefined();
   });
 
-  test('refused and last games score the cell neutral value when present', () => {
+  test('refused and last games score the neutral map', () => {
+    // Map C sits between worst and best, so best/worst are unchanged.
     const withNeutral: Matrix = {
       ...matrix,
-      cells: matrix.cells.map((row) => row.map((cell) => ({ ...cell, neutral: cell.best + 7 }))),
+      neutralMap: 'C',
+      cells: matrix.cells.map((row) => row.map((c) => ({
+        maps: [bestOf(c), worstOf(c), worstOf(c) + 0.25 * (bestOf(c) - worstOf(c))],
+      }))),
     };
     const neutralEngine = new DraftEngine(withNeutral, null, smoke.neutralWeight);
     neutralEngine.solve();
@@ -72,8 +77,14 @@ describe('draftState (Smoke 4×4, exact engine)', () => {
       const node = neutralEngine.nodeResult(model.path);
       model = applyStep(model, node, argmax(node.choices.map((c) => c.prob)), argmax(node.why!.enStrategy));
     }
-    for (const g of model.fixed.filter((x) => x.kind === 'refused' || x.kind === 'last')) {
-      expect(g.value).toBeCloseTo(withNeutral.cells[g.my][g.enemy].best + 7, 9);
+    expect(model.fixed.map((g) => g.kind).sort()).toEqual(['enemy-defends', 'last', 'my-defends', 'refused']);
+    for (const g of model.fixed) {
+      const cell = withNeutral.cells[g.my][g.enemy];
+      const expectedValue =
+        g.kind === 'my-defends' ? bestOf(cell)
+        : g.kind === 'enemy-defends' ? worstOf(cell)
+        : (cell.maps[2] as number);
+      expect(g.value).toBeCloseTo(expectedValue, 9);
     }
   });
 });
@@ -86,7 +97,8 @@ function additiveMatrix(a: number[], b: number[]): Matrix {
     n,
     myNames: Array.from({ length: n }, (_, i) => `F${i}`),
     enemyNames: Array.from({ length: n }, (_, i) => `E${i}`),
-    cells: a.map((ai) => b.map((bj) => ({ best: ai + bj, worst: ai + bj }))),
+    cells: a.map((ai) => b.map((bj) => cellFromBestWorst(ai + bj, ai + bj))),
+    neutralMap: null,
   };
 }
 

@@ -3,6 +3,7 @@
  * the anti-drift guard of docs/web-design.md §7.2. They pin the 4/6/8-player
  * value model; never edit them by hand. */
 
+import { cellFromBestWorst } from '../engine/maps';
 import { Matrix } from '../engine/types';
 import smokeJson from './fixtures/smoke.json';
 import sixJson from './fixtures/six.json';
@@ -54,6 +55,7 @@ export function fixtureMatrix(fixture: Fixture): Matrix {
     myNames: fixture.myNames,
     enemyNames: fixture.enemyNames,
     cells: fixture.cellsBest.map((row, i) =>
-      row.map((best, j) => ({ best, worst: fixture.cellsWorst[i][j] }))),
+      row.map((best, j) => cellFromBestWorst(best, fixture.cellsWorst[i][j]))),
+    neutralMap: null,
   };
 }

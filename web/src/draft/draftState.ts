@@ -1,4 +1,5 @@
 import type { Matrix, Move, NodeChoice, NodeResult } from '../engine/types';
+import { bestOf, neutralOf, worstOf } from '../engine/maps';
 
 /** One of the n games fixed by the draft, with its value-model value (internal
  * scale). `my`/`enemy` are player indices. */
@@ -140,11 +141,11 @@ function enemyDecision(model: DraftModel, node: NodeResult, colIndex: number): D
 
 function matchupValue(model: DraftModel, kind: FixedGame['kind'], my: number, enemy: number): number {
   const cell = model.matrix.cells[my][enemy];
-  if (kind === 'my-defends') return cell.best; // I defend → my best map
-  if (kind === 'enemy-defends') return cell.worst; // enemy defends → my worst map
-  // refused / last → neutral: the cell's own neutral map value when the matrix
-  // carries one, else the engine's weighted-midpoint fallback.
-  return cell.neutral ?? cell.worst + model.neutralWeight * (cell.best - cell.worst);
+  if (kind === 'my-defends') return bestOf(cell); // I defend → my best map
+  if (kind === 'enemy-defends') return worstOf(cell); // enemy defends → my worst map
+  // refused / last → neutral: the matrix's neutral map, or the engine's
+  // weighted midpoint when the maps carry no identity.
+  return neutralOf(model.matrix, my, enemy, model.neutralWeight);
 }
 
 /** Apply one simultaneous decision: my choice (index into node.choices) + the

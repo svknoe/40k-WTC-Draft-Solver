@@ -1,4 +1,5 @@
 import type { DraftModel } from '../draft/draftState';
+import { bestOf } from '../engine/maps';
 import { scoreBand, toScore } from '../model/scale';
 
 interface RemainingMatchupsProps {
@@ -41,7 +42,7 @@ export function RemainingMatchups({ model, myNames, enemyNames }: RemainingMatch
                   <span className="wlabel mine">{myNames[m]}</span>
                 </th>
                 {enemyRemaining.map((e) => {
-                  const score = toScore(matrix.cells[m][e].best);
+                  const score = toScore(bestOf(matrix.cells[m][e]));
                   return (
                     <td key={e} className={`num band-${scoreBand(score)}`}>
                       {score}

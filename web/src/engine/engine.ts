@@ -19,6 +19,7 @@ import {
 import { RestrictionTables, FRIENDLY, ENEMY, heuristicallyBestAttackers } from './restriction';
 import { gameValue, solveGame, value2x2, GameSolution } from './zeroSum';
 import { Matrix, Move, NodeResult, NodeChoice } from './types';
+import { bestOf, neutralOf, worstOf } from './maps';
 
 export type ProgressCallback = (frac: number, phase: 'enumerating' | 'inducting') => void;
 
@@ -165,9 +166,9 @@ export class DraftEngine {
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         const cell = matrix.cells[i][j];
-        this.best[i * n + j] = cell.best;
-        this.worst[i * n + j] = cell.worst;
-        this.neutral[i * n + j] = cell.neutral ?? cell.worst + neutralWeight * (cell.best - cell.worst);
+        this.best[i * n + j] = bestOf(cell);
+        this.worst[i * n + j] = worstOf(cell);
+        this.neutral[i * n + j] = neutralOf(matrix, i, j, neutralWeight);
       }
     }
 

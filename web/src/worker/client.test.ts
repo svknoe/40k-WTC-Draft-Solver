@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { cellFromBestWorst } from '../engine/maps';
 import type { Matrix, NodeResult, WorkerRequest, WorkerResponse } from '../engine/types';
 import { WorkerClient, WorkerLike } from './client';
 
@@ -8,7 +9,8 @@ const matrix: Matrix = {
   n: 4,
   myNames: ['a', 'b', 'c', 'd'],
   enemyNames: ['w', 'x', 'y', 'z'],
-  cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ best: 0, worst: 0 }))),
+  cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => cellFromBestWorst(0, 0))),
+  neutralMap: null,
 };
 
 /** A fake worker whose postMessage synchronously runs a responder that can push

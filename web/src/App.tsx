@@ -13,10 +13,10 @@ import type { SolveState } from './worker/useSolve';
 
 type Screen = 'editor' | 'solve' | 'trainer';
 
-// Fallback neutral-game weight for matrices without per-cell neutral values
-// (the engine's and the trainer's `neutral ?? worst + w·(best − worst)`). The
-// app always sends a per-cell neutral (the chosen neutral map), so this only
-// matters if a cell lacks one.
+// Neutral-game weight for matrices whose maps carry no identity
+// (`neutralMap: null`, i.e. single-rating mode): neutral games then score
+// worst + w·(best − worst). By-map matrices name a neutral map, which the
+// engine and the trainer read instead.
 const NEUTRAL_WEIGHT = 0.5;
 
 interface AppProps {

@@ -2,7 +2,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import type { Disposition } from '../model/dispositions';
 import { exportJson, importJson } from '../model/exchange';
 import type { EditorCell, EditorMatrix, MatrixSize } from '../model/matrix';
-import { cleared, randomized, resize, transpose } from '../model/matrix';
+import { MAP_LETTERS, cleared, randomized, resize, transpose } from '../model/matrix';
 import { parsePaste } from '../model/paste';
 import type { Settings } from '../model/storage';
 import { validateMatrix } from '../model/validation';
@@ -232,6 +232,24 @@ export function MatrixEditor({
               By map
             </button>
           </div>
+          {!settings.simpleMode && (
+            <>
+              <span className="neutral-label">Neutral games on</span>
+              <div className="segmented" role="group" aria-label="Neutral games map">
+                {MAP_LETTERS.map((letter) => (
+                  <button
+                    key={letter}
+                    className={matrix.neutralMap === letter ? 'on' : ''}
+                    disabled={locked}
+                    title={`Refused vs refused and last vs last are played on map ${letter}`}
+                    onClick={() => update({ neutralMap: letter })}
+                  >
+                    {letter}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <button
             onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}
             disabled={locked || !validation.ok}

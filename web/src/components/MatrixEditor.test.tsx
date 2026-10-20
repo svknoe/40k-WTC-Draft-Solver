@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
@@ -101,10 +101,29 @@ describe('MatrixEditor', () => {
     // Clear/Random would rewrite the matrix under the draft — frozen as well.
     expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Random' })).toBeDisabled();
+    expect(within(screen.getByRole('group', { name: 'Neutral games map' })).getByRole('button', { name: 'B' })).toBeDisabled();
 
     // "Discard draft to edit" discards immediately — no confirmation dialog.
     await user.click(screen.getByRole('button', { name: /discard draft to edit/i }));
     expect(onDiscardDraft).toHaveBeenCalledTimes(1);
+  });
+
+  test('By map mode shows a neutral-map control that sets the matrix neutral map', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />); // by-map mode, neutralMap 'A'
+    const group = screen.getByRole('group', { name: 'Neutral games map' });
+    expect(within(group).getByRole('button', { name: 'A' })).toHaveClass('on');
+    await user.click(within(group).getByRole('button', { name: 'C' }));
+    expect(within(group).getByRole('button', { name: 'C' })).toHaveClass('on');
+    expect(screen.getByLabelText('A vs W map C')).toHaveClass('neutral');
+    expect(screen.getByLabelText('A vs W map A')).not.toHaveClass('neutral');
+  });
+
+  test('the neutral-map control is hidden in single rating mode', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    expect(screen.queryByRole('group', { name: 'Neutral games map' })).not.toBeInTheDocument();
   });
 
   test('opponent name slots default to "Opponent k", not "Enemy k"', () => {

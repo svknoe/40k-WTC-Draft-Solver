@@ -212,9 +212,11 @@ both sides — i.e. `expected` + `root.choices` (my side) plus the enemy's root 
 type Matrix = {
   n: 3 | 4 | 5 | 6 | 7 | 8,  // odd sizes: terminal round at 3 players, no last-vs-last game
   myNames: string[], enemyNames: string[],   // length n; distinct within a team (may repeat across teams)
-  cells: { best: number, worst: number, neutral?: number }[][] // n×n, INTERNAL scale (score − 10, −10..+10);
-  // neutral = the rating on the captain's chosen neutral map, used for refused-vs-refused and
-  // last-players games; absent => the engine falls back to worst + w·(best − worst)
+  cells: { maps: [number | null, number | null, number | null] }[][] // n×n, INTERNAL scale (score − 10, −10..+10);
+  // the ratings on maps A, B, C (null = unrated)
+  neutralMap: 'A' | 'B' | 'C' | null
+  // best = max(maps), worst = min(maps); neutral games (refused-vs-refused, last players) use the
+  // rating on neutralMap, or worst + w·(best − worst) when neutralMap is null (see engine/types.ts)
 }
 ```
 

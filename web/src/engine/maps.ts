@@ -36,7 +36,8 @@ export function neutralOf(matrix: Matrix, i: number, j: number, neutralWeight: n
 }
 
 /** A matchup known only by its best and worst map (the conformance fixtures,
- * hand-built test matrices): maps A = best, B = worst, C unrated. */
+ * hand-built test matrices): maps A = best, B = worst, C unrated. Expects
+ * best >= worst, so that bestOf / worstOf (the max and min) return them back. */
 export const cellFromBestWorst = (best: number, worst: number): MatchupCell => ({ maps: [best, worst, null] });
 
 export type { MapLetter };

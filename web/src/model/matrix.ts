@@ -77,8 +77,9 @@ export function filledMaps(cell: EditorCell): number[] {
 }
 
 /** The mean of a cell's filled maps as a 0-20 score, or null when no map is
- * filled or one is unparseable. Display only: the solver uses the max/min
- * (toEngineMatrix), and neutral games use the chosen neutral map. */
+ * filled or one is unparseable. Display only: the engine derives best and worst
+ * from the map ratings toEngineMatrix sends, and neutral games use the chosen
+ * neutral map. */
 export function mapAverage(cell: EditorCell): number | null {
   try {
     const values = filledMaps(cell);

@@ -17,6 +17,7 @@ function matrix(overrides: Partial<EditorMatrix> = {}): EditorMatrix {
     enemyNames: ['', '', ''],
     myDispositions: ['', '', ''],
     enemyDispositions: ['', '', ''],
+    neutralMap: 'A',
     cells: Array.from({ length: n }, () =>
       Array.from({ length: n }, () => ({ maps: ['10', '10', ''] as [string, string, string], s: '10' }))),
     ...overrides,
@@ -94,6 +95,13 @@ describe('Grid faction dropdowns', () => {
 });
 
 describe('Grid tiles', () => {
+  test('tiles do not mark the neutral map (the A/B/C control above the grid shows it)', () => {
+    renderGrid(matrix({ neutralMap: 'B' }));
+    const mapB = screen.getByLabelText('P1 vs E1 map B');
+    expect(mapB).toHaveClass('map-input', { exact: true });
+    expect(mapB).not.toHaveAttribute('title');
+  });
+
   test('by-map mode shows the map average rounded to a whole score, matching its palette step', () => {
     const m = matrix();
     m.cells[0][0] = { maps: ['12', '9', ''], s: '10' }; // 10.5 -> 11 (half up)
@@ -156,7 +164,7 @@ describe('Grid tiles', () => {
     m.cells[0][1] = { maps: ['', '', ''], s: '' };
     const errors = noErrors(m.n) as (string | null)[][];
     errors[0][0] = 'Map A: out of range';
-    errors[0][1] = 'Enter at least one map rating.';
+    errors[0][1] = 'Map A is the neutral map — fill it in.';
     renderGrid(m, { cellErrors: errors });
     const bad = screen.getByLabelText('P1 vs E1 map A').closest('td');
     expect(bad).toHaveClass('invalid');

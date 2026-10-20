@@ -1,8 +1,8 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useId, useRef, useState, type ChangeEvent } from 'react';
 import type { Disposition } from '../model/dispositions';
 import { exportJson, importJson } from '../model/exchange';
 import type { EditorCell, EditorMatrix, MatrixSize } from '../model/matrix';
-import { cleared, randomized, resize, transpose } from '../model/matrix';
+import { MAP_LETTERS, cleared, randomized, resize, transpose } from '../model/matrix';
 import { parsePaste } from '../model/paste';
 import type { Settings } from '../model/storage';
 import { validateMatrix } from '../model/validation';
@@ -48,6 +48,7 @@ export function MatrixEditor({
   const [pasteOpen, setPasteOpen] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const neutralLabelId = useId();
 
   const validation = validateMatrix(matrix, settings.simpleMode);
   const update = (partial: Partial<EditorMatrix>) => onMatrixChange({ ...matrix, ...partial });
@@ -225,13 +226,37 @@ export function MatrixEditor({
           </button>
           <span className="spacer" />
           <div className="segmented" role="group" aria-label="Rating mode">
-            <button className={settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: true })}>
+            <button className={settings.simpleMode ? 'on' : ''} aria-pressed={settings.simpleMode} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: true })}>
               Single rating
             </button>
-            <button className={!settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
+            <button className={!settings.simpleMode ? 'on' : ''} aria-pressed={!settings.simpleMode} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
               By map
             </button>
           </div>
+          {!settings.simpleMode && (
+            // One unit, so a narrow controls row never wraps the label away
+            // from its buttons.
+            <div className="neutral-pick">
+              <span className="neutral-label" id={neutralLabelId}>Neutral games on</span>
+              <div className="segmented" role="group" aria-labelledby={neutralLabelId}>
+                {MAP_LETTERS.map((letter) => {
+                  const isOn = matrix.neutralMap === letter;
+                  return (
+                    <button
+                      key={letter}
+                      className={isOn ? 'on' : ''}
+                      aria-pressed={isOn}
+                      disabled={locked}
+                      title={`Refused vs refused and last vs last are played on map ${letter}`}
+                      onClick={() => update({ neutralMap: letter })}
+                    >
+                      {letter}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <button
             onClick={() => { if (validation.ok) onMatrixChange(transpose(matrix)); }}
             disabled={locked || !validation.ok}

@@ -11,6 +11,7 @@ function valid4(): EditorMatrix {
     enemyNames: ['W', 'X', 'Y', 'Z'],
     myDispositions: ['', '', '', ''],
     enemyDispositions: ['', '', '', ''],
+    neutralMap: 'A',
     cells: Array.from({ length: 4 }, () =>
       Array.from({ length: 4 }, () => ({ maps: ['12', '9', ''] as [string, string, string], s: '10' }))),
   };
@@ -28,8 +29,16 @@ describe('validateMatrix (by-map mode)', () => {
     expect(validateMatrix(valid4()).ok).toBe(true);
   });
 
-  test('one filled map is enough, in any slot', () => {
-    const m = valid4();
+  test('the neutral map must be filled', () => {
+    const m = { ...valid4(), neutralMap: 'B' as const };
+    m.cells[0][0] = { maps: ['14', '', ''], s: '10' };
+    const r = validateMatrix(m, false);
+    expect(r.ok).toBe(false);
+    expect(r.cellErrors[0][0]).toMatch(/Map B is the neutral map/);
+  });
+
+  test('other maps may be blank', () => {
+    const m = { ...valid4(), neutralMap: 'B' as const };
     m.cells[0][0] = { maps: ['', '14', ''], s: '10' };
     expect(validateMatrix(m, false).ok).toBe(true);
   });
@@ -57,12 +66,12 @@ describe('validateMatrix (by-map mode)', () => {
     expect(r.cellErrors[0][0]).toMatch(/Map A.*whole number/);
   });
 
-  test('flags a cell with no map filled', () => {
+  test('flags a cell with no map filled (the neutral map is missing)', () => {
     const m = valid4();
     m.cells[2][2] = { maps: ['', '', ''], s: '5' };
     const r = validateMatrix(m, false);
     expect(r.ok).toBe(false);
-    expect(r.cellErrors[2][2]).toMatch(/at least one map/i);
+    expect(r.cellErrors[2][2]).toMatch(/neutral map/);
   });
 
   test('ignores an invalid or blank single rating (the inactive layer)', () => {
@@ -76,6 +85,11 @@ describe('validateMatrix (single-rating mode)', () => {
   test('validates the single rating only, ignoring blank/invalid maps', () => {
     const m = valid4();
     m.cells = m.cells.map((row) => row.map(() => ({ maps: ['', 'garbage', ''] as [string, string, string], s: '11' })));
+    expect(validateMatrix(m, true).ok).toBe(true);
+  });
+
+  test('ignores the neutral map: neutralMap C with every map C blank is still valid', () => {
+    const m = { ...valid4(), neutralMap: 'C' as const };
     expect(validateMatrix(m, true).ok).toBe(true);
   });
 

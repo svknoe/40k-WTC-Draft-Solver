@@ -128,6 +128,8 @@ input.tile-value:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
 .map-input::placeholder { color: inherit; opacity: 0.5; }
 .tile:hover .map-input, .map-input:focus { opacity: 1; }
 .map-input:focus { outline: 1px solid var(--blue); outline-offset: -1px; }
+.neutral-pick { display: inline-flex; align-items: center; gap: 0.5rem; }
+.neutral-label { color: var(--text-3); font-size: 0.85rem; white-space: nowrap; }
 td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }
 
 /* value bands (colours defined as vars in theme.css; flip under .cb) */

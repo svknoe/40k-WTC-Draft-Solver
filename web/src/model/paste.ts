@@ -1,13 +1,24 @@
-import type { EditorCell } from './matrix';
-import { normaliseCell } from './matrix';
+import type { EditorCell, MapTriple } from './matrix';
+import { singleFromMaps } from './matrix';
+
+const blankCell = (): EditorCell => ({ maps: ['', '', ''], s: '' });
+
+/** One pasted token: "a/b/c" is maps A, B, C (single rating = their rounded
+ * mean); a single number is the same score on all three maps and the single
+ * rating. Anything else (e.g. a two-value "15/12") is a blank cell. */
+function cellOf(token: string): EditorCell {
+  if (token === '') return blankCell();
+  if (!token.includes('/')) return { maps: [token, token, token], s: token };
+  const parts = token.split('/').map((p) => p.trim());
+  if (parts.length !== 3) return blankCell();
+  const maps: MapTriple = [parts[0], parts[1], parts[2]];
+  return { maps, s: singleFromMaps(maps) };
+}
 
 /** Parse pasted spreadsheet text into an n×n grid of cells. Rows are
- * newline-separated; cells are tab/comma/semicolon-separated. A cell token is
- * "a/b/c" (maps A, B, C), "best/worst" (maps A and B), or a single number
- * (map A) — or, when a row holds exactly 2n plain numbers, best/worst
- * alternating columns. Every cell's single rating is backfilled from its maps
- * via normaliseCell (half-up rounded mean). Short input pads with blanks;
- * extra rows/columns/maps are dropped. (docs/design-mockup.html paste modal.) */
+ * newline-separated; cells are tab/comma/semicolon-separated (see cellOf).
+ * Short input pads with blanks; extra rows/columns are dropped.
+ * (docs/design-mockup.html paste modal.) */
 export function parsePaste(text: string, n: number): EditorCell[][] {
   const rows = text
     .split(/\r?\n/)
@@ -19,13 +30,6 @@ export function parsePaste(text: string, n: number): EditorCell[][] {
       .split(/[\t,;]+/)
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
-
-    if (tokens.length === 2 * n) {
-      return Array.from({ length: n }, (_, j) => normaliseCell({ maps: [tokens[2 * j], tokens[2 * j + 1], ''] }));
-    }
-    return Array.from({ length: n }, (_, j) => {
-      const parts = (tokens[j] ?? '').split('/').map((p) => p.trim());
-      return normaliseCell({ maps: [parts[0] ?? '', parts[1] ?? '', parts[2] ?? ''] });
-    });
+    return Array.from({ length: n }, (_, j) => cellOf(tokens[j] ?? ''));
   });
 }

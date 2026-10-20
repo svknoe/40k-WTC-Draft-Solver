@@ -48,7 +48,10 @@ What the artifact *does* correctly encode, and we keep:
   side defends, `worst` when the enemy defends, and `worst + w·(best − worst)` for neutral
   games (refused-vs-refused, last players), where `w = neutral_map_weight` (default
   **0.5**, i.e. the midpoint — see `drafter/solver/context.py`). Midpoint is the default,
-  not the model; the MVP hardcodes `w = 0.5` (see §7).
+  not the model; the MVP hardcodes `w = 0.5` (see §7). *Superseded:* the shipped app plays
+  neutral games on a captain-chosen map (A/B/C) and sends it per cell (§4.1); the weighted
+  midpoint is now only the engine's fallback for cells without a `neutral` value (the frozen
+  conformance fixtures).
 - Bot "styles" (equilibrium / greedy / wildcard), colourblind toggle, undo stack,
   localStorage saves, JSON import/export, paste-from-spreadsheet, simple/advanced mode.
 
@@ -98,7 +101,7 @@ correlate responses. Versioned with `protocol: 1`.
 { type: 'solve', reqId, protocol: 1,
   matrix: Matrix,           // see §4.1 — best/worst per cell, internal scale
   k: number | null,         // k-restriction (null = exact; M3/#5 decides default)
-  neutralWeight?: number }  // neutral-game weight w (default 0.5 = midpoint); MVP omits/hardcodes
+  neutralWeight?: number }  // fallback w (default 0.5 = midpoint) for cells without `neutral`; the app always sends `neutral`
 
 // Query one draft node (instant; served from the solved values held in the worker).
 { type: 'node', reqId, path: Move[] }   // path from root; [] = opening node
@@ -209,7 +212,9 @@ both sides — i.e. `expected` + `root.choices` (my side) plus the enemy's root 
 type Matrix = {
   n: 3 | 4 | 5 | 6 | 7 | 8,  // odd sizes: terminal round at 3 players, no last-vs-last game
   myNames: string[], enemyNames: string[],   // length n; distinct within a team (may repeat across teams)
-  cells: { best: number, worst: number }[][] // n×n, INTERNAL scale (score − 10, −10..+10)
+  cells: { best: number, worst: number, neutral?: number }[][] // n×n, INTERNAL scale (score − 10, −10..+10);
+  // neutral = the rating on the captain's chosen neutral map, used for refused-vs-refused and
+  // last-players games; absent => the engine falls back to worst + w·(best − worst)
 }
 ```
 
@@ -229,6 +234,7 @@ Key `wtcDraftTrainer`:
     "myTeam": "Norway", "enemyTeam": "Scotland",
     "myNames": [...], "enemyNames": [...],
     "myDispositions": [...], "enemyDispositions": [...],   // display-only, never solved
+    "neutralMap": "A",       // "A" | "B" | "C": the map neutral games are played on
     "cells": [[{ "maps": ["15", "9", ""], "s": "12" }, ...], ...]   // strings (as typed), 0–20 scale
   }
 }
@@ -241,7 +247,12 @@ losslessly, tolerates in-progress/invalid edits).
 
 **Decided (2026-07-05): JSON-only for the MVP.** CSV interop is deferred.
 - **Native JSON export** — a `SavedMatrix` (the `current` block above) plus a
-  `"format": "wtc-matrix", "version": 2` header (v1 `{b, w}` files still import as maps A/B). Human-portable, re-importable.
+  `"format": "wtc-matrix", "version": 2` header, including `neutralMap`. Import accepts
+  v2 only (v1 `{b, w}` and other legacy formats are rejected). Human-portable, re-importable.
+- **Paste-from-spreadsheet** cells accept an `a/b/c` triple (maps A/B/C) or a single number
+  (the same score on all three maps and the single rating); a slash token that isn't exactly three values is a blank cell; any other token is written
+  as-is to all three maps (and the single rating) and flagged by validation if it isn't a 0-20
+  whole number.
 - **Deferred (post-MVP):** round-trip with the repo's `pairing_matrix_best.csv` +
   `pairing_matrix_worst.csv` so captains can move a matrix between the CLI and the web
   app. Nice-to-have; not required for the train-against-the-bot MVP. Revisit if users ask.
@@ -258,7 +269,7 @@ losslessly, tolerates in-progress/invalid edits).
 | Strategy (`prob`) | `softmax(evs)` heuristic | **Nash mixed strategy from the LP** |
 | Why panel | approximate | real payoff matrix (child values) + equilibrium mixes |
 | Bot styles | client-side sampling of a heuristic | client-side sampling of the **true** strategy (unchanged) |
-| Value model | best/worst; neutral = midpoint ✓ | best/worst; neutral = `worst + w·(best−worst)`, `w`=`neutral_map_weight` (default 0.5 = midpoint) |
+| Value model | best/worst; neutral = midpoint ✓ | best/worst; neutral = the chosen neutral map's rating (per-cell `neutral`; fallback `worst + w·(best−worst)`, `w`=`neutral_map_weight`, default 0.5) |
 
 The UI's data *shapes* barely change; its *source* changes from "compute inline with a
 heuristic" to "await a message from the worker." This is why Slices 1–3 can be built
@@ -269,9 +280,10 @@ real engine dropped in behind the same contract at Slice 2.
 
 ## 6. Validation rules (mirror the CLI; run in the UI before `solve`)
 
-- A by-map cell is valid when at least one of maps A/B/C is filled and every filled map is a
+- A by-map cell is valid when the chosen neutral map is filled and every filled map is a
   whole number 0–20 (no `best ≥ worst` rule; the solver takes the max and min of the filled
-  maps). A single-rating cell is a whole number 0–20.
+  maps; the neutral map's value is used for neutral games). A single-rating cell is a whole
+  number 0–20 and ignores the neutral map.
 - Player names are factions from a dropdown, or the unset `Player N` / `Opponent K`
   default. No two players on the **same** team may resolve to the same label
   (checked on the positional-filled names, so the default fill can't create a

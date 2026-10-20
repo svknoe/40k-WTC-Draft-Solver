@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
@@ -18,6 +18,7 @@ function valid4(): EditorMatrix {
     enemyNames: ['W', 'X', 'Y', 'Z'],
     myDispositions: ['', '', '', ''],
     enemyDispositions: ['', '', '', ''],
+    neutralMap: 'A',
     cells: Array.from({ length: 4 }, () =>
       Array.from({ length: 4 }, () => ({ maps: ['12', '9', ''] as [string, string, string], s: '10' }))),
   };
@@ -100,10 +101,29 @@ describe('MatrixEditor', () => {
     // Clear/Random would rewrite the matrix under the draft — frozen as well.
     expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Random' })).toBeDisabled();
+    expect(within(screen.getByRole('group', { name: 'Neutral games on' })).getByRole('button', { name: 'B' })).toBeDisabled();
 
     // "Discard draft to edit" discards immediately — no confirmation dialog.
     await user.click(screen.getByRole('button', { name: /discard draft to edit/i }));
     expect(onDiscardDraft).toHaveBeenCalledTimes(1);
+  });
+
+  test('By map mode shows a neutral-map control that sets the matrix neutral map', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />); // by-map mode, neutralMap 'A'
+    const group = screen.getByRole('group', { name: 'Neutral games on' });
+    expect(within(group).getByRole('button', { name: 'A' })).toHaveClass('on');
+    await user.click(within(group).getByRole('button', { name: 'C' }));
+    expect(within(group).getByRole('button', { name: 'C' })).toHaveClass('on');
+    expect(within(group).getByRole('button', { name: 'C' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(group).getByRole('button', { name: 'A' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('the neutral-map control is hidden in single rating mode', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} />);
+    await user.click(screen.getByRole('button', { name: 'Single rating' }));
+    expect(screen.queryByRole('group', { name: 'Neutral games on' })).not.toBeInTheDocument();
   });
 
   test('opponent name slots default to "Opponent k", not "Enemy k"', () => {
@@ -135,7 +155,7 @@ describe('MatrixEditor', () => {
     expect(screen.queryByDisplayValue('Norway')).not.toBeInTheDocument();
     // Unset names fall back to the terse P/E cell aria-label.
     expect(screen.getByLabelText('P1 vs E1 map A')).toHaveValue('10');
-    expect(screen.getByLabelText('P1 vs E1 map B')).toHaveValue('');
+    expect(screen.getByLabelText('P1 vs E1 map B')).toHaveValue('10');
     // Still solvable straight away.
     expect(screen.getByRole('button', { name: /solve/i })).toBeEnabled();
   });

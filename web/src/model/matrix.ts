@@ -13,10 +13,19 @@ export type MapTriple = [string, string, string];
 /** The labels of the three maps, in storage order. */
 export const MAP_LETTERS = ['A', 'B', 'C'] as const;
 
+/** One of the three map letters. */
+export type MapLetter = typeof MAP_LETTERS[number];
+
+/** The storage index (0, 1, 2) of a map letter. */
+export const mapIndex = (letter: MapLetter): number => MAP_LETTERS.indexOf(letter);
+
+const toMapLetter = (raw: unknown): MapLetter =>
+  (MAP_LETTERS as readonly unknown[]).includes(raw) ? (raw as MapLetter) : 'A';
+
 /** One editor cell: 0-20 strings AS TYPED. Storing raw strings tolerates
  * in-progress/invalid edits and round-trips losslessly; conversion to the
  * internal scale happens on solve (docs/web-design.md §4.2). The map ratings
- * `maps` (A, B, C — any 1 to 3 may be filled) and the single rating `s` are
+ * `maps` (A, B, C — 1 to 3 may be filled, one of which must be the matrix's neutral map) and the single rating `s` are
  * independent layers: the active rating mode decides which is edited,
  * validated and solved, and only Clear / Random / import / paste write both,
  * so switching modes never destroys data. */
@@ -35,6 +44,8 @@ export interface EditorMatrix {
   /** Per-player force disposition — display only, the solver ignores it. */
   myDispositions: Disposition[];
   enemyDispositions: Disposition[];
+  /** The map neutral games (refused vs refused, last vs last) are played on. */
+  neutralMap: MapLetter;
   cells: EditorCell[][];
 }
 
@@ -68,7 +79,7 @@ export function filledMaps(cell: EditorCell): number[] {
 
 /** The mean of a cell's filled maps as a 0-20 score, or null when no map is
  * filled or one is unparseable. Display only: the solver uses the max/min
- * (toEngineMatrix), and neutral games keep the engine's best/worst midpoint. */
+ * (toEngineMatrix), and neutral games use the chosen neutral map. */
 export function mapAverage(cell: EditorCell): number | null {
   try {
     const values = filledMaps(cell);
@@ -106,17 +117,20 @@ export function blank(n: MatrixSize): EditorMatrix {
     enemyNames: Array.from({ length: n }, () => ''),
     myDispositions: unset(n),
     enemyDispositions: unset(n),
+    neutralMap: 'A',
     cells: Array.from({ length: n }, () => Array.from({ length: n }, empty)),
   };
 }
 
 /** Parse an EditorMatrix to the engine's internal-scale Matrix, reading the
  * layer the active rating mode shows: simple mode uses the single rating `s`
- * as both maps (you solve what you see); by-map mode sends the best and worst
- * of the filled maps — the defender picks the map, so only the extremes
- * matter to the draft. Throws RangeError if a cell in the active layer is
- * unparseable or has no map — callers validate first (§6). */
+ * for every game (you solve what you see); by-map mode sends the best and
+ * worst of the filled maps — the defender picks the map — and the chosen
+ * neutral map as the value of neutral games. Throws RangeError if a cell in
+ * the active layer is unparseable or lacks its neutral map — callers validate
+ * first (§6). */
 export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
+  const k = mapIndex(m.neutralMap);
   return {
     n: m.n,
     // Surface the positional label for any unset (empty) name, so the engine
@@ -128,11 +142,11 @@ export function toEngineMatrix(m: EditorMatrix, simple = false): Matrix {
       row.map((cell) => {
         if (simple) {
           const v = parseRating(cell.s);
-          return { best: v, worst: v };
+          return { best: v, worst: v, neutral: v };
         }
+        if (cell.maps[k].trim() === '') throw new RangeError(`Map ${m.neutralMap} (the neutral map) is blank.`);
         const maps = filledMaps(cell);
-        if (maps.length === 0) throw new RangeError('No map rating entered.');
-        return { best: Math.max(...maps), worst: Math.min(...maps) };
+        return { best: Math.max(...maps), worst: Math.min(...maps), neutral: parseRating(cell.maps[k]) };
       })),
   };
 }
@@ -160,6 +174,7 @@ export function transpose(m: EditorMatrix): EditorMatrix {
     enemyNames: [...m.myNames],
     myDispositions: [...m.enemyDispositions],
     enemyDispositions: [...m.myDispositions],
+    neutralMap: m.neutralMap,
     cells: Array.from({ length: m.n }, (_, i) =>
       Array.from({ length: m.n }, (_, j) => {
         const [a, b, c] = m.cells[j][i].maps;
@@ -180,19 +195,20 @@ export function resize(m: EditorMatrix, n: MatrixSize): EditorMatrix {
     enemyNames: Array.from({ length: n }, (_, j) => m.enemyNames[j] ?? ''),
     myDispositions: Array.from({ length: n }, (_, i) => m.myDispositions[i] ?? ''),
     enemyDispositions: Array.from({ length: n }, (_, j) => m.enemyDispositions[j] ?? ''),
+    neutralMap: m.neutralMap,
     cells: Array.from({ length: n }, (_, i) =>
       Array.from({ length: n }, (_, j) => copyCell(m.cells[i]?.[j] ?? empty()))),
   };
 }
 
 /** A full reset at size n: unset player names and dispositions, blank team
- * names, and an even 10-10 game in every cell (map A and the single rating) —
- * immediately valid in both modes, ready to overwrite. */
+ * names, and an even 10-10 game in every cell (all three maps and the single
+ * rating) — immediately valid in both modes, whichever map is neutral. */
 export function cleared(n: MatrixSize): EditorMatrix {
   return {
     ...blank(n),
     cells: Array.from({ length: n }, () =>
-      Array.from({ length: n }, (): EditorCell => ({ maps: ['10', '', ''], s: '10' }))),
+      Array.from({ length: n }, (): EditorCell => ({ maps: ['10', '10', '10'], s: '10' }))),
   };
 }
 
@@ -242,15 +258,16 @@ export function randomized(m: EditorMatrix, rng: () => number = Math.random): Ed
 
 /** The persisted / exported shape: an EditorMatrix minus `n`, which is derived
  * from myNames.length. Matches the localStorage `current` block and the export
- * file body (docs/web-design.md §4.2/§4.3). Dispositions are optional because
- * data saved before they existed has none. */
+ * file body (docs/web-design.md §4.2/§4.3). */
 export interface SavedMatrix {
   myTeam: string;
   enemyTeam: string;
   myNames: string[];
   enemyNames: string[];
-  myDispositions?: Disposition[];
-  enemyDispositions?: Disposition[];
+  myDispositions: Disposition[];
+  enemyDispositions: Disposition[];
+  /** Defaults to A when absent. */
+  neutralMap?: MapLetter;
   cells: EditorCell[][];
 }
 
@@ -262,13 +279,14 @@ export function toSaved(m: EditorMatrix): SavedMatrix {
     enemyNames: m.enemyNames,
     myDispositions: m.myDispositions,
     enemyDispositions: m.enemyDispositions,
+    neutralMap: m.neutralMap,
     cells: m.cells,
   };
 }
 
 /** The single rating implied by a cell's maps: the mean of the filled maps
  * rounded half up, '' when none is filled or one is unparseable. */
-function deriveSingle(maps: MapTriple): string {
+export function singleFromMaps(maps: MapTriple): string {
   try {
     const values = filledMaps({ maps, s: '' });
     if (values.length === 0) return '';
@@ -278,18 +296,13 @@ function deriveSingle(maps: MapTriple): string {
   }
 }
 
-/** Normalise a raw saved/imported/pasted cell to an EditorCell. Current cells
- * carry `maps` (padded to three); legacy cells carry best `b` / worst `w`,
- * which become maps A and B — their max/min are the old best/worst, so old
- * matrices solve identically. A missing single rating `s` is derived from the
- * maps (half-up rounded mean); one that is present is preserved untouched. */
-export function normaliseCell(raw: { maps?: unknown; b?: unknown; w?: unknown; s?: unknown }): EditorCell {
+/** Read one saved cell. A cell must carry a `maps` array (padded to three);
+ * anything else is malformed — older formats are not supported. */
+function readCell(raw: unknown): EditorCell {
+  const cell = raw as { maps?: unknown; s?: unknown } | null;
+  if (!cell || !Array.isArray(cell.maps)) throw new Error('Malformed matrix cell.');
   const str = (v: unknown): string => (v === undefined || v === null ? '' : String(v));
-  const maps: MapTriple = Array.isArray(raw.maps)
-    ? [str(raw.maps[0]), str(raw.maps[1]), str(raw.maps[2])]
-    : [str(raw.b), str(raw.w), ''];
-  const s = str(raw.s);
-  return { maps, s: s !== '' ? s : deriveSingle(maps) };
+  return { maps: [str(cell.maps[0]), str(cell.maps[1]), str(cell.maps[2])], s: str(cell.s) };
 }
 
 function isSize(n: number): n is MatrixSize {
@@ -310,18 +323,17 @@ export function fromSaved(s: SavedMatrix): EditorMatrix {
   for (const row of s.cells) {
     if (row?.length !== n) throw new Error(`Expected ${n} columns per row, got ${row?.length}.`);
   }
+  const allStrings = (names: unknown[]): boolean => names.every((x) => typeof x === 'string');
+  if (!allStrings(s.myNames) || !allStrings(s.enemyNames)) throw new Error('Malformed player names.');
   return {
     n,
     myTeam: s.myTeam ?? '',
     enemyTeam: s.enemyTeam ?? '',
-    // Normalise pre-faction-dropdown data: a name left at the old literal
-    // "Player N" / "Opponent K" default becomes the unset sentinel '', so the
-    // dropdown shows its default option rather than a duplicate legacy entry.
-    // Trimmed match, matching the unset convention used everywhere else.
-    myNames: s.myNames.map((name, i) => (name.trim() === defaultMyName(i) ? '' : name)),
-    enemyNames: s.enemyNames.map((name, j) => (name.trim() === defaultEnemyName(j) ? '' : name)),
+    myNames: [...s.myNames],
+    enemyNames: [...s.enemyNames],
     myDispositions: Array.from({ length: n }, (_, i) => toDisposition(s.myDispositions?.[i])),
     enemyDispositions: Array.from({ length: n }, (_, j) => toDisposition(s.enemyDispositions?.[j])),
-    cells: s.cells.map((row) => row.map((cell) => normaliseCell(cell))),
+    neutralMap: toMapLetter(s.neutralMap),
+    cells: s.cells.map((row) => row.map(readCell)),
   };
 }

@@ -173,7 +173,7 @@ export function DraftBoard({ model, myNames, enemyNames, pending = NO_PENDING }:
           <div className="slot empty">
             <span className="slot-name">refused: {refMine} vs {refThem}</span>
           </div>
-          <div className="board-hint">Resolves on lock · scored as avg of both maps</div>
+          <div className="board-hint">Resolves on lock · scored on the neutral map</div>
         </div>
       )}
     </div>

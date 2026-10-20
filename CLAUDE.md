@@ -20,8 +20,10 @@ Map choice follows the 11th-edition rule: the defender picks the map, and
 because that choice is zero-sum each matchup is rated on exactly two maps —
 its best and its worst from the friendly side's perspective. Values are read
 as: best-map value when the friendly player defends, worst-map value when the
-enemy defends, and a neutral weight (default 0.5 = midpoint) of the way from
-worst to best when neither does (refused-vs-refused and last-players games).
+enemy defends. Neutral games (refused-vs-refused and last-players) are played
+on a map the captain picks per matrix (A, B or C); the engine's weighted-midpoint
+formula (`worst + w·(best − worst)`, w = 0.5) survives only as the fallback the
+frozen conformance fixtures use.
 
 **History:** the engine began life in Python with a CLI (`python -m
 drafter`). The TypeScript port (issue #17) became the sole implementation in
@@ -82,10 +84,12 @@ last-vs-last game). Cells accept **0–20 scores** (community scale: expected
 score out of 20), where `10` is an even 10-10 game, `0` is a 20-0 blowout
 loss, and `20` is a 20-0 win. Internally everything normalises to the
 deviation from an even 10-10 game (`internal = score - 10`, range -10..+10).
-Each cell holds up to three map ratings (A, B, C — at least one filled, each a
-whole number); the solver uses the best and worst of the filled maps, and the
+Each cell holds up to three map ratings (A, B, C — each a whole number, and
+the chosen neutral map must be filled); the solver uses the best and worst of
+the filled maps, the chosen neutral map's rating for neutral games, and the
 editor shows their average (rounded). A single-rating mode instead uses one
-number for both. Players can also carry a display-only disposition (purge /
+number for best, worst and neutral. Saved data (export/import, localStorage)
+is JSON v2 only; legacy formats are no longer read. Players can also carry a display-only disposition (purge /
 hold / disrupt / priority / recon) that the solver ignores. Each player's name is a faction picked
 from a dropdown (the 28 WTC factions) or left as the positional `Player N` /
 `Opponent K` default; two players on the **same** team can't share a faction,

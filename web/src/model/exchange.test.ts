@@ -11,6 +11,7 @@ function sample(): EditorMatrix {
     enemyNames: ['W', 'X', 'Y', 'Z'],
     myDispositions: ['purge', '', 'hold', ''],
     enemyDispositions: ['', '', '', 'recon'],
+    neutralMap: 'B',
     cells: Array.from({ length: 4 }, () =>
       Array.from({ length: 4 }, () => ({ maps: ['12', '9', ''] as [string, string, string], s: '10' }))),
   };
@@ -30,16 +31,22 @@ describe('exchange', () => {
     const exported = JSON.parse(exportJson(m));
     expect(exported.cells[0][0]).toEqual({ maps: ['12', '9', ''], s: '10' });
     expect(exported.myDispositions).toEqual(['purge', '', 'hold', '']);
+    expect(exported.neutralMap).toBe('B');
     expect(importJson(exportJson(m))).toEqual(m);
   });
 
-  test('a v1 export (best/worst, no single, no dispositions) imports as maps A/B', () => {
+  test('rejects a v1 file', () => {
     const old = { format: 'wtc-matrix', version: 1, myTeam: '', enemyTeam: '',
       myNames: ['A', 'B', 'C', 'D'], enemyNames: ['W', 'X', 'Y', 'Z'],
       cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ b: '15', w: '9' }))) };
-    const m = importJson(JSON.stringify(old));
-    expect(m.cells[0][0]).toEqual({ maps: ['15', '9', ''], s: '12' });
-    expect(m.myDispositions).toEqual(['', '', '', '']);
+    expect(() => importJson(JSON.stringify(old))).toThrow(/exported from this app/);
+  });
+
+  test('rejects a file without a version', () => {
+    const noVersion = { format: 'wtc-matrix', myTeam: '', enemyTeam: '',
+      myNames: ['A', 'B', 'C', 'D'], enemyNames: ['W', 'X', 'Y', 'Z'],
+      cells: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ maps: ['1', '', ''], s: '1' }))) };
+    expect(() => importJson(JSON.stringify(noVersion))).toThrow(/exported from this app/);
   });
 
   test('rejects non-JSON with a friendly message', () => {

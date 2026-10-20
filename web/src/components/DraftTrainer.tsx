@@ -47,7 +47,8 @@ const STAGE_COPY_2P = {
 
 // Which map a resolved game is played on: the defender picks it, so my-defends
 // is my best map and enemy-defends is theirs (my worst); the refused / last
-// games have no defender (a 50/50 best↔worst average), so they're neutral.
+// games have no defender, so they're scored on the matrix's neutral map (the
+// engine's per-cell neutral value).
 const MAP_LABEL: Record<FixedGame['kind'], string> = {
   'my-defends': 'your map',
   'enemy-defends': 'their map',

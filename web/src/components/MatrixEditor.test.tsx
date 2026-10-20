@@ -119,11 +119,19 @@ describe('MatrixEditor', () => {
     expect(within(group).getByRole('button', { name: 'A' })).toHaveAttribute('aria-pressed', 'false');
   });
 
-  test('the neutral-map control is hidden in single rating mode', async () => {
+  test('in single rating mode the neutral-map control stays in place but is greyed out', async () => {
     const user = userEvent.setup();
     render(<Harness initial={valid4()} />);
     await user.click(screen.getByRole('button', { name: 'Single rating' }));
-    expect(screen.queryByRole('group', { name: 'Neutral games on' })).not.toBeInTheDocument();
+    const group = screen.getByRole('group', { name: 'Neutral games on' });
+    for (const letter of ['A', 'B', 'C']) {
+      expect(within(group).getByRole('button', { name: letter })).toBeDisabled();
+    }
+    expect(group.closest('.neutral-pick')).toHaveClass('off');
+    // Back in By map mode it is live again.
+    await user.click(screen.getByRole('button', { name: 'By map' }));
+    expect(within(group).getByRole('button', { name: 'B' })).toBeEnabled();
+    expect(group.closest('.neutral-pick')).not.toHaveClass('off');
   });
 
   test('opponent name slots default to "Opponent k", not "Enemy k"', () => {

@@ -82,7 +82,11 @@ last-vs-last game). Cells accept **0–20 scores** (community scale: expected
 score out of 20), where `10` is an even 10-10 game, `0` is a 20-0 blowout
 loss, and `20` is a 20-0 win. Internally everything normalises to the
 deviation from an even 10-10 game (`internal = score - 10`, range -10..+10).
-Every cell must satisfy best ≥ worst. Each player's name is a faction picked
+Each cell holds up to three map ratings (A, B, C — at least one filled, each a
+whole number); the solver uses the best and worst of the filled maps, and the
+editor shows their average (rounded). A single-rating mode instead uses one
+number for both. Players can also carry a display-only disposition (purge /
+hold / disrupt / priority / recon) that the solver ignores. Each player's name is a faction picked
 from a dropdown (the 28 WTC factions) or left as the positional `Player N` /
 `Opponent K` default; two players on the **same** team can't share a faction,
 but both teams may field the same one. (The legacy relative tokens

@@ -49,34 +49,86 @@
 
 .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 
-/* grid — sized to fit its container so the whole matrix is visible without a
- * horizontal scrollbar on desktop (table-layout: fixed distributes the columns
- * evenly). The min-width only trips the scroll fallback on very narrow screens. */
-.grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-table.grid { border-collapse: collapse; width: 100%; table-layout: fixed; min-width: 34rem; }
-table.grid th, table.grid td { border: 1px solid var(--border); padding: 0; }
-table.grid .corner { width: 6.5rem; color: var(--text-4); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
-  padding: 0.35rem 0.5rem; text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--bg-2); z-index: 2; }
-table.grid .col-head { background: var(--bg-2); }
-table.grid .row-head { width: 6.5rem; position: sticky; left: 0; background: var(--bg-2); z-index: 1; }
+/* grid — square, palette-filled tiles. Columns: row header (11rem) + n tiles + AVG (4rem). The
+ * table asks for tiles of up to 6rem and shrinks to its container
+ * (table-layout: fixed shares the width evenly); the min-width trips the
+ * horizontal-scroll fallback on narrow screens. --n is set inline by Grid. */
+.grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-2); }
+table.grid {
+  border-collapse: separate; border-spacing: 3px; table-layout: fixed;
+  width: calc(15rem + var(--n) * 6rem); max-width: 100%; min-width: calc(15rem + var(--n) * 3.5rem);
+}
+table.grid th, table.grid td { padding: 0; }
+table.grid .corner { width: 11rem; color: var(--text-4); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 0.35rem 0.5rem; text-align: left; font-weight: 500; vertical-align: bottom;
+  position: sticky; left: 0; background: var(--bg-2); z-index: 2; }
+table.grid .col-head { vertical-align: bottom; }
+table.grid .row-head { position: sticky; left: 0; background: var(--bg-2); z-index: 1; vertical-align: middle; }
+table.grid .avg-head { width: 4rem; color: var(--text-4); font-size: 0.66rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.03em; vertical-align: bottom; padding-bottom: 0.35rem; }
+table.grid .avg-head.avg-foot { text-align: right; padding: 0.35rem 0.5rem; position: sticky; left: 0; background: var(--bg-2); }
+table.grid td.avg { text-align: center; vertical-align: middle; color: var(--text-2);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.85rem; padding: 0.35rem 0; }
 
-input.name, select.name { border: 0; background: transparent; width: 100%; min-width: 0; padding: 0.4rem 0.4rem; font-weight: 600;
-  font-size: 0.85rem; text-overflow: ellipsis; font-family: inherit; }
-select.name { cursor: pointer; }
-select.name:disabled { cursor: default; opacity: 1; }
-input.name.mine, select.name.mine { color: var(--blue); }
-input.name.enemy, select.name.enemy { color: var(--enemy); text-align: center; }
-input.name:focus, select.name:focus { outline: 1px solid var(--blue); border-radius: 4px; }
+/* player headers: a wrapping faction label with the native select laid
+ * transparently over it (so long factions read in full), plus a disposition pill */
+.faction-pick { position: relative; border-radius: 4px; }
+.faction-pick:focus-within { outline: 1px solid var(--blue); }
+.faction-label { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+  font-weight: 600; font-size: 0.76rem; line-height: 1.2; padding: 0.3rem 0.15rem; hyphens: auto; }
+.faction-pick.mine .faction-label { color: var(--blue); text-align: left; }
+.faction-pick.enemy .faction-label { color: var(--enemy); text-align: center; min-height: calc(2.4em + 0.6rem); }
+.faction-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+.faction-select:disabled { cursor: default; }
+.faction-select option { color: var(--text-1); background: var(--card); }
 
-td.cell { text-align: center; }
-td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }
-.cell-input { border: 0; background: transparent; text-align: center; width: 100%; padding: 0.45rem 0.1rem;
-  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.9rem; }
-.cell-input:focus { outline: 1px solid var(--blue); border-radius: 4px; }
-.bw { display: flex; align-items: center; justify-content: center; gap: 1px; }
-.bw .sep { color: var(--text-4); font-size: 0.8rem; }
-.bw .cell-input { width: 44%; padding: 0.45rem 0.05rem; }
-.cell-input.worst { font-weight: 500; opacity: 0.85; }
+table.grid .col-head { padding-bottom: 0.35rem; text-align: center; }
+/* Column-header pills fill the column and scale their text with its width
+ * (11cqi ≈ "PRIORITY"/"disposition" plus padding), so they fit even the
+ * narrow columns of an 8×8 grid on a small window. */
+.col-head-inner { container-type: inline-size; }
+/* Likewise the faction name: the longest single words ("Genestealer",
+ * "Mechanicus") are ~5.7em wide, so 15.5cqi keeps every word whole in a
+ * narrow column; wide columns stay at the normal size. */
+.col-head-inner .faction-label { font-size: clamp(0.5rem, 15.5cqi, 0.76rem); }
+.col-head-inner select.disp { width: 100%; padding: 0.1rem 0.15rem; letter-spacing: 0;
+  font-size: clamp(0.5rem, 11cqi, 0.62rem); }
+.row-head-inner { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; padding: 0 0.35rem; }
+.row-head-inner .faction-pick { align-self: stretch; }
+
+select.disp { appearance: none; -webkit-appearance: none; border: 1px solid transparent; border-radius: 4px;
+  padding: 0.1rem 0.3rem; max-width: 100%; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em;
+  text-align: center; text-align-last: center; cursor: pointer; }
+select.disp:disabled { cursor: default; }
+select.disp:focus { outline: 1px solid var(--blue); outline-offset: 1px; }
+select.disp option { background: var(--card); color: var(--text-1); }
+select.disp.disp-unset { background: transparent; color: var(--text-4); border-color: var(--border-strong); border-style: dashed; }
+.disp-purge { background: #e2445c; color: #ffffff; }
+.disp-hold { background: #45c48f; color: #0a0a0c; }
+.disp-disrupt { background: #a78bfa; color: #0a0a0c; }
+.disp-priority { background: #f0a030; color: #0a0a0c; }
+.disp-recon { background: #4fc3f7; color: #0a0a0c; }
+
+/* matchup tile: the value centred in the whole square (in both modes), with
+ * the map A/B/C inputs overlaid as a darker strip along the bottom */
+td.cell { vertical-align: top; }
+.tile { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; }
+/* blank cells only: the palette .pt-k classes own the fill of scored tiles */
+.tile.empty { background: var(--card-2); color: var(--text-4); }
+.tile-value { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.15rem; color: inherit; }
+input.tile-value { width: 100%; height: 100%; border: 0; background: transparent; text-align: center; padding: 0; border-radius: 6px; }
+input.tile-value::placeholder { color: inherit; }
+input.tile-value:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
+/* above the value layer, so the map inputs stay clickable */
+.tile-maps { position: absolute; left: 0; right: 0; bottom: 0; height: 24%; z-index: 1; display: flex; background: #00000033; }
+.map-input { flex: 1; width: 0; min-width: 0; border: 0; border-radius: 0; background: transparent; padding: 0;
+  color: inherit; opacity: 0.6; text-align: center;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.72rem; }
+.map-input::placeholder { color: inherit; opacity: 0.5; }
+.tile:hover .map-input, .map-input:focus { opacity: 1; }
+.map-input:focus { outline: 1px solid var(--blue); outline-offset: -1px; }
+td.cell.invalid .tile { outline: 2px solid var(--red); outline-offset: -2px; }
 
 /* value bands (colours defined as vars in theme.css; flip under .cb) */
 .band-worst { color: var(--band-worst); }
@@ -85,14 +137,12 @@ td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }
 .band-good { color: var(--band-good); }
 .band-best { color: var(--band-best); }
 
-.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-3); }
-.legend .swatch { display: inline-flex; align-items: center; gap: 0.35rem; }
-.legend .chip { width: 0.7rem; height: 0.7rem; border-radius: 3px; }
-.legend .chip.worst { background: var(--band-worst); }
-.legend .chip.bad { background: var(--band-bad); }
-.legend .chip.okay { background: var(--band-okay); }
-.legend .chip.good { background: var(--band-good); }
-.legend .chip.best { background: var(--band-best); }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-3); }
+/* 21 segments of 1.1rem; the basis keeps the strip full width (its shrinkable
+ * segments give it no min-content), max-width lets it shrink on phones. */
+.scale-strip { display: inline-flex; flex: 0 1 23.1rem; border-radius: 4px; overflow: hidden; max-width: 100%; }
+.scale-strip > span { flex: 0 1 1.1rem; min-width: 0; height: 1rem; line-height: 1rem; text-align: center;
+  font-family: var(--font-mono); font-size: 0.6rem; }
 
 .solve-bar { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
 
@@ -102,6 +152,6 @@ td.cell.invalid { outline: 2px solid var(--red); outline-offset: -2px; }
 .hidden-file { display: none; }
 
 @media (max-width: 820px) {
-  .editor { flex-direction: column; }
+  .editor { flex-direction: column; align-items: stretch; }
   .editor-sidebar { flex-basis: auto; width: 100%; }
 }

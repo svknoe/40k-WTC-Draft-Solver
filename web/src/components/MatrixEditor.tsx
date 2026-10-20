@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react';
+import type { Disposition } from '../model/dispositions';
 import { exportJson, importJson } from '../model/exchange';
 import type { EditorCell, EditorMatrix, MatrixSize } from '../model/matrix';
 import { cleared, randomized, resize, transpose } from '../model/matrix';
@@ -60,6 +61,16 @@ export function MatrixEditor({
     const names = [...matrix.enemyNames];
     names[j] = name;
     update({ enemyNames: names });
+  };
+  const setMyDisposition = (i: number, disposition: Disposition) => {
+    const dispositions = [...matrix.myDispositions];
+    dispositions[i] = disposition;
+    update({ myDispositions: dispositions });
+  };
+  const setEnemyDisposition = (j: number, disposition: Disposition) => {
+    const dispositions = [...matrix.enemyDispositions];
+    dispositions[j] = disposition;
+    update({ enemyDispositions: dispositions });
   };
   const setCell = (i: number, j: number, cell: EditorCell) => {
     const cells = matrix.cells.map((row) => row.slice());
@@ -207,7 +218,7 @@ export function MatrixEditor({
           </button>
           <button
             disabled={locked}
-            title="Fill every matchup with random 0-20 scores"
+            title="Random practice matchup: 0-20 scores on every map, plus a faction and disposition for each player"
             onClick={() => onMatrixChange(randomized(matrix))}
           >
             Random
@@ -218,7 +229,7 @@ export function MatrixEditor({
               Single rating
             </button>
             <button className={!settings.simpleMode ? 'on' : ''} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
-              Best / worst map
+              By map
             </button>
           </div>
           <button
@@ -238,15 +249,17 @@ export function MatrixEditor({
           onCellChange={setCell}
           onMyName={setMyName}
           onEnemyName={setEnemyName}
+          onMyDisposition={setMyDisposition}
+          onEnemyDisposition={setEnemyDisposition}
         />
 
         <div className="legend">
           <span>Each cell: my expected score, 0–20 · 10 = even game</span>
-          <span className="swatch"><span className="chip worst" /> worst ≤ 4</span>
-          <span className="swatch"><span className="chip bad" /> bad 5–8</span>
-          <span className="swatch"><span className="chip okay" /> okay 9–11</span>
-          <span className="swatch"><span className="chip good" /> good 12–15</span>
-          <span className="swatch"><span className="chip best" /> best 16+</span>
+          <span className="scale-strip" aria-hidden="true">
+            {Array.from({ length: 21 }, (_, k) => (
+              <span key={k} className={`pt-${k}`}>{k % 5 === 0 ? k : ''}</span>
+            ))}
+          </span>
         </div>
 
         {validation.globalErrors.length > 0 && (

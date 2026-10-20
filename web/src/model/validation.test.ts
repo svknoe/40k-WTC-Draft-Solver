@@ -9,12 +9,14 @@ function valid4(): EditorMatrix {
     enemyTeam: 'Scotland',
     myNames: ['A', 'B', 'C', 'D'],
     enemyNames: ['W', 'X', 'Y', 'Z'],
+    myDispositions: ['', '', '', ''],
+    enemyDispositions: ['', '', '', ''],
     cells: Array.from({ length: 4 }, () =>
-      Array.from({ length: 4 }, () => ({ b: '12', w: '9', s: '10' }))),
+      Array.from({ length: 4 }, () => ({ maps: ['12', '9', ''] as [string, string, string], s: '10' }))),
   };
 }
 
-describe('validateMatrix (best/worst mode)', () => {
+describe('validateMatrix (by-map mode)', () => {
   test('a fully valid matrix has no errors', () => {
     const r = validateMatrix(valid4(), false);
     expect(r.ok).toBe(true);
@@ -22,42 +24,45 @@ describe('validateMatrix (best/worst mode)', () => {
     expect(r.cellErrors.flat().every((e) => e === null)).toBe(true);
   });
 
-  test('defaults to best/worst mode when no flag is passed', () => {
+  test('defaults to by-map mode when no flag is passed', () => {
     expect(validateMatrix(valid4()).ok).toBe(true);
   });
 
-  test('flags best < worst on the offending cell only', () => {
+  test('one filled map is enough, in any slot', () => {
     const m = valid4();
-    m.cells[0][0] = { b: '9', w: '15', s: '12' };
-    const r = validateMatrix(m, false);
-    expect(r.ok).toBe(false);
-    expect(r.cellErrors[0][0]).toMatch(/best/i);
-    expect(r.cellErrors[0][1]).toBeNull();
+    m.cells[0][0] = { maps: ['', '14', ''], s: '10' };
+    expect(validateMatrix(m, false).ok).toBe(true);
   });
 
-  test('flags an out-of-range / unparseable cell', () => {
+  test('maps need no ordering (the solver takes max/min)', () => {
     const m = valid4();
-    m.cells[1][2] = { b: '25', w: '10', s: '15' };
-    const r = validateMatrix(m, false);
-    expect(r.ok).toBe(false);
-    expect(r.cellErrors[1][2]).toBeTruthy();
+    m.cells[0][0] = { maps: ['5', '15', '10'], s: '10' };
+    expect(validateMatrix(m, false).ok).toBe(true);
   });
 
-  test('flags a non-integer map value (a game is played on a single map)', () => {
+  test('flags an out-of-range map on the offending cell, naming the map', () => {
     const m = valid4();
-    m.cells[0][0] = { b: '12.5', w: '9', s: '10' };
+    m.cells[1][2] = { maps: ['12', '25', ''], s: '15' };
     const r = validateMatrix(m, false);
     expect(r.ok).toBe(false);
-    expect(r.cellErrors[0][0]).toMatch(/whole number/i);
-    expect(r.cellErrors[0][1]).toBeNull();
+    expect(r.cellErrors[1][2]).toMatch(/Map B/);
+    expect(r.cellErrors[1][1]).toBeNull();
   });
 
-  test('flags a blank (incomplete) cell', () => {
+  test('flags a non-integer map (a game is played on a single map)', () => {
     const m = valid4();
-    m.cells[2][2] = { b: '', w: '5', s: '5' };
+    m.cells[0][0] = { maps: ['12.5', '9', ''], s: '10' };
     const r = validateMatrix(m, false);
     expect(r.ok).toBe(false);
-    expect(r.cellErrors[2][2]).toBeTruthy();
+    expect(r.cellErrors[0][0]).toMatch(/Map A.*whole number/);
+  });
+
+  test('flags a cell with no map filled', () => {
+    const m = valid4();
+    m.cells[2][2] = { maps: ['', '', ''], s: '5' };
+    const r = validateMatrix(m, false);
+    expect(r.ok).toBe(false);
+    expect(r.cellErrors[2][2]).toMatch(/at least one map/i);
   });
 
   test('ignores an invalid or blank single rating (the inactive layer)', () => {
@@ -68,16 +73,15 @@ describe('validateMatrix (best/worst mode)', () => {
 });
 
 describe('validateMatrix (single-rating mode)', () => {
-  test('validates the single rating only, ignoring blank/invalid best/worst', () => {
+  test('validates the single rating only, ignoring blank/invalid maps', () => {
     const m = valid4();
-    // Wreck the inactive best/worst layer entirely — simple mode must not care.
-    m.cells = m.cells.map((row) => row.map(() => ({ b: '', w: 'garbage', s: '11' })));
+    m.cells = m.cells.map((row) => row.map(() => ({ maps: ['', 'garbage', ''] as [string, string, string], s: '11' })));
     expect(validateMatrix(m, true).ok).toBe(true);
   });
 
   test('flags a non-integer single rating on the offending cell only', () => {
     const m = valid4();
-    m.cells[0][0] = { b: '12', w: '9', s: '12.5' };
+    m.cells[0][0] = { maps: ['12', '9', ''], s: '12.5' };
     const r = validateMatrix(m, true);
     expect(r.ok).toBe(false);
     expect(r.cellErrors[0][0]).toMatch(/whole number/i);
@@ -86,7 +90,7 @@ describe('validateMatrix (single-rating mode)', () => {
 
   test('flags a blank single rating', () => {
     const m = valid4();
-    m.cells[2][2] = { b: '12', w: '9', s: '' };
+    m.cells[2][2] = { maps: ['12', '9', ''], s: '' };
     const r = validateMatrix(m, true);
     expect(r.ok).toBe(false);
     expect(r.cellErrors[2][2]).toBeTruthy();
@@ -94,7 +98,7 @@ describe('validateMatrix (single-rating mode)', () => {
 
   test('flags an out-of-range single rating', () => {
     const m = valid4();
-    m.cells[1][1] = { b: '12', w: '9', s: '25' };
+    m.cells[1][1] = { maps: ['12', '9', ''], s: '25' };
     expect(validateMatrix(m, true).ok).toBe(false);
   });
 });

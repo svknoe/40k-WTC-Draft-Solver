@@ -35,6 +35,18 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Matrix' })).toBeInTheDocument();
   });
 
+  test('only the Matrix screen gets the wider page container', async () => {
+    localStorage.clear();
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    expect(container.querySelector('main')).toHaveClass('wide');
+
+    await user.selectOptions(screen.getByLabelText('Team size'), '4');
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    await user.click(screen.getByRole('button', { name: 'Solver' }));
+    expect(container.querySelector('main')).not.toHaveClass('wide');
+  });
+
   test('keeps the draft trainer mounted when switching tabs (no reset)', async () => {
     localStorage.clear();
     const user = userEvent.setup();

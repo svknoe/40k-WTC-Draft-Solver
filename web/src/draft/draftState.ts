@@ -164,6 +164,21 @@ function matchupGame(
 export const pairingLabel = (label: string, map: MapLetter | null): string =>
   map ? `${label} · ${map}` : label;
 
+/** Which kind of game a remaining pairing (my m vs enemy e) would be RIGHT NOW,
+ * if it happens: decided once both defenders are on the table. A defender's
+ * row/column is a defender game; in the final round every other pairing that
+ * happens is neutral (refused vs refused, or last vs last); before the
+ * defenders are known — or for non-defenders in earlier rounds, whose refused
+ * attackers return to the pool — it is undecided (null). Defenders never meet. */
+export function contextKind(model: DraftModel, m: number, e: number): GameKind | null {
+  const { myDefender, enemyDefender } = model;
+  if (myDefender < 0 || enemyDefender < 0) return null;
+  if (m === myDefender && e === enemyDefender) return null;
+  if (m === myDefender) return 'my-defends';
+  if (e === enemyDefender) return 'enemy-defends';
+  return model.round === model.finalRound ? 'refused' : null;
+}
+
 /** Apply one simultaneous decision: my choice (index into node.choices) + the
  * bot's sampled enemy column (index into node.why.enStrategy). Returns a new
  * model (the input is not mutated). At the refusal step it resolves the round's

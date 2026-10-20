@@ -193,6 +193,8 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
               onLiveChange={setDraftLive}
               remainingOpen={remainingOpen}
               onRemainingOpenChange={setRemainingOpen}
+              myDispositions={matrix.myDispositions}
+              enemyDispositions={matrix.enemyDispositions}
             />
           </div>
         )}

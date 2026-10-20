@@ -131,12 +131,6 @@
 .ev-bar > span.top { background: var(--green); }
 .ev-val { text-align: right; color: var(--text-2); width: 3rem; }
 .why-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-.why-table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
-.why-table th, .why-table td { border: 1px solid var(--border); padding: 0.35rem 0.5rem; text-align: center; }
-.why-table .wcorner { background: var(--bg-2); }
-.why-table .wrow { text-align: left; white-space: nowrap; background: var(--bg-2); }
-.wlabel.mine { color: var(--blue); }
-.wlabel.enemy { color: var(--enemy); }
 
 /* remaining-matchups collapsible */
 .remaining { margin-top: 1.25rem; }
@@ -183,3 +177,18 @@
 .summary-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
 
 @media (max-width: 640px) { .decomp, .decomp.three { grid-template-columns: 1fr; } }
+
+/* remaining matchups as matrix tiles: a compact grid (narrower row header, no
+ * AVG column) that fits the trainer column; tiles cap at 6rem like the matrix. */
+.remaining table.grid.compact { width: calc(8rem + var(--n) * 6rem); max-width: 100%;
+  min-width: calc(8rem + var(--n) * 3.5rem); }
+.remaining table.grid.compact .corner, .remaining table.grid.compact .row-head { width: 8rem; }
+.remaining .faction-label.mine-label { color: var(--blue); text-align: left; }
+.remaining .faction-label.enemy-label { color: var(--enemy); text-align: center; }
+/* read-only map strip: the played map (if decided) bold and bright, others dimmer */
+.map-cell { flex: 1; min-width: 0; text-align: center; align-self: center; color: inherit; opacity: 0.6;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.72rem; }
+.tile-maps.has-played .map-cell { opacity: 0.35; }
+.tile-maps.has-played .map-cell.played { opacity: 1; font-weight: 700; }
+span.disp { display: inline-block; border-radius: 4px; padding: 0.1rem 0.3rem; font-size: 0.62rem;
+  font-weight: 700; letter-spacing: 0.02em; }

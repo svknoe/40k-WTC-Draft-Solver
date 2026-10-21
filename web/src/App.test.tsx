@@ -7,6 +7,7 @@ import { App } from './App';
 import { fixtureMatrix, smoke } from './conformance/fixtures';
 import { DraftEngine } from './engine/engine';
 import type { Move } from './engine/types';
+import { blank, toSaved } from './model/matrix';
 import type { SolveState } from './worker/useSolve';
 
 /** A done SolveState backed by a real Smoke engine (so node() returns genuine
@@ -28,7 +29,52 @@ function doneSolve(): SolveState {
   };
 }
 
+/** An idle SolveState (nothing solved yet) — the Solver screen shows its start
+ * view, with the rating toggle. */
+function idleSolve(): SolveState {
+  return {
+    status: 'idle', progress: 0, phase: null, result: null, error: null, solvedK: null,
+    solve: vi.fn(), reset: vi.fn(), node: vi.fn(),
+  };
+}
+
 describe('App', () => {
+  test('the Solver toggle is the Matrix toggle: one shared setting', async () => {
+    localStorage.clear();
+    const user = userEvent.setup();
+    render(<App solve={idleSolve()} />);
+    await user.selectOptions(screen.getByLabelText('Team size'), '4');
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    await user.click(screen.getByRole('button', { name: 'Solver' }));
+    await user.click(screen.getByRole('button', { name: 'By map' }));
+    await user.click(screen.getByRole('button', { name: 'Matrix' }));
+    expect(screen.getByRole('button', { name: 'By map' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('a mode the matrix cannot solve in is disabled on the Solver screen', async () => {
+    const m = blank(4);
+    m.cells = m.cells.map((row) => row.map(() => ({ maps: ['', '', ''] as [string, string, string], s: '10' })));
+    localStorage.setItem('wtcDraftTrainer', JSON.stringify({ simpleModeV2: true, current: toSaved(m) }));
+    const user = userEvent.setup();
+    render(<App solve={idleSolve()} />);
+    await user.click(screen.getByRole('button', { name: 'Solver' }));
+    expect(screen.getByRole('button', { name: 'By map' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Single rating' })).toBeEnabled();
+    localStorage.clear();
+  });
+
+  test('switching the rating mode resets a solved result', async () => {
+    localStorage.clear();
+    const user = userEvent.setup();
+    const solve = doneSolve();
+    render(<App solve={solve} />);
+    await user.selectOptions(screen.getByLabelText('Team size'), '4');
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    vi.mocked(solve.reset).mockClear();
+    await user.click(screen.getByRole('button', { name: 'By map' }));
+    expect(solve.reset).toHaveBeenCalled();
+  });
+
   test('renders the editor shell with the Local-only pill', () => {
     render(<App />);
     expect(screen.getByText(/Local-only/i)).toBeInTheDocument();

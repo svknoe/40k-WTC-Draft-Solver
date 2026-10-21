@@ -31,6 +31,16 @@ const result: SolvedEvent = {
 };
 
 describe('SolveView', () => {
+  test('idle shows the rating toggle slot; the result screen does not', () => {
+    const idle: SolveState = { ...base, status: 'idle', progress: 0, phase: null, result: null, error: null };
+    const { rerender } = render(
+      <SolveView myTeam="" enemyTeam="" n={8} canRun solve={idle} onRun={() => {}} ratingToggle={<span>MODE</span>} />);
+    expect(screen.getByText('MODE')).toBeInTheDocument();
+    const done: SolveState = { ...base, status: 'done', progress: 1, phase: null, result, error: null };
+    rerender(<SolveView myTeam="" enemyTeam="" n={8} canRun solve={done} onRun={() => {}} ratingToggle={<span>MODE</span>} />);
+    expect(screen.queryByText('MODE')).toBeNull();
+  });
+
   test('done: shows the 0-160 expected result and both opening mixes', () => {
     const solve: SolveState = { ...base, status: 'done', progress: 1, phase: null, result, error: null };
     render(<SolveView myTeam="Norway" enemyTeam="Scotland" n={8} canRun solve={solve} onRun={() => {}} />);

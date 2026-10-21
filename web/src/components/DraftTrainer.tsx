@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import type { Matrix, NodeResult } from '../engine/types';
 import { sampleIndex } from '../draft/sampling';
 import type { DraftModel, FixedGame } from '../draft/draftState';
@@ -37,6 +37,8 @@ interface DraftTrainerProps {
   /** Per-player dispositions, shown as pills in the Remaining matchups headers. */
   myDispositions?: Disposition[];
   enemyDispositions?: Disposition[];
+  /** The rating-mode toggle, shown on the intro (owned by App). */
+  ratingToggle?: ReactNode;
 }
 
 const STAGE_COPY = {
@@ -64,7 +66,7 @@ const MAP_LABEL: Record<FixedGame['kind'], string> = {
   last: 'neutral',
 };
 
-export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onSolve, onEditMatrix, onLiveChange, remainingOpen, onRemainingOpenChange, myDispositions, enemyDispositions }: DraftTrainerProps) {
+export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, onSolve, onEditMatrix, onLiveChange, remainingOpen, onRemainingOpenChange, myDispositions, enemyDispositions, ratingToggle }: DraftTrainerProps) {
   const { myNames, enemyNames } = matrix;
   const [model, setModel] = useState<DraftModel | null>(null);
   const [history, setHistory] = useState<DraftModel[]>([]);
@@ -162,6 +164,7 @@ export function DraftTrainer({ matrix, myTeam, enemyTeam, neutralWeight, solve, 
         </ul>
         {solve.status === 'solving' && <ProgressBar frac={solve.progress} label="Solving exactly for training…" />}
         <div className="intro-actions">
+          {ratingToggle}
           {modeToggle}
           <button className="primary" disabled={solve.status === 'solving'} onClick={start}>Start practice draft</button>
           {solve.status === 'error' && <span className="muted">Solve failed — {solve.error}</span>}

@@ -29,6 +29,24 @@ function engineSolveState(): SolveState {
 }
 
 describe('DraftTrainer (Smoke 4×4, real engine)', () => {
+  test('the intro shows the rating toggle slot', () => {
+    render(
+      <DraftTrainer
+        matrix={fixtureMatrix(smoke)}
+        myTeam="Us"
+        enemyTeam="Them"
+        neutralWeight={smoke.neutralWeight}
+        solve={engineSolveState()}
+        onSolve={() => {}}
+        onEditMatrix={() => {}}
+        remainingOpen={false}
+        onRemainingOpenChange={() => {}}
+        ratingToggle={<span>MODE</span>}
+      />,
+    );
+    expect(screen.getByText('MODE')).toBeInTheDocument();
+  });
+
   test('plays a full draft from intro to the summary', async () => {
     const user = userEvent.setup();
     const { container } = render(

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AboutModal } from './components/AboutModal';
 import { DraftTrainer } from './components/DraftTrainer';
 import { MatrixEditor } from './components/MatrixEditor';
+import { RatingModeToggle } from './components/RatingModeToggle';
 import { SolveView } from './components/SolveView';
 import { blank, toEngineMatrix } from './model/matrix';
 import type { EditorMatrix } from './model/matrix';
@@ -46,10 +47,13 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
 
   const matrix = useMemo(() => state.current ?? blank(8), [state.current]);
   const { settings, saves } = state;
-  // Validate and convert the layer the active rating mode shows — you solve
-  // what you see (the single rating vs the map A/B/C ratings).
-  const solvable = useMemo(
-    () => validateMatrix(matrix, settings.simpleMode).ok, [matrix, settings.simpleMode]);
+  // Which rating modes the matrix validates in. You solve what you see: the
+  // active mode's layer (the single rating vs the map A/B/C ratings) must be
+  // valid; the other mode's state greys out its option on the Solver and
+  // Trainer toggles.
+  const canUse = useMemo(
+    () => ({ simple: validateMatrix(matrix, true).ok, byMap: validateMatrix(matrix, false).ok }), [matrix]);
+  const solvable = settings.simpleMode ? canUse.simple : canUse.byMap;
   const engineMatrix = useMemo(() => {
     try {
       return solvable ? toEngineMatrix(matrix, settings.simpleMode) : null;
@@ -58,12 +62,13 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
     }
   }, [matrix, solvable, settings.simpleMode]);
 
-  // A matrix edit invalidates any solved result (§3: reset on matrix change).
+  // A matrix edit or a rating-mode switch invalidates any solved result (§3:
+  // reset on matrix change) — the solve was of the other mode's numbers.
   useEffect(() => {
     if (solve.status !== 'idle') solve.reset();
-    // Only react to matrix identity; solve is stable enough for this guard.
+    // Only react to matrix identity and mode; solve is stable enough for this guard.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matrix]);
+  }, [matrix, settings.simpleMode]);
 
   const setMatrix = (m: EditorMatrix) => setState((s) => ({ ...s, current: m }));
   const setSettings = (next: Settings) => setState((s) => ({ ...s, settings: next }));
@@ -91,6 +96,17 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
     solve.reset();
     setDraftKey((k) => k + 1);
   };
+
+  // One rating-mode setting, switchable from the Solver start screen and the
+  // Trainer intro too. Locked while a draft is live or a solve is running.
+  const ratingToggle = (
+    <RatingModeToggle
+      simpleMode={settings.simpleMode}
+      onChange={(simpleMode) => setSettings({ ...settings, simpleMode })}
+      disabled={draftLive || solve.status === 'solving'}
+      canUse={canUse}
+    />
+  );
 
   return (
     <div className={settings.cb ? 'app cb' : 'app'}>
@@ -171,6 +187,7 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
             solve={solve}
             onRun={() => solve.solve(matrix, null, settings.simpleMode)}
             onTrain={solvable ? goTrainer : undefined}
+            ratingToggle={ratingToggle}
           />
         )}
         {/* The trainer stays mounted for the whole session (only hidden when
@@ -195,6 +212,7 @@ export function App({ solve: injectedSolve }: AppProps = {}) {
               onRemainingOpenChange={setRemainingOpen}
               myDispositions={matrix.myDispositions}
               enemyDispositions={matrix.enemyDispositions}
+              ratingToggle={ratingToggle}
             />
           </div>
         )}

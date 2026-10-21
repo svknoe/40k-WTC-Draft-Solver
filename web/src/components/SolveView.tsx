@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { teamResult } from '../model/scale';
 import type { SolveState } from '../worker/useSolve';
 import { ProgressBar } from './ProgressBar';
@@ -15,6 +16,8 @@ interface SolveViewProps {
   onRun: () => void;
   /** Provided once the trainer exists (#21). */
   onTrain?: () => void;
+  /** The rating-mode toggle, shown on the idle screen (owned by App). */
+  ratingToggle?: ReactNode;
 }
 
 const PHASE_LABEL = {
@@ -26,7 +29,7 @@ function nameOf(name: string | [string, string]): string {
   return typeof name === 'string' ? name : `${name[0]} + ${name[1]}`;
 }
 
-export function SolveView({ myTeam, enemyTeam, n, canRun, solve, onRun, onTrain }: SolveViewProps) {
+export function SolveView({ myTeam, enemyTeam, n, canRun, solve, onRun, onTrain, ratingToggle }: SolveViewProps) {
   const my = myTeam || 'Your team';
   const enemy = enemyTeam || 'Opponent';
 
@@ -107,6 +110,12 @@ export function SolveView({ myTeam, enemyTeam, n, canRun, solve, onRun, onTrain 
         result and the optimal mixed strategy for the opening defender put-up, on both sides.
       </p>
       {solve.status === 'error' && <div className="errors">Solve failed: {solve.error}</div>}
+      {ratingToggle && (
+        <div className="solve-mode">
+          <span className="muted">Rating mode</span>
+          {ratingToggle}
+        </div>
+      )}
       <div>
         <button className="primary run" disabled={!canRun} onClick={onRun} title={canRun ? undefined : 'Complete the matrix first'}>
           Run solver

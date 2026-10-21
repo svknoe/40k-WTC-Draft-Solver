@@ -8,6 +8,7 @@ import type { Settings } from '../model/storage';
 import { validateMatrix } from '../model/validation';
 import { Grid } from './Grid';
 import { PasteModal } from './PasteModal';
+import { RatingModeToggle } from './RatingModeToggle';
 import './editor.css';
 
 interface MatrixEditorProps {
@@ -231,14 +232,11 @@ export function MatrixEditor({
             Random
           </button>
           <span className="spacer" />
-          <div className="segmented" role="group" aria-label="Rating mode">
-            <button className={settings.simpleMode ? 'on' : ''} aria-pressed={settings.simpleMode} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: true })}>
-              Single rating
-            </button>
-            <button className={!settings.simpleMode ? 'on' : ''} aria-pressed={!settings.simpleMode} disabled={locked} onClick={() => onSettingsChange({ ...settings, simpleMode: false })}>
-              By map
-            </button>
-          </div>
+          <RatingModeToggle
+            simpleMode={settings.simpleMode}
+            onChange={(simpleMode) => onSettingsChange({ ...settings, simpleMode })}
+            disabled={locked}
+          />
           {/* One unit, so a narrow controls row never wraps the label away from
               its buttons. Always rendered (greyed out in single rating mode,
               where every game uses the one rating) so toggling the rating mode

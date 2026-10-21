@@ -101,6 +101,24 @@ export function cellValue(cell: EditorCell, simple: boolean): number | null {
   }
 }
 
+/** Whether the matrix carries real map ratings: some cell rates two of its
+ * maps differently. Flat cells (one rating on every map, e.g. Clear's
+ * 10/10/10) and blank or unparseable maps don't count — app exports always
+ * fill both layers, so filled maps alone can't tell a map-rated file apart. */
+export function hasMapRatings(m: EditorMatrix): boolean {
+  return m.cells.some((row) => row.some((cell) => {
+    const values = cell.maps.flatMap((raw) => {
+      if (raw.trim() === '') return [];
+      try {
+        return [parseRating(raw)];
+      } catch {
+        return [];
+      }
+    });
+    return values.some((v) => v !== values[0]);
+  }));
+}
+
 /** The mean of the non-null values, or null when there are none — the
  * matrix's AVG row/column, which skip blank cells. */
 export function meanOf(values: readonly (number | null)[]): number | null {

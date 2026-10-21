@@ -2,7 +2,7 @@ import { useId, useRef, useState, type ChangeEvent } from 'react';
 import type { Disposition } from '../model/dispositions';
 import { exportJson, importJson } from '../model/exchange';
 import type { EditorCell, EditorMatrix, MatrixSize } from '../model/matrix';
-import { MAP_LETTERS, cleared, randomized, resize, transpose } from '../model/matrix';
+import { MAP_LETTERS, cleared, hasMapRatings, randomized, resize, transpose } from '../model/matrix';
 import { parsePaste } from '../model/paste';
 import type { Settings } from '../model/storage';
 import { validateMatrix } from '../model/validation';
@@ -89,7 +89,13 @@ export function MatrixEditor({
     event.target.value = '';
     if (!file) return;
     try {
-      onMatrixChange(importJson(await file.text()));
+      const imported = importJson(await file.text());
+      onMatrixChange(imported);
+      // A file with real map ratings opens in By map, so they aren't silently
+      // ignored; a flat file leaves the mode alone.
+      if (settings.simpleMode && hasMapRatings(imported)) {
+        onSettingsChange({ ...settings, simpleMode: false });
+      }
       setImportError(null);
     } catch (error) {
       setImportError((error as Error).message);

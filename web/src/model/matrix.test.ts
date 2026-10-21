@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { DISPOSITIONS } from './dispositions';
 import { FACTIONS } from './factions';
 import {
-  blank, cellValue, cleared, EditorCell, EditorMatrix, filledMaps, fromSaved, mapAverage, mapIndex, meanOf, randomized,
+  blank, cellValue, cleared, EditorCell, EditorMatrix, filledMaps, fromSaved, hasMapRatings, mapAverage, mapIndex, meanOf, randomized,
   resize, SavedMatrix, singleFromMaps, toEngineMatrix, toSaved, transpose,
 } from './matrix';
 import { validateMatrix } from './validation';
@@ -424,5 +424,24 @@ describe('meanOf', () => {
   test('is null when there is nothing to average', () => {
     expect(meanOf([])).toBeNull();
     expect(meanOf([null, null])).toBeNull();
+  });
+});
+
+describe('hasMapRatings', () => {
+  const withCell = (maps: [string, string, string]) => {
+    const m = blank(3);
+    m.cells[1][2] = { maps, s: '10' };
+    return m;
+  };
+  test('false for blank and flat maps', () => {
+    expect(hasMapRatings(blank(3))).toBe(false);
+    expect(hasMapRatings(cleared(3))).toBe(false);
+    expect(hasMapRatings(withCell(['12', '', '12']))).toBe(false);
+  });
+  test('true when one cell rates two maps differently', () => {
+    expect(hasMapRatings(withCell(['12', '11', '']))).toBe(true);
+  });
+  test('ignores unparseable maps', () => {
+    expect(hasMapRatings(withCell(['12', 'x', '12']))).toBe(false);
   });
 });

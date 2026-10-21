@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
-import { blank } from '../model/matrix';
+import { exportJson } from '../model/exchange';
+import { blank, cleared } from '../model/matrix';
 import type { EditorMatrix } from '../model/matrix';
 import type { Settings } from '../model/storage';
 import { MatrixEditor } from './MatrixEditor';
@@ -29,9 +30,9 @@ function valid4(): EditorMatrix {
 const factions = (side: 'Your' | 'Opponent'): string[] =>
   [1, 2, 3, 4].map((k) => (screen.getByLabelText(`${side} player ${k} faction`) as HTMLSelectElement).value);
 
-function Harness({ initial }: { initial: EditorMatrix }) {
+function Harness({ initial, simple = false }: { initial: EditorMatrix; simple?: boolean }) {
   const [matrix, setMatrix] = useState(initial);
-  const [settings, setSettings] = useState<Settings>({ cb: false, simpleMode: false });
+  const [settings, setSettings] = useState<Settings>({ cb: false, simpleMode: simple });
   return (
     <MatrixEditor
       matrix={matrix}
@@ -48,6 +49,22 @@ function Harness({ initial }: { initial: EditorMatrix }) {
 }
 
 describe('MatrixEditor', () => {
+  test('importing a map-rated file switches to By map; a flat one keeps the mode', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={valid4()} simple />);
+    const byMap = () => screen.getByRole('button', { name: 'By map' });
+    const file = (m: EditorMatrix) => new File([exportJson(m)], 'm.json', { type: 'application/json' });
+
+    // Flat file (cleared() blanks the team names — wait for that to land).
+    await user.upload(screen.getByLabelText('Import matrix JSON'), file(cleared(4)));
+    await waitFor(() => expect(screen.queryByDisplayValue('Norway')).toBeNull());
+    expect(byMap()).toHaveAttribute('aria-pressed', 'false');
+
+    // Map-rated file (valid4 rates maps 12 / 9).
+    await user.upload(screen.getByLabelText('Import matrix JSON'), file(valid4()));
+    await waitFor(() => expect(byMap()).toHaveAttribute('aria-pressed', 'true'));
+  });
+
   test('renders the matchup and grid for a valid matrix, Solve enabled', () => {
     render(<Harness initial={valid4()} />);
     expect(screen.getByDisplayValue('Norway')).toBeInTheDocument();
